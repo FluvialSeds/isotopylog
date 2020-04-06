@@ -24,7 +24,6 @@ Package Information
   http://pypi.python.org/pypi/isoclump
 
 :doi:
-  UPDATE THIS DOI!
   |doi|
 
 How to Cite
