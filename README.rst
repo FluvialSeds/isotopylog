@@ -116,4 +116,4 @@ This software is still in active deveopment. Please report any bugs directly to 
 
 
 .. |date| date::
-.. |doi| image:: https://zenodo.org/badge/66090463.svg
+.. |doi| image:: https://zenodo.org/badge/89735636.svg
