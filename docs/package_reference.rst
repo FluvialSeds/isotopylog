@@ -7,9 +7,9 @@ isoclump classes
 .. autosummary::
 	:toctree: _generated/
 
-	isoclump.Experiment
+	isoclump.D47Experiment
 	isoclump.Model
-	isoclump.History
+	isoclump.GeologicHistory
 
 isoclump methods
 ----------------
