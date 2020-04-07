@@ -272,14 +272,188 @@ class TimeData(object):
 		return ax
 
 
-class D47Experiment(TimeData):
+class HeatingExperiment(TimeData):
 	__doc__='''
 	Class for inputting and storing reordering experiment true (observed)
-	and estimated (forward-modelled) carbonate clumped isotope data,
-	calculating goodness of fit statistics, and reporting summary tables.
+	and estimated (forward-modelled) clumped isotope data, calculating
+	goodness of fit statistics, and reporting summary tables. This class can
+	currently handle carbonate D47 only, but will expand to other isotope
+	systems as they become available and more widely used.
 
 	Parmeters
 	---------
+	t : array-like
+		Array of experimental time points, in seconds. Length `nt`.
+
+	T : scalar or array-like
+		Array of experimental temperature, in Kelvin. Length `nt`. If
+		scalar, assumes constant temperature experiment.
+
+	fi : array-like or None
+		The fractional abundance of each isotopologue at each experimental
+		time point. Shape `nt` x `ni`.
+
+	clumps : string
+		The clumped isotope system being measured. Currently only accepts
+		'CO47' but will expand in the future to accept new clumped systems
+		(e.g., 'CO48','CH18', 'SO100') as they become more widely used.
+		Defaults to 'CO47'.
+
+
+	fi_std : array-like or None
+		The analytical standard deviation of the fractional abundance of
+		each isotopologue. If 1d array of length `ni`, assumes constant
+		uncertainty with time; if 2d array, then length `nt` x `ni`; if
+		`None`, then assumes no uncertainty. Defaults to `None`.
+
+	T_std : array-like or None
+		The standard deviation of `T`, with length `nt`, in Kelvin. If
+		scalar, assumes constant temperature uncertainty. Defaults to
+		`None`.
+
+	Raises
+	------
+	ValueError
+		If `clumps` is not one of the possible clumped isotope systems
+		(currently 'CO47').
+
+	ADD ERRORS
+
+	Warnings
+	--------
+	ADD WARNINGS	
+
+	Notes
+	-----
+	ADD NOTES
+
+	See Also
+	--------
+	GeologicHistory
+		``ci.TimeData`` subclass used to generate geologic time-temperature
+		histories and predict their clumped isotope evolution.
+
+	Model
+		Class used to generate 
+
+	*add ratedata classes here**
+
+	Examples
+	--------
+	Generating an arbitrary bare-bones heating experiment containing only `t`
+	and `T`::
+
+		#import modules
+		import numpy as np
+		import isoclump as ic
+
+		#generate arbitrary data
+		t = np.arange(1,100) #100 second experiment
+		T = 350 + 273.15 #constant T, in Kelvin
+
+		#create instance
+		he = ci.HeatingExperiment(t, T)
+
+	Generating a real heating experiment using a .csv file and the
+	``ci.HeatingExperiment.from_csv()`` class method and culling the data
+	to remove points near equilibrium due to high uncertainty (PH12)::
+
+		#create path to data file
+		file = 'path_to_folder_containing_data/heating_data.csv'
+
+		#create instance
+		he = ci.HeatingExperiment.from_csv(
+			file,
+			clumps = 'CO47',
+			culled = True,
+			refframe = 'CDES90'
+			)
+
+	Manually adding some model-estimated isotopologue fractional abundances,
+	fihat::
+
+		#assuming fihat has been generated using one of the ci.Model classes
+		# and that a bare-bones ci.HeatingExperiment instance already exists
+		he.input_estimated(fihat)
+
+	Or, instead, you can input model-estimated fi data directly from a given
+	``ci.Model`` instance combined with a ``ci.RateData`` instance containing
+	the kinetic parameters (i.e., run the forward model)::
+
+		#assuming ci.Model instance named hh and ci.RateData instance named rd
+		he.forward_model(hh, rd)
+
+	Plotting the resulting observed and modeled clumped isotope evolution in
+	various ways::
+
+		#import additional modules
+		import matplotlib.pyplot as plt
+
+		#create figure
+		fig, ax = plt.subplots(2,2)
+
+		#plot raw D47 vs. t
+		ax[0,0] = he.plot(
+			ax = ax[0,0],
+			xaxis = 'time',
+			yaxis = 'D')
+
+		#plot the reaction progress, G, vs t
+		ax[0,1] = he.plot(
+			ax = ax[0,1],
+			xaxis = 'time',
+			yaxis = 'G')
+
+		#same as above but log G axis
+		ax[1,0] = he.plot(
+			ax = ax[1,0],
+			xaxis = 'time',
+			yaxis = 'G',
+			logy = True)
+
+		#same as above but log G and t axis
+		ax[1,1] = he.plot(
+			ax = ax[1,1],
+			xaxis = 'time',
+			yaxis = 'G',
+			logx = True,
+			logy = True)
+
+	Printing a summary of the observed and modeled clumped values, including
+	stastistics::
+
+		print(he.fit_summary())
+
+	**Attributes**
+
+	References
+	----------
+	[1] H.P. Affek and J.M. Eiler (2006) Abundance of mass 47 CO2 in urban air,
+		car exhaust, and human breath, *Geochim. Cosmochim. Ac.*, **70**, 1--12.
+
+	[2] Passey and Henkes 2012
+
+
+
+	'''
+
+	def __init__(self, t, T,
+		fi = None, clumps = 'CO47', fi_std = None, T_std = None):
+
+
+class GeologicHistory(TimeData):
+	__doc__='''
+	Class for inputting geologic time-temperature histories and estimating
+	their clumped isotope evolution using a forward implementation of any of
+	the kinetic models; also generates diagnostic plots (a la Henkes et al. 
+	2014) and statistics. This class can currently handle carbonate D47 only,
+	but will expand to other isotope systems as they become available.
+
+	Parameters
+	----------
+
+	Raises
+	------
 
 	Warnings
 	--------
@@ -295,13 +469,11 @@ class D47Experiment(TimeData):
 
 	**Attributes**
 
-
+	References
+	----------
 	'''
 
 	# def __init__(self, t, T, fi = None, fi_std = None, T_std = None):
-
-
-
 
 
 
