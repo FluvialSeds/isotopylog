@@ -9,7 +9,7 @@ from __future__ import(
 	)
 
 __docformat__ = 'restructuredtext en'
-__all__ = ['Rates', 'Energies']
+__all__ = ['kDistribution', 'EDistribution']
 
 #import modules
 import matplotlib.pyplot as plt
@@ -42,33 +42,28 @@ class RateData(object):
 	directly.
 	'''
 
-	def __init__(model = 'HH20'):
+	def __init__(self, model = 'HH20'):
 		'''
 		ADD DOCSTRING
 		'''
 
-	#define classmethod for defining instance directly from literature values
-	@classmethod
-	def from_literature(clumps = 'CO47', mineral = 'calcite', paper = 'PH12'):
-		raise NotImplementedError
-
 	#define method for plotting results
-	def plot(ax = ax, xaxis = 'k', yaxis = 'pk', logx = True):
+	def plot(self, ax = ax, xaxis = 'k', yaxis = 'pk', logx = True):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define method for printing results summary
-	def summary():
+	def summary(self):
 		'''
 		ADD DOCSTRING
 		'''
 
 
-class Rates(RateData):
+class kDistribution(RateData):
 	__doc__='''
-	Class for inputting and storing clumped isotope rate data, whether derived
-	from the literature or from an inverse fit to heating experiment data,
+	Class for inputting and storing clumped isotope rate data, whether entered
+	manually or derived from an inverse fit to heating experiment data,
 	calculating goodness-of-fit statistics, reporting summary tables, and
 	generating plots. This class can handle any of the published clumped isotope
 	reordering kinetic models: Passey and Henkes (2012), Henkes et al. (2014),
@@ -101,38 +96,32 @@ class Rates(RateData):
 
 	'''
 
-	def __init__():
+	def __init__(self, kvals, model = 'HH20'):
 		'''
 		ADD DOCSTRING
 		'''
 
-	#define classmethod for defining instance directly from literature values
+	#define classmethod for inputting experiment inverse-model results
 	@classmethod
-	def from_literature(T, clumps = 'CO47', mineral = 'calcite', paper = 'PH12'):
-		'''
-		ADD DOCSTRING
-		'''
-
-	#define function for inputting experiment inverse-model results
-	def invert_experiment(HeatingExperiment, model = 'HH20'):
+	def invert_experiment(cls, HeatingExperiment, model = 'HH20'):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define method for plotting results
-	def plot(ax = ax, xaxis = 'k', yaxis = 'pk', logx = True):
+	def plot(self, ax = ax, xaxis = 'k', yaxis = 'pk', logx = True):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define method for printing results summary
-	def summary():
+	def summary(self):
 		'''
 		ADD DOCSTRING
 		'''
 
 
-class Energies(RateData):
+class EDistribution(RateData):
 	__doc__='''
 	Class for inputting and storing clumped isotope activation energy data, E,
 	whether from the literature or from a set of inverse fits to heating
@@ -169,45 +158,46 @@ class Energies(RateData):
 
 	'''
 
-	def __init__(E, pE, model = 'HH20'):
+	def __init__(self, Evals, model = 'HH20'):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define classmethod for defining instance directly from literature values
 	@classmethod
-	def from_literature(clumps = 'CO47', mineral = 'calcite', paper = 'HH20'):
+	def from_literature(cls, clumps = 'CO47', mineral = 'calcite',
+		paper = 'HH20'):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define classmethod for defining instance directly from a set of rates
 	@classmethod
-	def from_rates(rate_list):
+	def from_rates(cls, rate_list):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define method for making Arrhenius plots
-	def Arrhenius_plot(ax = ax, xaxis = 'Tinv', yaxis = 'mu'):
+	def Arrhenius_plot(self, ax = ax, xaxis = 'Tinv', yaxis = 'mu'):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define method for plotting results
-	def plot(ax = ax, xaxis = 'E', yaxis = 'pE'):
+	def plot(self, ax = ax, xaxis = 'E', yaxis = 'pE'):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define method for printing results summary
-	def summary():
+	def summary(self):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define function to update E distribution using new results
-	def update(ratedata_list):
+	def update(self, ratedata_list):
 		'''
 		ADD DOCSTRING
 		'''
