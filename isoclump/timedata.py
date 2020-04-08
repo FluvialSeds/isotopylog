@@ -1,5 +1,5 @@
 '''
-This module contains the Experiment superclass and all corresponding subclasses.
+This module contains the TimeData superclass and all corresponding subclasses.
 '''
 
 #for python 2 compatibility
@@ -9,7 +9,7 @@ from __future__ import(
 	)
 
 __docformat__ = 'restructuredtext en'
-__all__ = ['HeatingExperiment']
+__all__ = ['HeatingExperiment', 'GeologicHistory']
 
 #import modules
 import matplotlib.pyplot as plt
@@ -32,9 +32,9 @@ from .plotting_helper import(
 	)
 
 # from .summary_helper import()
-from .model_helper import(
-	_calc_fihat
-	)
+# from .model_helper import(
+# 	_calc_fihat
+# 	)
 
 # from .timedata_helper import ()
 
