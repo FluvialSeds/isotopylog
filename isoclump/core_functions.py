@@ -33,7 +33,7 @@ from .exceptions import(
 	)
 
 #define funtction for making Arrhenius plots
-def Arrhenius_plot(rate_list, ax = ax, xaxis = 'Tinv', yaxis = 'mu'):
+def Arrhenius_plot(rate_list, ax = None, xaxis = 'Tinv', yaxis = 'mu'):
 	'''
 	ADD DOCSTRING
 	'''

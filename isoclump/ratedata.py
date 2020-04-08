@@ -17,24 +17,24 @@ import numpy as np
 import warnings
 
 #import exceptions
-from .exceptions import(
-	)
+# from .exceptions import(
+# 	)
 
-#import helper functions
-from .core_functions import(
-	)
+# #import helper functions
+# from .core_functions import(
+# 	)
 
-from .plotting_helper import(
-	)
+# from .plotting_helper import(
+# 	)
 
-from .summary_helper import(
-	)
+# from .summary_helper import(
+# 	)
 
-from .ratedata_helper import(
-	)
+# from .ratedata_helper import(
+# 	)
 
-from .timedata_helper import (
-	)
+# from .timedata_helper import (
+# 	)
 
 class RateData(object):
 	'''
@@ -48,7 +48,7 @@ class RateData(object):
 		'''
 
 	#define method for plotting results
-	def plot(self, ax = ax, xaxis = 'k', yaxis = 'pk', logx = True):
+	def plot(self, ax = None, xaxis = 'k', yaxis = 'pk', logx = True):
 		'''
 		ADD DOCSTRING
 		'''
@@ -97,9 +97,9 @@ class kDistribution(RateData):
 	'''
 
 	def __init__(self, kvals, model = 'HH20'):
-		'''
-		ADD DOCSTRING
-		'''
+
+		#adding a dummy line here to circumvent indentation error
+		self.model = model
 
 	#define classmethod for inputting experiment inverse-model results
 	@classmethod
@@ -109,7 +109,7 @@ class kDistribution(RateData):
 		'''
 
 	#define method for plotting results
-	def plot(self, ax = ax, xaxis = 'k', yaxis = 'pk', logx = True):
+	def plot(self, ax = None, xaxis = 'k', yaxis = 'pk', logx = True):
 		'''
 		ADD DOCSTRING
 		'''
@@ -159,9 +159,9 @@ class EDistribution(RateData):
 	'''
 
 	def __init__(self, Evals, model = 'HH20'):
-		'''
-		ADD DOCSTRING
-		'''
+
+		#adding a dummy line here to circumvent indentation error
+		self.model = model
 
 	#define classmethod for defining instance directly from literature values
 	@classmethod
@@ -179,13 +179,13 @@ class EDistribution(RateData):
 		'''
 
 	#define method for making Arrhenius plots
-	def Arrhenius_plot(self, ax = ax, xaxis = 'Tinv', yaxis = 'mu'):
+	def Arrhenius_plot(self, ax = None, xaxis = 'Tinv', yaxis = 'mu'):
 		'''
 		ADD DOCSTRING
 		'''
 
 	#define method for plotting results
-	def plot(self, ax = ax, xaxis = 'E', yaxis = 'pE'):
+	def plot(self, ax = None, xaxis = 'E', yaxis = 'pE'):
 		'''
 		ADD DOCSTRING
 		'''

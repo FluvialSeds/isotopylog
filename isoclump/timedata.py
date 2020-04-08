@@ -17,24 +17,24 @@ import numpy as np
 import warnings
 
 #import exceptions
-from .exceptions import(
-	)
+# from .exceptions import(
+# 	)
 
-#import helper functions
-from .core_functions import(
-	)
+# #import helper functions
+# from .core_functions import(
+# 	)
 
-from .plotting_helper import(
-	)
+# from .plotting_helper import(
+# 	)
 
-from .summary_helper import(
-	)
+# from .summary_helper import(
+# 	)
 
-from .ratedata_helper import(
-	)
+# from .ratedata_helper import(
+# 	)
 
-from .timedata_helper import (
-	)
+# from .timedata_helper import (
+# 	)
 
 
 class TimeData(object):
@@ -125,9 +125,10 @@ class HeatingExperiment(TimeData):
 	def __init__(self, t, T, calibration = 'PH12', clumps = 'CO47', d = None,
 		d_std = None, dex = None, dex_std = None, ref_frame = 'CDES90', 
 		tex = None, T_std = None):
-		'''
-		ADD DOCSTRING
-		'''
+
+		#adding a dummy line here to circumvent indentation error
+		self.t = t
+
 	
 	#define classmethod to import from csv file
 	@classmethod
@@ -220,9 +221,9 @@ class GeologicHistory(TimeData):
 
 	def __init__(self, t, T, calibration = 'PH12', clumps = 'CO47', d = None,
 		d_std = None, ref_frame = 'CDES90', T_std = None):
-		'''
-		ADD DOCSTRING
-		'''
+
+		#adding a dummy line here to circumvent indentation error
+		self.t = t
 
 	#define classmethod to import from csv file
 	@classmethod
