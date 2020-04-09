@@ -129,9 +129,23 @@ class TimeData(object):
 		self.ref_frame = _assert_ref_frame(ref_frame)
 
 		#check and store isotope data
+		if d is not None:
+			self.d = assert_len(d, nt)
+		else:
+			self.d = None
+
+		if d_std is not None:
+			self.d_std = assert_len(d_std, nt)
+		else:
+			self.d_std = None
 
 		#calculate derived attributes
-		self.f = calc_f()
+		self.f, self.f_std = calc_f(
+			self.d,
+			clumps = clumps,
+			d_std = self.d_std,
+			ref_frame = ref_frame
+			)
 
 	#define classmethod to import from csv file
 	@classmethod
@@ -352,7 +366,7 @@ class HeatingExperiment(TimeData):
 		elif tex is None and dex is not None:
 
 			raise TypeError(
-				'Cannot input dex data with if tex is nonetype. Add tex data.')
+				'Cannot input dex data if tex is nonetype. Add tex data.')
 
 
 		#store attributes if all are None
