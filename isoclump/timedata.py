@@ -17,16 +17,14 @@ import numpy as np
 import warnings
 
 #import exceptions
-# from .exceptions import(
-# 	)
+from .exceptions import(
+	LengthError,
+	)
 
 # #import helper functions
 from .core_functions import(
 	assert_len,
 	calc_f,
-	_assert_calib,
-	_assert_clumps,
-	_assert_ref_frame,
 	)
 
 # from .plotting_helper import(
@@ -38,8 +36,11 @@ from .core_functions import(
 # from .ratedata_helper import(
 # 	)
 
-# from .timedata_helper import (
-# 	)
+from .timedata_helper import (
+	_assert_calib,
+	_assert_clumps,
+	_assert_ref_frame,
+	)
 
 
 class TimeData(object):
@@ -130,7 +131,7 @@ class TimeData(object):
 		#check and store isotope data
 
 		#calculate derived attributes
-		self.f = calc_f(self.d)
+		self.f = calc_f()
 
 	#define classmethod to import from csv file
 	@classmethod
@@ -251,6 +252,13 @@ class HeatingExperiment(TimeData):
 
 	Raises
 	------
+	LengthError
+		If experimental data only contain a single time point. Cannot fit any
+		model if n < 2.
+
+	TypeError
+		If attempting to input experimental delta values but experimental time
+		is nonetype (cannot have data with no timestamp).
 
 	Warnings
 	--------
@@ -262,7 +270,7 @@ class HeatingExperiment(TimeData):
 
 	UserWarning
 		If experimental data do not contain at least 3 unique points (cannot
-		fit model if n < 3).
+		fit any model other than "PH12" if n < 3).
 
 	Notes
 	-----
@@ -320,58 +328,64 @@ class HeatingExperiment(TimeData):
 			T_std = None) #force to None for HeatingExperiments
 
 		#do additional steps:
+		
 		#check dex, dex_std, and tex lengths and dtypes; add to self
-		if dex is not None and tex is not None:
+		if tex is not None:
 
-			#warn if not iterable of at least three data points
-			if isinstance(tex, (int, float)) or len(set(tex) < 3):
+			try:
+				it = iter(tex)
+
+			except TypeError:
+				#not iterable; tex is scalar
+				raise LengthError(
+					'tex must be an array of length >1')
+
+			#warn if length < 3
+			if len(set(tex) < 3):
 				warnings.warn(
 					'Attempting to input experimental data with fewer than'
 					' three data points. Must have at least three data points'
-					' to generate a meaningful model fit.')
+					' to generate a meaningful fit for any model other than'
+					' "PH12"')
 
-		#store tex, dex, dex_std to self
-		try:
-			ntex = len(tex)
+		#raise exception if trying to input dex but no tex
+		elif tex is None and dex is not None:
 
-		except TypeError:
-			#tex is None or scalar; store attributes as None
+			raise TypeError(
+				'Cannot input dex data with if tex is nonetype. Add tex data.')
+
+
+		#store attributes if all are None
+		if tex is None:
 			self.ntex = None
-			self.tex = ntex
-			self.dex = dex
-			self.fex = None
-			self.fex_std = None
+			self.tex = None
+			self.dex = None
+			self.dex_std = None
+			self.f = None
+			self.f_std = None
 
+		#store attributes if tex and dex are not None
 		else:
-			#tex is not None
-
-		#store fex, fex_std to self
-
-
-
-
-
-
-
-
-
-
-			#store tex and dex to self
 			ntex = len(tex)
 			self.ntex = ntex
-			self.tex = assert_len(tex, ntex) #s
-			self.dex = assert_len(dex, ntex) #permil delta
+			self.tex = assert_len(tex, ntex)
+			self.dex = assert_len(dex, ntex)
 
-			#calculate fractional abundance and store
-			self.fex = calc_f(
-				self.dex, 
-				clumps = clumps, 
-				ref_frame = ref_frame) #fractional
-
-			#if dex_std exists, store it
+			#include dex_std if it's not None
 			if dex_std is not None:
+				self.dex_std = assert_len(dex_std, ntex)
 
-				self.dex_std = assert_len(dex_std, ntex) #permil delta
+			#now include if it is None
+			else:
+				self.dex_std = None
+
+			#finally, calculate derived fractional abundances
+			self.fex, self.fex_std = calc_f(
+				self.dex,
+				clumps = clumps,
+				d_std = self.dex_std,
+				ref_frame = ref_frame
+				)
 	
 	#define classmethod to import from csv file
 	@classmethod

@@ -102,16 +102,18 @@ def calc_cooling_rate(ds, EDistribution):
 	'''
 
 #define function to calculate d values from fractional abundances
-def calc_d(fs, clumps = 'CO47', ref_frame = 'CDES90'):
+def calc_d(f, clumps = 'CO47', f_std = None, ref_frame = 'CDES90'):
 	'''
 	ADD DOCSTRING
 	'''
+	return d, d_std
 
 #define function to calculate fractional abundances from d values
-def calc_f(ds, clumps = 'CO47', ref_frame = 'CDES90'):
+def calc_f(d, clumps = 'CO47', d_std = None, ref_frame = 'CDES90'):
 	'''
 	ADD DOCSTRING
 	'''
+	return f, f_std
 
 #define function calculate Tikhonov regularization "L-curve"
 def calc_L_curve(HeatingExperiment, kmin = 1e-50, kmax = 1e20, nk = 300):
@@ -142,7 +144,6 @@ def cooling_plot(EDistribution):
 	'''
 	ADD DOCSTRING
 	'''
-
 
 
 
