@@ -442,10 +442,10 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
-# import os
-# import sys
+import os
+import sys
 # sys.path.insert(0, os.path.abspath('.'))
-# sys.path.insert(0, os.path.abspath('../'))
+sys.path.insert(0, os.path.abspath('..'))
 
 
 # -- Project information -----------------------------------------------------
@@ -470,11 +470,15 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.autosummary',
     # 'sphinx.ext.mathjax'
-    'sphinx.ext.coverage',
-]
+    'sphinx.ext.coverage'
+    ]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
+autosummary_generate = True
+# napoleon_include_init_with_doc = True
+# napoleon_include_special_with_doc = False
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.

@@ -79,6 +79,8 @@ class kDistribution(RateData):
 
 	Warnings
 	--------
+	UserWarning
+		Foo bar baz
 
 	Notes
 	-----
@@ -141,6 +143,8 @@ class EDistribution(RateData):
 
 	Warnings
 	--------
+	UserWarning
+		Foo bar baz
 
 	Notes
 	-----

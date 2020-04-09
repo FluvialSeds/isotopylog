@@ -21,8 +21,13 @@ import warnings
 # 	)
 
 # #import helper functions
-# from .core_functions import(
-# 	)
+from .core_functions import(
+	assert_len,
+	calc_f,
+	_assert_calib,
+	_assert_clumps,
+	_assert_ref_frame,
+	)
 
 # from .plotting_helper import(
 # 	)
@@ -46,8 +51,86 @@ class TimeData(object):
 	def __init__(self, t, T, calibration = 'PH12', clumps = 'CO47', d = None,
 		d_std = None, ref_frame = 'CDES90', T_std = None):
 		'''
-		ADD DOCSTRING
+		Initializes the superclass.
+
+		Parameters
+		----------
+		t : array-like
+			Array of forward-modeled time points, in seconds. Length `nt`.
+
+		T : scalar or array-like
+			Array of forward-modeled temperature values, in Kelvin. Length
+			`nt`.
+
+		calibration : string or lambda function
+			The D-T calibration curve to use, either from the literature or as
+			a user-inputted lambda function. If from the literature for D47
+			clumps, options are:
+
+				'PH12': for Passey and Henkes (2012) Eq. 4
+				'SE15': for Stolper and Eiler (2015) Fig. 3
+				'Bea17': for Bonifacie et al. (2017) Eq. 2
+
+			If as a lambda function, must have T in Kelvin. Note that literature
+			equations will be adjusted to be consistent with any reference frame,
+			but lambda functions will be reference-frame-specific.
+			Defaults to 'PH12'.
+
+		clumps : string
+			The clumped isotope system under consideration. Currently only
+			accepts 'CO47' for D47 clumped isotopes, but will include other
+			isotope systems as they become more widely used and data become
+			available. Defaults to 'CO47'.
+
+		d : None or array-like
+			Array of forward-modeled isotope values, written for each time
+			point as [D, d1, d2] where D is the clumped isotope measurement
+			(e.g., D47) and d1 and d2 are the corresponding major isotope
+			values, listed from lowest to highest a.m.u. (e.g., d13C, d18O).
+			Note, for 'CO47', d17O is assumed to be mass-dependent.
+			Shape `nt` x 3. Defaults to `None`.
+
+		d_std : None or array-like
+			Propagated standard deviation of forward-modeled d values.
+			Shape `nt` x 3. Defaults to `None`.
+
+		ref_frame : string
+			Reference frame to use, from the literature. If for 'CO47' clumps,
+			options are:
+
+				'CDES90': for Carbon Dioxide Equilibrium Scale at 90 C (Dennis
+					et al. 2011).
+				'Ghosh': for the reference frame of Ghosh et al. (2006)
+
+			Defaults to 'CDES90'.
+
+		T_std : None, scalar, or array-like
+			Standard deviation of forward-modeled temperature values. Length
+			`nt`. Defaults to `None`.
+
+		Warnings
+		--------
+
+		Raises
+		------
+
 		'''
+
+		#check and store time-temperature attributes
+		nt = len(t)
+		self.nt = nt
+		self.t = assert_len(t, nt) #s
+		self.T = assert_len(T, nt) #K
+
+		#check and store property values (calibration, clumps, ref_frame)
+		self.clumps = _assert_clumps(clumps)
+		self.calibration = _assert_calib(calibration)
+		self.ref_frame = _assert_ref_frame(ref_frame)
+
+		#check and store isotope data
+
+		#calculate derived attributes
+		self.f = calc_f(self.d)
 
 	#define classmethod to import from csv file
 	@classmethod
@@ -99,12 +182,87 @@ class HeatingExperiment(TimeData):
 
 	Parameters
 	----------
+	t : array-like
+		Array of forward-modeled time points, in seconds. Length `nt`.
+
+	T : scalar or array-like
+		Array of forward-modeled temperature values, in Kelvin. Length `nt`.
+
+	calibration : string or lambda function
+		The D-T calibration curve to use, either from the literature or as
+		a user-inputted lambda function. If from the literature for D47
+		clumps, options are:
+
+			'PH12': for Passey and Henkes (2012) Eq. 4
+			'SE15': for Stolper and Eiler (2015) Fig. 3
+			'Bea17': for Bonifacie et al. (2017) Eq. 2
+
+		If as a lambda function, must have T in Kelvin. Note that literature
+		equations will be adjusted to be consistent with any reference frame,
+		but lambda functions will be reference-frame-specific.
+		Defaults to 'PH12'.
+
+	clumps : string
+		The clumped isotope system under consideration. Currently only
+		accepts 'CO47' for D47 clumped isotopes, but will include other
+		isotope systems as they become more widely used and data become
+		available. Defaults to 'CO47'.
+
+	d : None or array-like
+		Array of forward-modeled isotope values, written for each time
+		point as [D, d1, d2] where D is the clumped isotope measurement
+		(e.g., D47) and d1 and d2 are the corresponding major isotope
+		values, listed from lowest to highest a.m.u. (e.g., d13C, d18O).
+		Note, for 'CO47', d17O is assumed to be mass-dependent.
+		Shape `nt` x 3. Defaults to `None`.
+
+	d_std : None or array-like
+		Propagated standard deviation of forward-modeled d values.
+		Shape `nt` x 3. Defaults to `None`.
+
+	dex : None or array-like
+		Array of experimental isotope values, written for each time point as
+		[D, d1, d2] where D is the clumped isotope measurement (e.g., D47) and
+		d1 and d2 are the corresponding major isotope values, listed from
+		lowest to highest a.m.u. (e.g., d13C, d18O). Note, for 'CO47', d17O is
+		assumed to be mass-dependent. Shape `ntex` x 3. Defaults to `None`. 
+
+	dex_std : None or array-like
+		Analytical standard deviation of experimental d values. Shape `ntex` x
+		3. Defaults to `None`.
+
+	ref_frame : string
+		Reference frame to use, from the literature. If for 'CO47' clumps,
+		options are:
+
+			'CDES90': for Carbon Dioxide Equilibrium Scale at 90 C (Dennis
+				et al. 2011).
+			'Ghosh': for the reference frame of Ghosh et al. (2006)
+
+		Defaults to 'CDES90'.
+
+	tex : None or array-like
+		Array of experimental time points, in seconds. Length `ntex`.
+		Defaults to `None`.
+
+	T_std : None, scalar, or array-like
+		Standard deviation of forward-modeled temperature values. Length
+		`nt`. Defaults to `None`.
 
 	Raises
 	------
 
 	Warnings
 	--------
+	UserWarning
+		If attempting to use non-isothermal temperature data to create a
+		``HeatingExperiment`` instance. Currently, all experiments are assumed
+		isothermal; consider creating a ``GeologicHistory`` instance for
+		non-isothermal time-temperature histories. Also warns if T is ``None``.
+
+	UserWarning
+		If experimental data do not contain at least 3 unique points (cannot
+		fit model if n < 3).
 
 	Notes
 	-----
@@ -119,29 +277,115 @@ class HeatingExperiment(TimeData):
 
 	References
 	----------
-
+	[1] Ghosh et al. (2006) *Geochim. Cosmochim. Ac*, **70**, 1439--1456.
+	[2] Dennis et al. (2011) *Geochim. Cosmochim. Ac*, **75**, 7117--7131.
+	[3] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+	[4] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
+	[5] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac*, **200**, 255--279.
 	'''
 
 	def __init__(self, t, T, calibration = 'PH12', clumps = 'CO47', d = None,
 		d_std = None, dex = None, dex_std = None, ref_frame = 'CDES90', 
 		tex = None, T_std = None):
 
-		#adding a dummy line here to circumvent indentation error
-		self.t = t
+		#warn if T is not isothermal (all heating experiments must be for now)
+		try:
+			it = iter(T)
 
+		except TypeError:
+			#not iterable
+			if not isinstance(T, (int, float)):
+				warnings.warn(
+					'T must be int, float, or isothermal array-like. Consider'
+					' using a ``GeologicHistory`` instance for non-isothermal'
+					' data.')
+		
+		else:
+			#iterable
+			if len(set(T)) != 1:
+				warnings.warn(
+					'T must be int, float, or isothermal array-like. Consider'
+					' using a ``GeologicHistory`` instance for non-isothermal'
+					' data.')
+
+		#call superclass __init__ function
+		super(HeatingExperiment, self).__init__(
+			t,
+			T,
+			calibration = calibration,
+			clumps = clumps,
+			d = d,
+			d_std = d_std,
+			ref_frame = ref_frame,
+			T_std = None) #force to None for HeatingExperiments
+
+		#do additional steps:
+		#check dex, dex_std, and tex lengths and dtypes; add to self
+		if dex is not None and tex is not None:
+
+			#warn if not iterable of at least three data points
+			if isinstance(tex, (int, float)) or len(set(tex) < 3):
+				warnings.warn(
+					'Attempting to input experimental data with fewer than'
+					' three data points. Must have at least three data points'
+					' to generate a meaningful model fit.')
+
+		#store tex, dex, dex_std to self
+		try:
+			ntex = len(tex)
+
+		except TypeError:
+			#tex is None or scalar; store attributes as None
+			self.ntex = None
+			self.tex = ntex
+			self.dex = dex
+			self.fex = None
+			self.fex_std = None
+
+		else:
+			#tex is not None
+
+		#store fex, fex_std to self
+
+
+
+
+
+
+
+
+
+
+			#store tex and dex to self
+			ntex = len(tex)
+			self.ntex = ntex
+			self.tex = assert_len(tex, ntex) #s
+			self.dex = assert_len(dex, ntex) #permil delta
+
+			#calculate fractional abundance and store
+			self.fex = calc_f(
+				self.dex, 
+				clumps = clumps, 
+				ref_frame = ref_frame) #fractional
+
+			#if dex_std exists, store it
+			if dex_std is not None:
+
+				self.dex_std = assert_len(dex_std, ntex) #permil delta
 	
 	#define classmethod to import from csv file
 	@classmethod
 	def from_csv(cls, file, calibration = 'PH12', clumps = 'CO47',
 		culled = True, ref_frame = 'CDES90'):
 		'''
-		ADD DOCSTRING
+		Bar
 		'''
+		f = file
 
 	#define method to change calibration
 	def change_calibration(self, calibration):
 		'''
-		ADD DOCSTRING
+		Baz
 		'''
 
 	#define method to change reference frame
@@ -196,12 +440,65 @@ class GeologicHistory(TimeData):
 
 	Parameters
 	----------
+	t : array-like
+		Array of forward-modeled time points, in seconds. Length `nt`.
+
+	T : scalar or array-like
+		Array of forward-modeled temperature values, in Kelvin. Length `nt`.
+
+	calibration : string or lambda function
+		The D-T calibration curve to use, either from the literature or as
+		a user-inputted lambda function. If from the literature for D47
+		clumps, options are:
+
+			'PH12': for Passey and Henkes (2012) Eq. 4
+			'SE15': for Stolper and Eiler (2015) Fig. 3
+			'Bea17': for Bonifacie et al. (2017) Eq. 2
+
+		If as a lambda function, must have T in Kelvin. Note that literature
+		equations will be adjusted to be consistent with any reference frame,
+		but lambda functions will be reference-frame-specific.
+		Defaults to 'PH12'.
+
+	clumps : string
+		The clumped isotope system under consideration. Currently only
+		accepts 'CO47' for D47 clumped isotopes, but will include other
+		isotope systems as they become more widely used and data become
+		available. Defaults to 'CO47'.
+
+	d : None or array-like
+		Array of forward-modeled isotope values, written for each time
+		point as [D, d1, d2] where D is the clumped isotope measurement
+		(e.g., D47) and d1 and d2 are the corresponding major isotope
+		values, listed from lowest to highest a.m.u. (e.g., d13C, d18O).
+		Note, for 'CO47', d17O is assumed to be mass-dependent.
+		Shape `nt` x 3. Defaults to `None`.
+
+	d_std : None or array-like
+		Propagated standard deviation of forward-modeled d values.
+		Shape `nt` x 3. Defaults to `None`.
+
+	ref_frame : string
+		Reference frame to use, from the literature. If for 'CO47' clumps,
+		options are:
+
+			'CDES90': for Carbon Dioxide Equilibrium Scale at 90 C (Dennis
+				et al. 2011).
+			'Ghosh': for the reference frame of Ghosh et al. (2006)
+
+		Defaults to 'CDES90'.
+
+	T_std : None, scalar, or array-like
+		Standard deviation of forward-modeled temperature values. Length
+		`nt`. Defaults to `None`.
 
 	Raises
 	------
 
 	Warnings
 	--------
+	UserWarning
+		Foo bar baz
 
 	Notes
 	-----
@@ -216,14 +513,26 @@ class GeologicHistory(TimeData):
 
 	References
 	----------
-
+	[1] Ghosh et al. (2006) *Geochim. Cosmochim. Ac*, **70**, 1439--1456.
+	[2] Dennis et al. (2011) *Geochim. Cosmochim. Ac*, **75**, 7117--7131.
+	[3] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+	[4] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
+	[5] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac*, **200**, 255--279.
 	'''
 
 	def __init__(self, t, T, calibration = 'PH12', clumps = 'CO47', d = None,
 		d_std = None, ref_frame = 'CDES90', T_std = None):
 
-		#adding a dummy line here to circumvent indentation error
-		self.t = t
+		#call superclass __init__ function
+		super(GeologicHistory, self).__init__(
+			t,
+			T,
+			calibration = calibration,
+			clumps = clumps,
+			d = d,
+			d_std = d_std,
+			ref_frame = ref_frame,
+			T_std = None) #force to None for GeologicHistory
 
 	#define classmethod to import from csv file
 	@classmethod

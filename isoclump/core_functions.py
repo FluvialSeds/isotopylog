@@ -12,8 +12,8 @@ __all__ = ['Arrhenius_plot',
 			'assert_len',
 			'change_ref_frame',
 			'calc_cooling_rate',
-			'calc_ds',
-			'calc_fs',
+			'calc_d',
+			'calc_f',
 			'calc_L_curve',
 			'calc_Teq',
 			'calc_Deq',
@@ -102,13 +102,13 @@ def calc_cooling_rate(ds, EDistribution):
 	'''
 
 #define function to calculate d values from fractional abundances
-def calc_ds(fs, clumps = 'CO47', ref_frame = 'CDES90'):
+def calc_d(fs, clumps = 'CO47', ref_frame = 'CDES90'):
 	'''
 	ADD DOCSTRING
 	'''
 
 #define function to calculate fractional abundances from d values
-def calc_fs(ds, clumps = 'CO47', ref_frame = 'CDES90'):
+def calc_f(ds, clumps = 'CO47', ref_frame = 'CDES90'):
 	'''
 	ADD DOCSTRING
 	'''
