@@ -26,7 +26,7 @@ from .ratedata_helper import(
 	_fit_HH20,
 	)
 
-def kDistribution(object):
+class kDistribution(object):
 	__doc__='''
 	Add docstring here
 	'''
@@ -48,7 +48,7 @@ def kDistribution(object):
 			self.pk = pk #only used for HH20 model
 
 	@classmethod
-	def invert_experiment(cls, heatingexperiment, model = 'HH20'):
+	def invert_experiment(cls, heatingexperiment, model = 'HH20', thresh = 1e-3):
 		'''
 		Inverst a HeatingExperiment instance to generate rates
 		'''
@@ -56,7 +56,7 @@ def kDistribution(object):
 		#check which model and run the inversion
 		if model == 'PH12':
 
-			k, k_std, RMSE = _fit_PH12(heatingexperiment)
+			k, k_std, RMSE = _fit_PH12(heatingexperiment, thresh)
 			pk = None
 
 		elif model == 'Hea14':
