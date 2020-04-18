@@ -59,4 +59,5 @@ from .core_functions import(
 	calc_Deq,
 	resetting_plot,
 	cooling_plot,
+	derivatize,
 	)

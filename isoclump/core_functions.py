@@ -17,6 +17,7 @@ __all__ = ['Arrhenius_plot',
 			'calc_L_curve',
 			'calc_Teq',
 			'calc_Deq',
+			'derivatize',
 			'resetting_plot',
 			'cooling_plot',
 			]
@@ -399,7 +400,62 @@ def cooling_plot(EDistribution):
 	'''
 
 
+#define function to derivatize an array w.r.t. another array
+def derivatize(num, denom):
+    '''
+    Method for derivatizing numerator, `num`, with respect to denominator, 
+    `denom`.
 
+    Parameters
+    ----------
+    num : int or array-like
+        The numerator of the numerical derivative function.
+
+    denom : array-like
+        The denominator of the numerical derivative function. Length `n`.
+
+    Returns
+    -------
+    derivative : rparray
+        An ``np.ndarray`` instance of the derivative. Length `n`.
+
+    Raises
+    ------
+    ArrayError
+        If `denom` is not array-like.
+
+    See Also
+    --------
+    numpy.gradient
+        The method used to calculate derivatives
+
+    Notes
+    -----
+    This method uses the ``np.gradient`` method to calculate derivatives. If
+    `denom` is a scalar, resulting array will be all ``np.inf``. If both `num`
+    and `denom` are scalars, resulting array will be all ``np.nan``. If 
+    either `num` or `denom` are 1d and the other is 2d, derivative will be
+    calculated column-wise. If both are 2d, each column will be derivatized 
+    separately.
+    '''
+
+    #calculate separately for each dimensionality case
+    if num.ndim == denom.ndim == 1:
+        dndd = np.gradient(num)/np.gradient(denom)
+
+    elif num.ndim == denom.ndim == 2:
+        dndd = np.gradient(num)[0]/np.gradient(denom)[0]
+
+    #note recursive list comprehension when dimensions are different
+    elif num.ndim == 2 and denom.ndim == 1:
+        col_der = [derivatize(col, denom) for col in num.T]
+        dndd = np.column_stack(col_der)
+
+    elif num.ndim == 1 and denom.ndim == 2:
+        col_der = [derivatize(num, col) for col in denom.T]
+        dndd = np.column_stack(col_der)
+
+    return dndd
 
 
 
