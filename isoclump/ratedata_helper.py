@@ -259,7 +259,11 @@ def _fit_SE15(he, z):
 	#fit model to lambda function to allow inputting constants
 	lamfunc = lambda x, k1f, k2f, Dpp0: _SE15_fin_diff(x, k1f, k2f, Dpp0, *cs)
 
-	p, pcov = curve_fit(lamfunc, x, yp,
+	#set initial guess
+	p0 = [1e-5, 1e-5, 0.99*Dppeq]
+
+	#solve
+	p, pcov = curve_fit(lamfunc, x, yp, p0,
 		sigma = yp_std, 
 		absolute_sigma = True
 		)
@@ -279,7 +283,7 @@ def _fit_SE15(he, z):
 	k_dif_single = p[1]*(R45_stoch - Rpeq)*(R46_stoch - Rpeq)/Rpeq
 	Rp0 = p[2]*R47_stoch
 
-	k = [k1, k_dif_single, Rp0] #combine into list
+	k = np.array([k1, k_dif_single, Rp0]) #combine into list
 
 	#extract uncertainty
 	pstd = np.sqrt(np.diag(pcov))
@@ -287,7 +291,7 @@ def _fit_SE15(he, z):
 	k_dif_single_std = pstd[1]*(R45_stoch - Rpeq)*(R46_stoch - Rpeq)/Rpeq
 	Rp0_std = pstd[2]*R47_stoch
 
-	k_std = [k1_std, k_dif_single_std, Rp0_std] #combine into list
+	k_std = np.array([k1_std, k_dif_single_std, Rp0_std]) #combine into list
 
 	return k, k_std, rmse, npt
 
@@ -571,7 +575,7 @@ def _calc_R_stoch(d13C, d18O, iso_params):
 	f44 = f12*f16*f16
 	f45 = f13*f16*f16 + 2*f12*f17*f16
 	f46 = 2*f12*f16*f18 + 2*f13*f17*f16 + f12*f17*f17
-	f17 = 2*f13*f16*f18 + 2*f12*f17*f18 + f13*f17*f17
+	f47 = 2*f13*f16*f18 + 2*f12*f17*f18 + f13*f17*f17
 
 	#convert to R values
 	R45_stoch = f45/f44
@@ -623,7 +627,7 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 	#calculate equilibrium pair concentration (SE15 Eq. 13a/b)
 	# Note: Use the average of both calculations
 	pa = f46*(1 - (1 - f45)**z)
-	pb = f45*(1 - (1 - f56)**z)
+	pb = f45*(1 - (1 - f46)**z)
 	p = (pa+pb)/2
 
 	#convert to ratio
