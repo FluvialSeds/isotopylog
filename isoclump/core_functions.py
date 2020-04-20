@@ -13,7 +13,7 @@ __all__ = ['Arrhenius_plot',
 			'change_ref_frame',
 			'calc_cooling_rate',
 			'calc_d',
-			'calc_f',
+			'calc_R',
 			'calc_L_curve',
 			'calc_Teq',
 			'calc_Deq',
@@ -33,12 +33,12 @@ import numpy as np
 # 	LengthError,
 # 	)
 
-# #import timedata helper functions
-# from .timedata_helper import(
-# 	_assert_clumps,
-# 	_assert_ref_frame,
-# 	_assert_iso_params,
-# 	)
+#import timedata helper functions
+from .timedata_helper import(
+	_assert_clumps,
+	_assert_ref_frame,
+	_assert_iso_params,
+	)
 
 #import dictionaries with conversion information
 from .dictionaries import(
