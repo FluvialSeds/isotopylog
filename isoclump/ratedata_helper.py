@@ -309,6 +309,10 @@ def _fit_SE15(he, k0, z):
 	function of the chosen isotope parameters and thus might be sensitive to
 	this choice. See Daëron et al. (2016) and the `calc_R` and `calc_d`
 	functions for details.
+
+	As mentioned in Stolper and Eiler (2015), results appear to be sensitive
+	to the choice of initial conditions; for this reason, the user can pass
+	different choices of k0 when solving.
 	'''
 
 	#extract values to fit
@@ -399,13 +403,106 @@ def _fit_HH20inv(he, k_curve_kink, lam_max, lam_min, nlam, omega):
 
 	return kvec, pkvec
 
-
 #function to fit data using HH20 lognormal model
 def _fit_HH20(he, lam_max, lam_min, nlam):
 	'''
+	Fits D evolution data using the distributed activation energy model of
+	Hemingway and Henkes (2020). This function solves for mu_lam and sig_lam,
+	the mean and standard deviation of a Gaussian distribution in lnk space.
+	See HH20 Eq. X for notation and details.
 
+	Paramters
+	---------
+	he : ic.HeatingExperiment
+		HeatingExperiment instance containing the D data to be modeled.
+
+	lam_max : float
+		The maximum lnk value to consider.
+
+	lam_min : float
+		The minimum lnk value to consider.
+
+	nlam : int
+		The number of lam values in the array such that
+		dlam = (lam_max - lam_min)/nlam.
+
+	Returns
+	-------
+	k : np.ndarray
+		Array of resulting k values, in the order [mu_lam, sig_lam].
+
+	k_std : np.ndarray
+		Uncertainty associated with resulting k values.
+
+	rmse : float
+		Root Mean Square Error uncertainty (in D47 units) of the model fit.
+		Includes model fit to all data points.
+
+	npt : int
+		Number of data points included in the model solution.
+
+	References
+	----------
+	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+
+	Notes
+	-----
+	Results are bounded such that mu_lam is between lam_min and lam_max; sig_lam
+	<= (lam_max - lam_min)/2. All calculations are done in lnG space and thus
+	only depend on relative changes in D47.
 	'''
 
+	#extract values to fit
+	x = he.tex
+	y = he.Gex
+	y_std = he.Gex_std
+
+	#make lam array
+	# dlam = (lam_max - lam_min)/nlam
+	# lam = np.linspace(lam_min, lam_max, nlam)
+
+	#fit model to lambda function to allow inputting constants
+	lamfunc = lambda x, mu_lam, sig_lam: _lognormal_decay(
+		x, 
+		mu_lam, 
+		sig_lam, 
+		lam_max,
+		lam_min,
+		nlam
+		)
+
+	#make initial guess
+	sig0 = (lam_max-lam_min)/4 #quarter of the inputted width
+	mu0 = lam_min + 2*sig0 #middle of the inputted range
+	p0 = [mu0, sig0]
+
+	#solve
+	p, pcov = curve_fit(lamfunc, x, y, p0,
+		sigma = y_std, 
+		absolute_sigma = True,
+		bounds = ([lam_min, 0.],[lam_max, sig0]), #mu, sig must be in range
+		)
+
+	#extract variables to export
+	k = p
+	k_std = np.sqrt(np.diag(pcov))
+	npt = len(x)
+
+	#calculate Gex_hat
+	Gex_hat = lamfunc(x, *p)
+
+	#convert to D47
+	D47_hat, _ = _calc_D_from_G(
+		he.calibration, 
+		he.clumps, 
+		he.dex[0,0], 
+		Gex_hat, 
+		0, #just pass Gex_hat_std = 0 since we won't use it 
+		he.ref_frame, 
+		he.T)
+
+	#calcualte RMSE
+	rmse = _calc_rmse(he.dex[:,0], D47_hat)
 
 	return k, k_std, rmse, npt
 
@@ -745,3 +842,80 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 
 	return Rpeq
 
+#function to predict decay given an inputted lognormal k distribution
+def _lognormal_decay(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
+	'''
+    Function to calculate G as a function of time assuming a lognormal 
+    distribution of decay rates described by mu and sigma.
+    
+    Parameters
+    ----------
+    t : array-like
+        Array of time, in seconds; of length `n_t`.
+    
+    mu_lam : scalar
+        Mean of lam, the lognormal rate distribution.
+        
+    sig_lam : scalar
+        Standard deviation of lam, the lognormal rate distribution.
+    
+    lam_max : scalar
+        Maximum lambda value for distribution range; should be at least 4 sigma
+        above the mean. 
+
+    lam_min : scalar
+        Minimum lambda value for distribution range; should be at least 4 sigma
+        below the mean.
+        
+    nlam : int
+        Number of nodes in lam array.
+    
+    Returns
+    -------
+    G : array-like
+        Array of resulting G values at each time point.
+	'''
+
+    #setup arrays
+    nt = len(t)
+    lam = np.linspace(lam_min, lam_max, nlam)
+    dlam = lam[1] - lam[0]
+    rho = Gaussian(lam, mu_lam, sig_lam)
+
+    #make matrices
+    t_mat = np.outer(t, np.ones(nlam))
+    lam_mat = np.outer(np.ones(nt), lam)
+    rho_mat = np.outer(np.ones(nt), rho)
+
+    #solve
+    x = rho_mat * np.exp(- np.exp(lam_mat) * t_mat) * dlam
+    G = np.inner(x, np.ones(nlam))
+
+    return G
+
+#function for a Gaussian distribution
+def Gaussian(x, mu, sigma):
+    '''
+    Function to make a Gaussian (normal) distribution.
+    
+    Parameters
+    ----------
+    x : scalar or array-like
+        Input x value(s).
+    
+    mu : scalar
+        Gaussian mean.
+        
+    sigma : scalar
+        Gaussian standard deviation.
+    
+    Returns
+    -------
+    y : scalar or array-like
+        Output y value(s).
+    '''
+    
+    s = 1/(2*np.pi*sigma**2)**0.5
+    y = s * np.exp(-(x - mu)**2/(2*sigma**2))
+
+    return y
