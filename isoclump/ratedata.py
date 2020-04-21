@@ -23,7 +23,7 @@ from .ratedata_helper import(
 	_fit_PH12,
 	_fit_Hea14,
 	_fit_SE15,
-	_fit_HH20,
+	# _fit_HH20,
 	)
 
 class kDistribution(object):
@@ -33,10 +33,12 @@ class kDistribution(object):
 
 	def __init__(self, k, 
 		k_std = None, 
+		kvec = None,
 		model = 'HH20', 
 		npt = None, 
-		# pk = None, 
-		RMSE = None):
+		pkvec = None, 
+		rmse = None
+		):
 		'''
 		Initializes the class
 		'''
@@ -44,40 +46,85 @@ class kDistribution(object):
 		#input all attributes
 		self.k = k
 		self.k_std = k_std
+		self.kvec = kvec
 		self.model = model
 		self.npt = npt
-		self.RMSE = RMSE
-
-		# if pk is None:
-		# 	self.pk = np.ones(len(k))
-		# else:
-		# 	self.pk = pk #only used for HH20 model
+		self.pkvec = pkvec
+		self.rmse = rmse
 
 	@classmethod
-	def invert_experiment(cls, heatingexperiment, model = 'HH20', thresh = 1e-6):
+	def invert_experiment(cls,
+		heatingexperiment,
+		fit_regularized = True, #for HH20inv
+		k0 = [1e-3, 1e-4, 1.0001], #for SE15
+		L_curve_kink = 1, #for HH20inv
+		lam_max = 10, #for HH20
+		lam_min = -50, #for HH20
+		nlam = 300, #for HH20
+		model = 'HH20',
+		omega = 'auto', #for HH20inv
+		thresh = 1e-6, #for PH12 and Hea14
+		z = 6, #for SE15
+		):
 		'''
 		Inverst a HeatingExperiment instance to generate rates
 		'''
 
 		#check which model and run the inversion
+		#Passey and Henkes 2012
 		if model == 'PH12':
 
-			k, k_std, RMSE, npt = _fit_PH12(heatingexperiment, thresh)
-			# pk = None
+			#fit the model
+			k, k_std, rmse, npt = _fit_PH12(heatingexperiment, thresh)
 
+			#this model has no kvec and pkvec
+			kvec = pkvec = None
+
+		#Henkes et al. 2014
 		elif model == 'Hea14':
 
-			k, k_std, RMSE, npt = _fit_Hea14(heatingexperiment, thresh)
-			# pk = None
+			#fit the model
+			k, k_std, rmse, npt = _fit_Hea14(heatingexperiment, thresh)
 
+			#this model has no kvec and pkvec
+			kvec = pkvec = None
+
+		#Stolper and Eiler 2015
 		elif model == 'SE15':
 
-			k = _fit_SE15(heatingexperiment)
-			# pk = None
+			#fit the model
+			k, k_std, rmse, npt = _fit_SE15(heatingexperiment, k0, z)
 
+			#this model has no kvec and pkvec
+			kvec = pkvec = None
+
+		#Hemingway and Henkes 2020
 		elif model == 'HH20':
 
-			k, pk = _fit_HH20(heatingexperiment)
+			#fit the model
+			k, k_std, rmse, npt = _fit_HH20(
+				heatingexperiment, 
+				lam_max, 
+				lam_min, 
+				nlam
+				)
+
+			#include regularized data if necessary
+			if fit_regularized is True:
+
+				kvec, pkvec = _fit_HH20inv(
+					heatingexperiment, 
+					L_curve_kink,
+					lam_max,
+					lam_min,
+					nlam,
+					omega
+					)
+
+			else:
+				
+				#this model has no kvec and pkvec
+				kvec = pkvec = None
 
 		else:
 			raise ValueError('Invalid model string.')
@@ -85,12 +132,16 @@ class kDistribution(object):
 		#run __init__ and return class instance
 		return cls(
 			k, 
-			k_std = k_std, 
+			k_std = k_std,
+			kvec = kvec,
 			model = model, 
 			npt = npt, 
-			# pk = pk, 
-			RMSE = RMSE)
+			pkvec = pkvec,
+			rmse = rmse
+			)
 
+	#DOES THIS PLOTTING METHOD MAKE SENSE? IT IS USELESS FOR ALL MODELS EXCEPT
+	# FOR HH20 INVERSE! PROBABLY GET RID OF IT?
 	def plot(ax = None, **kwargs):
 		'''
 		Method for plotting data

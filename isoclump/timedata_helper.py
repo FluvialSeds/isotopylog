@@ -99,7 +99,7 @@ def _cull_data(calibration, clumps, dex, dex_std, ref_frame, T, tex):
 	return dex, dex_std, tex
 
 
-def _calc_G(calibration, clumps, d, d_std, ref_frame, T):
+def _calc_G_from_D(calibration, clumps, d, d_std, ref_frame, T):
 	'''
 	Add docstring
 	'''
@@ -125,6 +125,24 @@ def _calc_G(calibration, clumps, d, d_std, ref_frame, T):
 		# G_std[0] = 0 #no uncertainty at t=0 by definition
 
 	return G, G_std
+
+def _calc_D_from_G(calibration, clumps, D0, G, G_std, ref_frame, T):
+	'''
+	Add docstring
+	'''
+
+	if clumps == 'CO47':
+
+		#calculate equilibrium D value
+		Deq = caleqs[calibration][ref_frame](T)
+
+		#calculate D values
+		D = G*(D0 - Deq) + Deq
+
+		#calcualte D_std (ASSUMES NO UNCERTAINTY IN Deq and D0!)
+		D_std = (D0 - Deq)*G_std
+
+		return D, D_std
 
 #forward modeling functions
 def _forward_PH12(kdistribution):

@@ -23,7 +23,7 @@ import pandas as pd
 from .timedata_helper import(
 	_read_csv,
 	_cull_data,
-	_calc_G,
+	_calc_G_from_D,
 	)
 
 from .dictionaries import(
@@ -59,7 +59,7 @@ class HeatingExperiment(object):
 
 		#convert D and Dex to fraction reaction remaining, G, and store
 		if dex is not None:
-			self.Gex, self.Gex_std = _calc_G(
+			self.Gex, self.Gex_std = _calc_G_from_D(
 				calibration,
 				clumps, 
 				dex, 
@@ -69,7 +69,7 @@ class HeatingExperiment(object):
 				)
 
 		if d is not None:
-			self.G, self.G_std = _calc_G(
+			self.G, self.G_std = _calc_G_from_D(
 				calibration,
 				clumps, 
 				d, 

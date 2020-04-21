@@ -2,6 +2,7 @@
 This module contains helper functions for the RateData classes.
 '''
 
+#import from future for python 2
 from __future__ import(
 	division,
 	print_function,
@@ -14,6 +15,7 @@ __all__ = ['_fit_PH12',
 			'_fit_HH20',
 			]
 
+#import packages
 import numpy as np
 import pandas as pd
 
@@ -21,24 +23,21 @@ from numpy.linalg import inv
 from numpy import eye
 from scipy.optimize import curve_fit
 
-# from .dictionaries import(
-# 	caleqs
-# 	)
-
-from .core_functions import(
-	derivatize,
-	)
-
+#import necessary isoclump dictionaries and functions
 from .dictionaries import(
 	caleqs,
 	d47_isoparams,
 	)
 
-#TO DO:
-# * SHOULD I REPORT PH12 AND HEA14 RMSE IN D47 NOTATION RATHER THAN G??
+from .core_functions import(
+	derivatize,
+	)
 
+from .timedata_helper import(
+	_calc_D_from_G,
+	)
 
-#inverse model fitting functions
+#function to fit data using PH12 model
 def _fit_PH12(he, thresh):
 	'''
 	Fits D evolution data using the first-order model approximation of Passey
@@ -64,8 +63,8 @@ def _fit_PH12(he, thresh):
 		Uncertainty associated with resulting k values.
 
 	rmse : float
-		Root Mean Square Error uncertainty (in G units) of the model fit. Only
-		includes data points that are deemed to be in the linear region.
+		Root Mean Square Error uncertainty (in D47 units) of the model fit.
+		Only includes data points that are deemed to be in the linear region.
 
 	npt : int
 		Number of data points deemed to be in the linear region.
@@ -79,6 +78,12 @@ def _fit_PH12(he, thresh):
 	References
 	----------
 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+
+	Notes
+	-----
+	Results are bounded such that k is non-negative; reported intercept is the
+	negative of the intercept in lnG vs. t space. All calculations are done in
+	lnG space and thus only depend on relative changes in D47.
 	'''
 
 	#convert to log space
@@ -111,7 +116,8 @@ def _fit_PH12(he, thresh):
 	p0 = [-1e-3,-0.5] #initial guess
 	p, pcov = curve_fit(_flin, xl, yl, p0,
 		sigma = yl_std,
-		absolute_sigma = True
+		absolute_sigma = True,
+		bounds = ([-np.inf, -np.inf],[0,0]), #-k and -intercept < 0
 		)
 	
 	#extract variables to export
@@ -119,12 +125,25 @@ def _fit_PH12(he, thresh):
 	k_std = np.diag(pcov)**0.5
 	npt = len(xl)
 
-	#calculate rmse in G space
+	#calculate Gex_hat
 	Gex_hat = _fexp(xl, p[0], np.exp(p[1]))
-	rmse = _calc_rmse(np.exp(yl), Gex_hat)
+
+	#convert to D47
+	D47_hat, _ = _calc_D_from_G(
+		he.calibration, 
+		he.clumps, 
+		he.dex[0,0], 
+		Gex_hat, 
+		0, #just pass Gex_hat_std = 0 since we won't use it 
+		he.ref_frame, 
+		he.T)
+
+	#calcualte RMSE
+	rmse = _calc_rmse(he.dex[:,0], D47_hat)
 
 	return k, k_std, rmse, npt
 	
+#function to fit data using Hea14 model
 def _fit_Hea14(he, thresh):
 	'''
 	Fits D evolution data using the transient defect/equilibrium model of
@@ -167,6 +186,11 @@ def _fit_Hea14(he, thresh):
 	----------
 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
 	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
+	
+	Notes
+	-----
+	Results are bounded to be non-negative. All calculations are done in lnG
+	space and thus only depend on relative changes in D47.
 	'''
 
 	#convert to log space
@@ -188,7 +212,8 @@ def _fit_Hea14(he, thresh):
 	p0 = [-1e-3, kfo[1]] #[-k2, kd/k2] in Hea14 notation
 	p, pcov = curve_fit(_fexp_const, x, A, p0,
 		sigma = A_std,
-		absolute_sigma = True
+		absolute_sigma = True,
+		bounds = ([-np.inf, 0],[0, np.inf]), #-k < 0; f.o. intercept > 0
 		)
 
 	#extract variables to export
@@ -207,22 +232,83 @@ def _fit_Hea14(he, thresh):
 
 	k_std = np.array([kc_std, kd_std, k2_std]) #[kc, kd, k2] in Hea14 notation
 
-	#calculate rmse
+	#calculate Gex_hat
 	Gex_hat = _fHea14(x, *k)
-	rmse = _calc_rmse(np.exp(y), Gex_hat)
 
-	# npt = len(x) #retained all points
+	#convert to D47
+	D47_hat, _ = _calc_D_from_G(
+		he.calibration, 
+		he.clumps, 
+		he.dex[0,0], 
+		Gex_hat, 
+		0, #just pass Gex_hat_std = 0 since we won't use it 
+		he.ref_frame, 
+		he.T)
+
+	#calcualte RMSE
+	rmse = _calc_rmse(he.dex[:,0], D47_hat)
 
 	return k, k_std, rmse, nptfo
 
-def _fit_SE15(he, z):
+#function to fit data using SE15 model
+def _fit_SE15(he, k0, z):
 	'''
-	Add docstring
+	Fits D evolution data using the paired diffusion model of Stolper and
+	Eiler (2015). The function solves for both k1 and k_dif_single as well
+	as the initial pair concentration, p0/peq, by solving a modified version
+	of SE15 Eq. 9-10. Note that p0/peq can be estimated from SE15 Eq. 17.
 
-	Notes: 
-	1. uses average of all experimental d13C and d18O for calculating
-	stochastic statistics.
-	2. Uses the average of both pair calculation equations (13a/b).
+	Paramters
+	---------
+	he : ic.HeatingExperiment
+		HeatingExperiment instance containing the D data to be modeled.
+
+	k0 : array-like
+		Initial guess at k parameters, in the order [k1, k_dif_single, p0/peq].
+		This is taken as an input in order to allow the user to adjust these
+		values to exactly match SE15 results.
+
+	z : float
+		The mineral lattice coordination number to use for calculating the
+		concentration of pairs. According to Stolper and Eiler (2015), this
+		should default to `6`.
+
+	Returns
+	-------
+	k : np.ndarray
+		Array of resulting k values, in the order [k1, k_dif_single, p0/peq].
+
+	k_std : np.ndarray
+		Uncertainty associated with resulting k values.
+
+	rmse : float
+		Root Mean Square Error uncertainty (in D47 units) of the model fit.
+		Includes model fit to all data points.
+
+	npt : int
+		Number of data points included in the model solution.
+
+	References
+	----------
+	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
+	[2] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.
+
+	Notes
+	-----
+	This function uses the average of all experimental d13C and d18O values
+	when calculating stochastic statistics. If d13C and d18O values change
+	considerably throughout the course of an experiment, this could cause
+	slight inconsistencies in results.
+
+	This function uses the average of SE15 Eq. 13a and Eq. 13b when calculating
+	pair concentrations. According to SE15, the relative difference between
+	these equations is ~1-2 percent, so this should be an arbitrary choice.
+
+	Results are bounded such that k values are non-negative and p0/peq >= 1.
+	Calculations depend on stochastic 'pair' concentrations, which are a
+	function of the chosen isotope parameters and thus might be sensitive to
+	this choice. See Daëron et al. (2016) and the `calc_R` and `calc_d`
+	functions for details.
 	'''
 
 	#extract values to fit
@@ -259,13 +345,23 @@ def _fit_SE15(he, z):
 	#fit model to lambda function to allow inputting constants
 	lamfunc = lambda x, k1f, k2f, Dpp0: _SE15_fin_diff(x, k1f, k2f, Dpp0, *cs)
 
-	#set initial guess
-	p0 = [1e-5, 1e-5, 0.99*Dppeq]
+	#get inputted k0 into the right format
+	#k1f
+	p00 = k0[0]
+
+	#k2f
+	p01 = k0[1]*(R45_stoch - Rpeq)*(R46_stoch - Rpeq)/Rpeq
+
+	#Dpp0
+	p02 = k0[2]*Dppeq
+
+	p0 = [p00, p01, p02]
 
 	#solve
 	p, pcov = curve_fit(lamfunc, x, yp, p0,
 		sigma = yp_std, 
-		absolute_sigma = True
+		absolute_sigma = True,
+		bounds = ([0.,0.,1.],[np.inf, np.inf, np.inf]), #k > 0; p0/peq >= 1
 		)
 
 	#calculate rmse
@@ -276,28 +372,42 @@ def _fit_SE15(he, z):
 	#Get results into SE15 notation:
 	#	k1 = k1f
 	#	k_dif_single = k2f*R45_s_eq*R46_s_eq/Rp_eq
-	#	Rp0 = Dpp0*R47_stoch
+	#	p0/peq = Dpp0/Dppeq
 
 	#extract values
 	k1 = p[0]
-	k_dif_single = p[1]*(R45_stoch - Rpeq)*(R46_stoch - Rpeq)/Rpeq
-	Rp0 = p[2]*R47_stoch
+	k_dif_single = p[1]*Rpeq/((R45_stoch - Rpeq)*(R46_stoch - Rpeq))
+	p0peq = p[2]/Dppeq
 
-	k = np.array([k1, k_dif_single, Rp0]) #combine into list
+	k = np.array([k1, k_dif_single, p0peq]) #combine into list
 
 	#extract uncertainty
 	pstd = np.sqrt(np.diag(pcov))
 	k1_std = pstd[0]
 	k_dif_single_std = pstd[1]*(R45_stoch - Rpeq)*(R46_stoch - Rpeq)/Rpeq
-	Rp0_std = pstd[2]*R47_stoch
+	p0peq_std = pstd[2]/Dppeq
 
-	k_std = np.array([k1_std, k_dif_single_std, Rp0_std]) #combine into list
+	k_std = np.array([k1_std, k_dif_single_std, p0peq_std]) #combine into list
 
 	return k, k_std, rmse, npt
 
-def _fit_HH20(he):
+#function to fit data using the HH20 inverse model
+def _fit_HH20inv(he, k_curve_kink, lam_max, lam_min, nlam, omega):
+	'''
 
-	return k, pk
+	'''
+
+	return kvec, pkvec
+
+
+#function to fit data using HH20 lognormal model
+def _fit_HH20(he, lam_max, lam_min, nlam):
+	'''
+
+	'''
+
+
+	return k, k_std, rmse, npt
 
 #linear function for curve fitting
 def _flin(x, c0, c1):
@@ -634,52 +744,4 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 	Rpeq = p/f44
 
 	return Rpeq
-
-
-
-
-
-
-
-
-
-
-	# D47_eq = _calc_Deq(he.T,
-	# 	calibration = he.calibration,
-	# 	clumps = he.clumps,
-	# 	ref_frame = he.calibration
-	# 	)
-
-	# #extract R45 and R46 from the first row of he.d (assume constant in time?)
-	# R45, R46, _ = calc_R(he.d[0,:],
-	# 	clumps = he.clumps,
-	# 	iso_params = he.iso_params,
-	# 	sig_figs = 15
-	# 	)
-
-	# #calculate singleton concentrations (SE15 Eq. 12)
-	# R45_s_eq = R45*((1 - R46)**z)
-	# R46_s_eq = R46*((1 - R45)**z)
-
-	# #calculate equilibrium pair concentration (SE15 Eq. 13a)
-	# Rp_eq = R46 - R46_s_eq
-
-	# #compile constants
-	# cs = [D47_eq, Rp_eq, R45_s_eq, R46_s_eq]
-
-
-
-# def _fSE15(x, k1, kdp, Rp0, D47_eq, Rp_eq, R45_s_eq, R46_s_eq):
-# # 	'''
-# # 	Add docstring
-# # 	'''
-
-
-# 	return D47
-
-
-
-
-
-
 
