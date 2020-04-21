@@ -23,8 +23,16 @@ from .ratedata_helper import(
 	_fit_PH12,
 	_fit_Hea14,
 	_fit_SE15,
-	# _fit_HH20,
+	_fit_HH20,
+	_fit_HH20inv,
 	)
+
+#TO DO: 
+# * CONVERT ALL K VALUES TO LN SPACE FOR CONSISTENCY??
+# * CHANGE INVERT_EXPERIMENT CALL SUCH THAT MODEL-SPECIFIC ARGUMENTS ARE CALLED
+#	WITH **KWARGS. THIS WILL REQUIRE CHANGING ARGUMENTS TO KEYWORD ARGUMENTS IN
+#	RATEDATA_HELPER FUNCTIONS.
+# *
 
 class kDistribution(object):
 	__doc__='''
@@ -33,10 +41,10 @@ class kDistribution(object):
 
 	def __init__(self, k, 
 		k_std = None, 
-		kvec = None,
+		lam = None,
 		model = 'HH20', 
 		npt = None, 
-		pkvec = None, 
+		rho_lam = None, 
 		rmse = None
 		):
 		'''
@@ -46,16 +54,16 @@ class kDistribution(object):
 		#input all attributes
 		self.k = k
 		self.k_std = k_std
-		self.kvec = kvec
+		self.lam = lam
 		self.model = model
 		self.npt = npt
-		self.pkvec = pkvec
+		self.rho_lam = rho_lam
 		self.rmse = rmse
 
 	@classmethod
 	def invert_experiment(cls,
 		heatingexperiment,
-		fit_regularized = True, #for HH20inv
+		fit_regularized = False, #for HH20inv
 		k0 = [1e-3, 1e-4, 1.0001], #for SE15
 		L_curve_kink = 1, #for HH20inv
 		lam_max = 10, #for HH20
@@ -65,6 +73,7 @@ class kDistribution(object):
 		omega = 'auto', #for HH20inv
 		thresh = 1e-6, #for PH12 and Hea14
 		z = 6, #for SE15
+		**kwargs
 		):
 		'''
 		Inverst a HeatingExperiment instance to generate rates
@@ -77,8 +86,8 @@ class kDistribution(object):
 			#fit the model
 			k, k_std, rmse, npt = _fit_PH12(heatingexperiment, thresh)
 
-			#this model has no kvec and pkvec
-			kvec = pkvec = None
+			#this model has no lam and rho_lam
+			lam = rho_lam = None
 
 		#Henkes et al. 2014
 		elif model == 'Hea14':
@@ -86,8 +95,8 @@ class kDistribution(object):
 			#fit the model
 			k, k_std, rmse, npt = _fit_Hea14(heatingexperiment, thresh)
 
-			#this model has no kvec and pkvec
-			kvec = pkvec = None
+			#this model has no lam and rho_lam
+			lam = rho_lam = None
 
 		#Stolper and Eiler 2015
 		elif model == 'SE15':
@@ -95,8 +104,8 @@ class kDistribution(object):
 			#fit the model
 			k, k_std, rmse, npt = _fit_SE15(heatingexperiment, k0, z)
 
-			#this model has no kvec and pkvec
-			kvec = pkvec = None
+			#this model has no lam and rho_lam
+			lam = rho_lam = None
 
 		#Hemingway and Henkes 2020
 		elif model == 'HH20':
@@ -109,22 +118,25 @@ class kDistribution(object):
 				nlam
 				)
 
+			#include lam vector
+			lam = np.linspace(lam_min, lam_max, nlam)
+
 			#include regularized data if necessary
 			if fit_regularized is True:
 
-				kvec, pkvec = _fit_HH20inv(
+				rho_lam = _fit_HH20inv(
 					heatingexperiment, 
-					L_curve_kink,
 					lam_max,
 					lam_min,
 					nlam,
-					omega
+					omega,
+					**kwargs
 					)
 
 			else:
 				
-				#this model has no kvec and pkvec
-				kvec = pkvec = None
+				#this model has no lam and rho_lam
+				rho_lam = None
 
 		else:
 			raise ValueError('Invalid model string.')
@@ -133,10 +145,10 @@ class kDistribution(object):
 		return cls(
 			k, 
 			k_std = k_std,
-			kvec = kvec,
+			lam = lam,
 			model = model, 
 			npt = npt, 
-			pkvec = pkvec,
+			rho_lam = rho_lam,
 			rmse = rmse
 			)
 

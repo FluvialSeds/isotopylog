@@ -21,7 +21,10 @@ import pandas as pd
 
 from numpy.linalg import inv
 from numpy import eye
-from scipy.optimize import curve_fit
+from scipy.optimize import (
+	curve_fit,
+	nnls,
+	)
 
 #import necessary isoclump dictionaries and functions
 from .dictionaries import(
@@ -36,6 +39,14 @@ from .core_functions import(
 from .timedata_helper import(
 	_calc_D_from_G,
 	)
+
+# TODO:
+# * FINISH WRITING L-CURVE FUNCTION
+# * CHANGE CALL STRUCTURE TO INCLUDE **KWARGS
+# * MOVE FUNCTIONS INTO MORE APPROPRIATE MODULES; RENAME ACCORDINGLY
+# * 
+
+
 
 #function to fit data using PH12 model
 def _fit_PH12(he, thresh):
@@ -139,7 +150,7 @@ def _fit_PH12(he, thresh):
 		he.T)
 
 	#calcualte RMSE
-	rmse = _calc_rmse(he.dex[:,0], D47_hat)
+	rmse = _calc_rmse(he.dex[i0:,0], D47_hat)
 
 	return k, k_std, rmse, npt
 	
@@ -396,12 +407,93 @@ def _fit_SE15(he, k0, z):
 	return k, k_std, rmse, npt
 
 #function to fit data using the HH20 inverse model
-def _fit_HH20inv(he, k_curve_kink, lam_max, lam_min, nlam, omega):
+def _fit_HH20inv(he, lam_max, lam_min, nlam, omega, **kwargs):
+	'''
+	Fits D evolution data using the distributed activation energy model of
+	Hemingway and Henkes (2020). This function solves for rho_lam, the
+	regularized distribution of rates in lnk space. See HH20 Eq. X for
+	notation and details. This function can estimate best-fit omega using
+	Tikhonov regularization.
+	
+	Parameters
+	----------
+	he : ic.HeatingExperiment
+		HeatingExperiment instance containing the D data to be modeled.
+
+	lam_max : float
+		The maximum lnk value to consider.
+
+	lam_min : float
+		The minimum lnk value to consider.
+
+	nlam : int
+		The number of lam values in the array such that
+		dlam = (lam_max - lam_min)/nlam.
+
+	omega : str or float
+		The "smoothing parameter" to use. This can be a number or 'auto'; if 'auto',
+		the function uses Tikhonov regularization to calculate the optimal omega
+		value.
+	
+	Returns
+	-------
+	rho_lam : array-like
+		Resulting regularized rho distribution, of length `n_lam`.
 	'''
 
-	'''
+	#extract variables
+	tex = he.tex
+	Gex = he.Gex
+	lam = np.linspace(lam_min, lam_max, nlam)
+	nt = len(tex)
 
-	return kvec, pkvec
+	#calculate A matrix
+	A = _calc_A(tex, lam)
+	
+	#calculate regularization matrix, R
+	R = _calc_R(nlam)
+	
+	#calculate omega using L curve if necessary:
+	if omega in ['auto', 'Auto']:
+		omega = _calc_L_curve(
+			tex, 
+			Gex, 
+			lam_max = lam_max,
+			lam_min = lam_min,
+			nlam = nlam,
+			plot = False,
+			**kwargs
+			)
+
+	#make sure omega is a scalar
+	elif type(omega) not in [float, int]:
+		omt = type(omega).__name__
+
+		raise TypeError(
+			'Attempting to input `omega` of type %s. Must be `int`, `float`'
+			' or "auto".' % omt)
+
+	#ensure it's float
+	else:
+		omega = float(omega)
+
+	#concatenate A+R and Gex+zeros
+	A_reg = np.concatenate(
+		(A, R*omega))
+
+	Gex_reg = np.concatenate(
+		(Gex, np.zeros(nlam + 1)))
+
+	#calculate inverse results and estimated G
+	rho, _ = nnls(A_reg, Gex_reg)
+	Gex_hat = np.inner(A, rho)
+	rgh = np.inner(R, rho)
+
+	#calculate errors
+	resid = norm(Gex - Gex_hat)/nt**0.5
+	rgh = norm(rgh)/nlam**0.5
+
+	return rho_lam, resid, rgh
 
 #function to fit data using HH20 lognormal model
 def _fit_HH20(he, lam_max, lam_min, nlam):
@@ -845,77 +937,346 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 #function to predict decay given an inputted lognormal k distribution
 def _lognormal_decay(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 	'''
-    Function to calculate G as a function of time assuming a lognormal 
-    distribution of decay rates described by mu and sigma.
-    
-    Parameters
-    ----------
-    t : array-like
-        Array of time, in seconds; of length `n_t`.
-    
-    mu_lam : scalar
-        Mean of lam, the lognormal rate distribution.
-        
-    sig_lam : scalar
-        Standard deviation of lam, the lognormal rate distribution.
-    
-    lam_max : scalar
-        Maximum lambda value for distribution range; should be at least 4 sigma
-        above the mean. 
+	Function to calculate G as a function of time assuming a lognormal 
+	distribution of decay rates described by mu and sigma.
 
-    lam_min : scalar
-        Minimum lambda value for distribution range; should be at least 4 sigma
-        below the mean.
-        
-    nlam : int
-        Number of nodes in lam array.
-    
-    Returns
-    -------
-    G : array-like
-        Array of resulting G values at each time point.
+	Parameters
+	----------
+	t : array-like
+		Array of time, in seconds; of length `n_t`.
+
+	mu_lam : scalar
+		Mean of lam, the lognormal rate distribution.
+		
+	sig_lam : scalar
+		Standard deviation of lam, the lognormal rate distribution.
+
+	lam_max : scalar
+		Maximum lambda value for distribution range; should be at least 4 sigma
+		above the mean. 
+
+	lam_min : scalar
+		Minimum lambda value for distribution range; should be at least 4 sigma
+		below the mean.
+		
+	nlam : int
+		Number of nodes in lam array.
+
+	Returns
+	-------
+	G : array-like
+		Array of resulting G values at each time point.
 	'''
 
-    #setup arrays
-    nt = len(t)
-    lam = np.linspace(lam_min, lam_max, nlam)
-    dlam = lam[1] - lam[0]
-    rho = Gaussian(lam, mu_lam, sig_lam)
+	#setup arrays
+	nt = len(t)
+	lam = np.linspace(lam_min, lam_max, nlam)
+	dlam = lam[1] - lam[0]
+	rho = _Gaussian(lam, mu_lam, sig_lam)
 
-    #make matrices
-    t_mat = np.outer(t, np.ones(nlam))
-    lam_mat = np.outer(np.ones(nt), lam)
-    rho_mat = np.outer(np.ones(nt), rho)
+	#make matrices
+	t_mat = np.outer(t, np.ones(nlam))
+	lam_mat = np.outer(np.ones(nt), lam)
+	rho_mat = np.outer(np.ones(nt), rho)
 
-    #solve
-    x = rho_mat * np.exp(- np.exp(lam_mat) * t_mat) * dlam
-    G = np.inner(x, np.ones(nlam))
+	#solve
+	x = rho_mat * np.exp(- np.exp(lam_mat) * t_mat) * dlam
+	G = np.inner(x, np.ones(nlam))
 
-    return G
+	return G
 
 #function for a Gaussian distribution
-def Gaussian(x, mu, sigma):
-    '''
-    Function to make a Gaussian (normal) distribution.
-    
-    Parameters
-    ----------
-    x : scalar or array-like
-        Input x value(s).
-    
-    mu : scalar
-        Gaussian mean.
-        
-    sigma : scalar
-        Gaussian standard deviation.
-    
-    Returns
-    -------
-    y : scalar or array-like
-        Output y value(s).
-    '''
-    
-    s = 1/(2*np.pi*sigma**2)**0.5
-    y = s * np.exp(-(x - mu)**2/(2*sigma**2))
+def _Gaussian(x, mu, sigma):
+	'''
+	Function to make a Gaussian (normal) distribution.
+	
+	Parameters
+	----------
+	x : scalar or array-like
+		Input x value(s).
+	
+	mu : scalar
+		Gaussian mean.
+		
+	sigma : scalar
+		Gaussian standard deviation.
+	
+	Returns
+	-------
+	y : scalar or array-like
+		Output y value(s).
+	'''
+	
+	s = 1/(2*np.pi*sigma**2)**0.5
+	y = s * np.exp(-(x - mu)**2/(2*sigma**2))
 
-    return y
+	return y
+
+#define function for calculating HH20 inverse A matrix
+def _calc_A(t, lam):
+	'''
+	Function for calculating A matrix for HH20 data inversion.
+
+	Parameters
+	----------
+	t : array-like
+		Array of time points, of length `nt`.
+
+	lam : array-like
+		Array of lambda points, of lnegth `nlam`.
+
+	Returns
+	-------
+	A : np.ndarray
+		2-D array A matrix, of shape [`n_t` x `n_lam`]
+
+	References
+	----------
+	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
+	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
+	'''
+
+	#extract constants
+	nt = len(t)
+	nlam = len(lam)
+	dlam = lam[1] - lam[0]
+
+	#define matrices
+	tmat = np.outer(t, np.ones(nlam))
+	lam_mat = np.outer(np.ones(nt), lam)
+
+	A = np.exp(- np.exp(lam_mat) * t_mat) * dlam
+	
+	return A
+
+#define function for calculating HH20 inverse R matrix
+def _calc_R(n):
+	'''
+	Calculates smoothing matrix, R.
+
+	Parameters
+	----------
+	n : int
+		The number of points.
+
+	Returns
+	-------
+	R : np.ndarray
+		2-D array Tikhonov regularization matrix, of shape [`n+1` x `n`]
+
+	References
+	----------
+	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
+	'''
+
+	#pre-allocate matrix
+	R = np.zeros([n + 1, n])
+
+	#ensure pdf = 0 outside of E range specified
+	R[0, 0] = 1.0
+	R[-1, -1] = -1.0
+
+	#1st derivative operator
+	c = [-1, 1]
+
+	#populate matrix
+	for i, row in enumerate(R):
+		if i != 0 and i != n:
+			row[i - 1:i + 1] = c
+
+	return R
+
+#FINISH UPDATING THIS FUNCTION!
+#define function for calculating best-fit omega using L-curve approach
+def _calc_L_curve(
+	tex,
+	Gex,
+	omega_max = 1e3, 
+	omega_min = 1e-3,
+	nom = 150,
+	lam_max = 10, 
+	lam_min = -50, 
+	nlam = 300,
+	kink = 1,
+	ax = None,
+	plot = False
+	):
+	'''
+	Function to choose the "best" omega value for regularization following
+	the Tikhonov Regularization method. The best-fit omega is chosen as the
+	value at the point of maximum curvature in a plot of log residual error
+	vs. log roughness.
+	
+	Parameters
+	----------
+	t_e : array-like
+		Array of experimental time points, in seconds; of length `n_t`.
+	
+	alpha_e : array-like
+		Array of measured alpha values; of length `n_lam`.
+	
+	omega_max : float
+		Maximum omega value to consider, defaults to `1e3`.
+
+	omega_min : float
+		Minimum omega value to consider, defaults to `1e-3`.
+		
+	nom : int
+		Number of nodes on omega array.
+
+	lam_max : scalar
+		Maximum lambda value for distribution range; should be at least 4 sigma
+		above the mean; defaults to `30`.
+
+	lam_min : scalar
+		Minimum lambda value for distribution range; should be at least 4 sigma
+		below the mean; defaults to `-30`.
+		
+	nlam : int
+		Number of nodes in lambda array.
+	
+	kink : int
+		Tells the funciton which L-curve "kink" to use; this is a required
+		input since many L-curve solutions appear to have 2 "kinks"; input `1`
+		for the lower kink and `2` for the upper kink. Without fail, the lower
+		kink appears to be a significantly more robust fit.
+	
+	ax : `None` or plt.axis
+		Matplotlib axis to plot on, only relevant if `plot = True`.
+	
+	plot : Boolean
+		Boolean telling the funciton whether or not to plot L-curve results.
+	
+	Returns
+	-------
+	om_best : np.ndarray
+		Array of best-fit omega values, of length `n_peaks`.
+	
+	ax : plt.axis
+		Updated Matplotlib axis containing L-curve plot.
+	'''
+	
+	#define arrays
+	log_om_vec = np.linspace(np.log10(omega_min), np.log10(omega_max), nom)
+	om_vec = 10**log_om_vec
+
+	res_vec = np.zeros(nom)
+	rgh_vec = np.zeros(nom)
+
+	#for each omega value in the vector, calculate the errors
+	for i, w in enumerate(om_vec):
+
+		#THIS NEEDS TO BE UPDATED TO CONFORM TO FUNCTION INPUTS!!!!
+		_, resid, rgh = _fit_HH20inv(t_e,
+			alpha_e,
+			w,
+			lam_max = lam_max,
+			lam_min = lam_min,
+			nlam = nlam
+			)
+
+		# _fit_HH20inv(he, lam_max, lam_min, nlam, omega,
+
+		res_vec[i] = res
+		rgh_vec[i] = rgh
+
+	#convert to log space
+	res_vec = np.log10(res_vec)
+	rgh_vec = np.log10(rgh_vec)
+
+	#remove noise after 6 sig figs
+	res_vec = np.around(res_vec, decimals = 6)
+	rgh_vec = np.around(rgh_vec, decimals = 6)
+
+	#calculate derivatives and curvature
+	dydx = derivatize(rgh_vec, res_vec)
+	dy2d2x = derivatize(dydx, res_vec)
+
+	#function for curvature
+	k = np.abs(dy2d2x / ((1 + dydx**2)**1.5))
+	
+	#make any infs and nans into zeros
+	k[np.abs(k) == np.inf] = 0
+	k[k == np.nan] = 0
+
+	#extract peak indices
+	pkinds = argrelmax(k)[0]
+	pki = np.argsort(k[pkinds])[::-1][:n_peaks]
+	i = pkinds[pki]
+
+	#extract om_best
+	om_best = om_vec[i]
+
+	#plot if necessary
+	if plot:
+
+		#create axis if necessary
+		if ax is None:
+			_, ax = plt.subplots(1, 1)
+
+		#plot results
+		ax.plot(
+			res_vec,
+			rgh_vec,
+			linewidth = 2,
+			color = 'k',
+			label = 'L-curve')
+
+		ax.scatter(
+			res_vec[i],
+			rgh_vec[i],
+			s = 250,
+			facecolor = 'k',
+			edgecolor = 'w',
+			linewidth = 1.5,
+			label = r'best-fit $\lambda$')
+
+		#set axis labels and text
+
+		xlab = r'residual error, $\log_{10} \left( \frac{\|\|' \
+			r'\mathbf{A}\cdot \mathbf{p} - \mathbf{g} \|\|}{\sqrt{n_{j}}}' \
+			r'\right)$'
+		ax.set_xlabel(xlab)
+
+		ylab = r'roughness, $\log_{10} \left( \frac{\|\| \mathbf{R}' \
+			r'\cdot\mathbf{p} \|\|}{\sqrt{n_{l}}} \right)$'
+
+		ax.set_ylabel(ylab)
+
+		if n_peaks == 1:
+			label1 = r'best-fit $\omega$ = %.3f' %(om_best)
+
+			label2 = (
+				r'$log_{10}$ (resid. err.) = %.3f' %(res_vec[i]))
+
+			label3 = (
+				r'$log_{10}$ (roughness)  = %0.3f' %(rgh_vec[i]))
+		
+		else:
+			label1 = r'best-fit $\omega$ = %.3f, %.3f' %(om_best[0], om_best[1])
+
+			label2 = (
+				r'$log_{10}$ (resid. err.) = %.3f, %.3f' %(res_vec[i[0]], res_vec[i[1]]))
+
+			label3 = (
+				r'$log_{10}$ (roughness)  = %0.3f, %.3f' %(rgh_vec[i[0]], rgh_vec[i[1]]))
+
+		ax.text(
+			0.3,
+			0.95,
+			label1 + '\n' + label2 + '\n' + label3,
+			verticalalignment='top',
+			horizontalalignment='left',
+			transform=ax.transAxes)
+
+		return om_best, ax
+
+	else:
+		return om_best
+
+
+
+
+
+
+	# return om_best, ax
