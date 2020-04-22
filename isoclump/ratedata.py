@@ -18,6 +18,7 @@ __all__ = [
 	]
 
 #import modules
+import inspect
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -29,6 +30,13 @@ from .ratedata_helper import(
 	fit_PH12,
 	fit_SE15,
 	)
+
+# TODO: 
+# * Update fit_HH20inv to throw error if unexpected **kwargs passed to L-curve
+# * Define @property functions
+# * Update __repr__ to output summary table
+# * Customize other magic method behavior??
+# * Write docstring
 
 class kDistribution(object):
 	__doc__='''
@@ -75,7 +83,7 @@ class kDistribution(object):
 		]
 
 	#initialize the object
-	def __init__(self, params, **kwargs):
+	def __init__(self, params, model, **kwargs):
 		'''
 		Initilizes the object.
 
@@ -84,6 +92,14 @@ class kDistribution(object):
 		params : array-like
 			The kinetic parameters associated with this instance; the exact
 			length and values of `params` depends on the model used.
+
+		model : string
+			The type of model to use for fitting. Must be one of:
+
+				"PH12", \n
+				"Hea14", \n
+				"SE15", \n
+				"HH20"
 
 		Returns
 		-------
@@ -97,6 +113,7 @@ class kDistribution(object):
 
 		#then set arguments
 		self.params = params
+		self.model = model
 
 		#finally set all attributes in kwargs and raise exception if unknown
 		for k, v in kwargs.items():
@@ -125,7 +142,7 @@ class kDistribution(object):
 				"PH12", \n
 				"Hea14", \n
 				"SE15", \n
-				"HH10"
+				"HH20"
 
 		fit_reg : boolean
 			Tells the function whether or not to find the regularized inverse
@@ -190,7 +207,7 @@ class kDistribution(object):
 		elif model == 'HH20':
 
 			#extract appropriate kwargs to pass
-			a = [k for k, v in inspect.signature(_fit_HH20).parameters.items()]
+			a = [k for k, v in inspect.signature(fit_HH20).parameters.items()]
 			kwa = {k : kwargs[k] for k in dict(kwargs) if k in a}
 
 			#fit the model

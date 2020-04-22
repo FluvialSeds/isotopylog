@@ -15,7 +15,6 @@ from __future__ import(
 #set magic attributes
 __docformat__ = 'restructuredtext en'
 __all__ = ['_calc_A',
-		   '_calc_L_curve',
 		   '_calc_R',
 		   '_calc_R_stoch',
 		   '_calc_rmse',
@@ -31,34 +30,25 @@ __all__ = ['_calc_A',
 
 #import packages
 import numpy as np
-import pandas as pd
 
+#import linear algebra functions
+from numpy import eye
 from numpy.linalg import (
 	inv,
 	norm,
 	)
 
-from numpy import eye
-
-from scipy.optimize import (
-	curve_fit,
-	nnls,
-	)
-
+#import signal processing functions
 from scipy.signal import argrelmax
 
-#import necessary isoclump dictionaries and functions
-from .dictionaries import(
-	caleqs,
-	d47_isoparams,
-	)
-
+#import necessary isoclump core functions
 from .core_functions import(
 	derivatize,
 	)
 
-from .timedata_helper import(
-	_calc_D_from_G,
+#import necessary isoclump dictionaries
+from .dictionaries import(
+	d47_isoparams,
 	)
 
 #define function for calculating HH20 inverse A matrix
@@ -97,181 +87,6 @@ def _calc_A(t, lam):
 	A = np.exp(- np.exp(lam_mat) * t_mat) * dlam
 	
 	return A
-
-#define function for calculating best-fit omega using L-curve approach
-def _calc_L_curve(
-	he,
-	ax = None,
-	kink = 1,
-	lam_max = 10, 
-	lam_min = -50, 
-	nlam = 300,
-	nom = 150,
-	omega_max = 1e2, 
-	omega_min = 1e-2,
-	plot = False
-	):
-	'''
-	Function to choose the "best" omega value for regularization following
-	the Tikhonov Regularization method. The best-fit omega is chosen as the
-	value at the point of maximum curvature in a plot of log residual error
-	vs. log roughness.
-	
-	Parameters
-	----------
-	he : ic.HeatingExperiment
-		HeatingExperiment instance containing the D data to be modeled.
-
-	ax : `None` or plt.axis
-		Matplotlib axis to plot on, only relevant if `plot = True`.
-
-	kink : int
-		Tells the funciton which L-curve "kink" to use; this is a required
-		input since many L-curve solutions appear to have 2 "kinks"; input `1`
-		for the lower kink and `2` for the upper kink. Without fail, the lower
-		kink appears to be a significantly more robust fit.
-
-	lam_max : scalar
-		Maximum lambda value for distribution range; should be at least 4 sigma
-		above the mean; defaults to `30`.
-
-	lam_min : scalar
-		Minimum lambda value for distribution range; should be at least 4 sigma
-		below the mean; defaults to `-30`.
-
-	nlam : int
-		Number of nodes in lambda array.
-
-	nom : int
-		Number of nodes on omega array.
-
-	omega_max : float
-		Maximum omega value to consider, defaults to `1e3`.
-
-	omega_min : float
-		Minimum omega value to consider, defaults to `1e-3`.
-			
-	plot : Boolean
-		Boolean telling the funciton whether or not to plot L-curve results.
-	
-	Returns
-	-------
-	om_best : np.ndarray
-		Array of best-fit omega values, of length `n_peaks`.
-	
-	ax : plt.axis
-		Updated Matplotlib axis containing L-curve plot.
-	'''
-	
-	#extract arrays
-	tex = he.tex
-	Gex = he.Gex
-	lam = np.linspace(lam_min, lam_max, nlam)
-	nt = len(tex)
-
-	#define additional arrays
-	log_om_vec = np.linspace(np.log10(omega_min), np.log10(omega_max), nom)
-	om_vec = 10**log_om_vec
-
-	res_vec = np.zeros(nom)
-	rgh_vec = np.zeros(nom)
-
-	#for each omega value in the vector, calculate the errors
-	for i, w in enumerate(om_vec):
-
-		#call the inverse fit parent function
-		_, _, resid, rgh = _fit_HH20inv(he, lam_max, lam_min, nlam, w)
-
-		#store results
-		res_vec[i] = resid
-		rgh_vec[i] = rgh
-
-	#convert to log space
-	res_vec = np.log10(res_vec)
-	rgh_vec = np.log10(rgh_vec)
-
-	#remove noise after 6 sig figs
-	res_vec = np.around(res_vec, decimals = 6)
-	rgh_vec = np.around(rgh_vec, decimals = 6)
-
-	#calculate derivatives and curvature
-	dydx = derivatize(rgh_vec, res_vec)
-	dy2d2x = derivatize(dydx, res_vec)
-
-	#function for curvature
-	k = np.abs(dy2d2x / ((1 + dydx**2)**1.5))
-	
-	#make any infs and nans into zeros just in case these exist
-	k[k == np.inf] = 0
-	k[k == np.nan] = 0
-
-	#extract peak indices
-	pkinds = argrelmax(k)[0]
-	pki = np.argsort(k[pkinds])[::-1][:kink+1] #keep top 2 "kink" points
-	ivals = pkinds[pki]
-
-	#choose either lower or upper kink to keep
-	i = np.sort(ivals)[kink-1]
-
-	#extract om_best
-	om_best = om_vec[i]
-
-	#plot if necessary
-	if plot is True:
-
-		#create axis if necessary
-		if ax is None:
-			_, ax = plt.subplots(1, 1)
-
-		#plot results
-		ax.plot(
-			res_vec,
-			rgh_vec,
-			linewidth = 2,
-			color = 'k',
-			label = 'L-curve')
-
-		ax.scatter(
-			res_vec[i],
-			rgh_vec[i],
-			s = 250,
-			facecolor = 'k',
-			edgecolor = 'w',
-			linewidth = 1.5,
-			label = r'best-fit $\omega$')
-
-		#set axis labels and text
-
-		xlab = r'residual error, $\log_{10} \left( \frac{\|\|' \
-			r'\mathbf{A}\cdot \mathbf{p} - \mathbf{g} \|\|}{\sqrt{n_{j}}}' \
-			r'\right)$'
-		ax.set_xlabel(xlab)
-
-		ylab = r'roughness, $\log_{10} \left( \frac{\|\| \mathbf{R}' \
-			r'\cdot\mathbf{p} \|\|}{\sqrt{n_{l}}} \right)$'
-
-		ax.set_ylabel(ylab)
-
-		label1 = r'best-fit $\omega$ = %.3f (kink = %.0f)' %(om_best, kink)
-
-		label2 = (
-			r'$log_{10}$ (resid. err.) = %.3f' %(res_vec[i]))
-
-		label3 = (
-			r'$log_{10}$ (roughness)  = %0.3f' %(rgh_vec[i]))
-		
-		ax.text(
-			0.3,
-			0.95,
-			label1 + '\n' + label2 + '\n' + label3,
-			verticalalignment = 'top',
-			horizontalalignment = 'left',
-			transform = ax.transAxes)
-
-		return om_best, ax
-
-	else:
-		return om_best
 
 #define function for calculating HH20 inverse R matrix
 def _calc_R(n):
