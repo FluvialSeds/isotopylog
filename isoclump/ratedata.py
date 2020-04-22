@@ -25,6 +25,7 @@ from .ratedata_helper import(
 	_fit_SE15,
 	_fit_HH20,
 	_fit_HH20inv,
+	_Gaussian,
 	)
 
 #TO DO: 
@@ -44,7 +45,11 @@ class kDistribution(object):
 		lam = None,
 		model = 'HH20', 
 		npt = None, 
-		rho_lam = None, 
+		omega = None,
+		rho_lam = None,
+		rho_lam_inv = None,
+		resid = None,
+		rgh = None,
 		rmse = None
 		):
 		'''
@@ -57,7 +62,11 @@ class kDistribution(object):
 		self.lam = lam
 		self.model = model
 		self.npt = npt
+		self.omega = omega
 		self.rho_lam = rho_lam
+		self.rho_lam_inv = rho_lam_inv
+		self.resid = resid
+		self.rgh = rgh
 		self.rmse = rmse
 
 	@classmethod
@@ -86,8 +95,8 @@ class kDistribution(object):
 			#fit the model
 			k, k_std, rmse, npt = _fit_PH12(heatingexperiment, thresh)
 
-			#this model has no lam and rho_lam
-			lam = rho_lam = None
+			#this model has no lam, rho_lam, or inverse statistics
+			lam = rho_lam = rho_lam_inv = omega = resid = rgh = None
 
 		#Henkes et al. 2014
 		elif model == 'Hea14':
@@ -95,8 +104,8 @@ class kDistribution(object):
 			#fit the model
 			k, k_std, rmse, npt = _fit_Hea14(heatingexperiment, thresh)
 
-			#this model has no lam and rho_lam
-			lam = rho_lam = None
+			#this model has no lam, rho_lam, or inverse statistics
+			lam = rho_lam = rho_lam_inv = omega = resid = rgh = None
 
 		#Stolper and Eiler 2015
 		elif model == 'SE15':
@@ -104,8 +113,8 @@ class kDistribution(object):
 			#fit the model
 			k, k_std, rmse, npt = _fit_SE15(heatingexperiment, k0, z)
 
-			#this model has no lam and rho_lam
-			lam = rho_lam = None
+			#this model has no lam, rho_lam, or inverse statistics
+			lam = rho_lam = rho_lam_inv = omega = resid = rgh = None
 
 		#Hemingway and Henkes 2020
 		elif model == 'HH20':
@@ -118,13 +127,15 @@ class kDistribution(object):
 				nlam
 				)
 
-			#include lam vector
+			#include lam vector and gaussian rho_lam
 			lam = np.linspace(lam_min, lam_max, nlam)
+			rho_lam = _Gaussian(lam, k[0], k[1])
 
 			#include regularized data if necessary
 			if fit_regularized is True:
 
-				rho_lam = _fit_HH20inv(
+				#fit the model using the inverse function
+				rho_lam_inv, omega, resid, rgh = _fit_HH20inv(
 					heatingexperiment, 
 					lam_max,
 					lam_min,
@@ -135,8 +146,8 @@ class kDistribution(object):
 
 			else:
 				
-				#this model has no lam and rho_lam
-				rho_lam = None
+				#this model has no rho_lam_inv and associated statistics
+				rho_lam_inv = omega = resid = rgh = None
 
 		else:
 			raise ValueError('Invalid model string.')
@@ -148,7 +159,11 @@ class kDistribution(object):
 			lam = lam,
 			model = model, 
 			npt = npt, 
+			omega = omega,
 			rho_lam = rho_lam,
+			rho_lam_inv = rho_lam_inv,
+			resid = resid,
+			rgh = rgh,
 			rmse = rmse
 			)
 

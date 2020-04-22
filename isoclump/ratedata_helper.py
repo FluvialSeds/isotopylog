@@ -19,12 +19,19 @@ __all__ = ['_fit_PH12',
 import numpy as np
 import pandas as pd
 
-from numpy.linalg import inv
+from numpy.linalg import (
+	inv,
+	norm,
+	)
+
 from numpy import eye
+
 from scipy.optimize import (
 	curve_fit,
 	nnls,
 	)
+
+from scipy.signal import argrelmax
 
 #import necessary isoclump dictionaries and functions
 from .dictionaries import(
@@ -439,6 +446,16 @@ def _fit_HH20inv(he, lam_max, lam_min, nlam, omega, **kwargs):
 	-------
 	rho_lam : array-like
 		Resulting regularized rho distribution, of length `n_lam`.
+
+	Raises
+	------
+	TypeError
+		If `omega` is not 'Auto' or float or int type.
+
+	References
+	----------
+	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
 	'''
 
 	#extract variables
@@ -455,9 +472,10 @@ def _fit_HH20inv(he, lam_max, lam_min, nlam, omega, **kwargs):
 	
 	#calculate omega using L curve if necessary:
 	if omega in ['auto', 'Auto']:
+
+		#run L curve function to calculate best-fit omega
 		omega = _calc_L_curve(
-			tex, 
-			Gex, 
+			he,
 			lam_max = lam_max,
 			lam_min = lam_min,
 			nlam = nlam,
@@ -466,7 +484,8 @@ def _fit_HH20inv(he, lam_max, lam_min, nlam, omega, **kwargs):
 			)
 
 	#make sure omega is a scalar
-	elif type(omega) not in [float, int]:
+	elif not isinstance(omega, float) and not isinstance(omega, int):
+
 		omt = type(omega).__name__
 
 		raise TypeError(
@@ -485,15 +504,15 @@ def _fit_HH20inv(he, lam_max, lam_min, nlam, omega, **kwargs):
 		(Gex, np.zeros(nlam + 1)))
 
 	#calculate inverse results and estimated G
-	rho, _ = nnls(A_reg, Gex_reg)
-	Gex_hat = np.inner(A, rho)
-	rgh = np.inner(R, rho)
+	rho_lam, _ = nnls(A_reg, Gex_reg)
+	Gex_hat = np.inner(A, rho_lam)
+	rgh = np.inner(R, rho_lam)
 
 	#calculate errors
 	resid = norm(Gex - Gex_hat)/nt**0.5
 	rgh = norm(rgh)/nlam**0.5
 
-	return rho_lam, resid, rgh
+	return rho_lam, omega, resid, rgh
 
 #function to fit data using HH20 lognormal model
 def _fit_HH20(he, lam_max, lam_min, nlam):
@@ -686,7 +705,8 @@ def _calc_rmse(y,yhat):
 	rmse : float
 		Resulting root mean square error value.
 	'''
-	return np.sqrt(np.sum((y-yhat)**2)/len(y))
+	# return np.sqrt(np.sum((y-yhat)**2)/len(y))
+	return norm(y - yhat)/(len(y)**0.5)
 
 #function to fit complete Hea14 model
 def _fHea14(t, kc, kd, k2):
@@ -1032,8 +1052,8 @@ def _calc_A(t, lam):
 
 	References
 	----------
-	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
-	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
+	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
 	'''
 
 	#extract constants
@@ -1042,7 +1062,7 @@ def _calc_A(t, lam):
 	dlam = lam[1] - lam[0]
 
 	#define matrices
-	tmat = np.outer(t, np.ones(nlam))
+	t_mat = np.outer(t, np.ones(nlam))
 	lam_mat = np.outer(np.ones(nt), lam)
 
 	A = np.exp(- np.exp(lam_mat) * t_mat) * dlam
@@ -1086,19 +1106,17 @@ def _calc_R(n):
 
 	return R
 
-#FINISH UPDATING THIS FUNCTION!
 #define function for calculating best-fit omega using L-curve approach
 def _calc_L_curve(
-	tex,
-	Gex,
-	omega_max = 1e3, 
-	omega_min = 1e-3,
-	nom = 150,
+	he,
+	ax = None,
+	kink = 1,
 	lam_max = 10, 
 	lam_min = -50, 
 	nlam = 300,
-	kink = 1,
-	ax = None,
+	nom = 150,
+	omega_max = 1e2, 
+	omega_min = 1e-2,
 	plot = False
 	):
 	'''
@@ -1109,20 +1127,17 @@ def _calc_L_curve(
 	
 	Parameters
 	----------
-	t_e : array-like
-		Array of experimental time points, in seconds; of length `n_t`.
-	
-	alpha_e : array-like
-		Array of measured alpha values; of length `n_lam`.
-	
-	omega_max : float
-		Maximum omega value to consider, defaults to `1e3`.
+	he : ic.HeatingExperiment
+		HeatingExperiment instance containing the D data to be modeled.
 
-	omega_min : float
-		Minimum omega value to consider, defaults to `1e-3`.
-		
-	nom : int
-		Number of nodes on omega array.
+	ax : `None` or plt.axis
+		Matplotlib axis to plot on, only relevant if `plot = True`.
+
+	kink : int
+		Tells the funciton which L-curve "kink" to use; this is a required
+		input since many L-curve solutions appear to have 2 "kinks"; input `1`
+		for the lower kink and `2` for the upper kink. Without fail, the lower
+		kink appears to be a significantly more robust fit.
 
 	lam_max : scalar
 		Maximum lambda value for distribution range; should be at least 4 sigma
@@ -1131,19 +1146,19 @@ def _calc_L_curve(
 	lam_min : scalar
 		Minimum lambda value for distribution range; should be at least 4 sigma
 		below the mean; defaults to `-30`.
-		
+
 	nlam : int
 		Number of nodes in lambda array.
-	
-	kink : int
-		Tells the funciton which L-curve "kink" to use; this is a required
-		input since many L-curve solutions appear to have 2 "kinks"; input `1`
-		for the lower kink and `2` for the upper kink. Without fail, the lower
-		kink appears to be a significantly more robust fit.
-	
-	ax : `None` or plt.axis
-		Matplotlib axis to plot on, only relevant if `plot = True`.
-	
+
+	nom : int
+		Number of nodes on omega array.
+
+	omega_max : float
+		Maximum omega value to consider, defaults to `1e3`.
+
+	omega_min : float
+		Minimum omega value to consider, defaults to `1e-3`.
+			
 	plot : Boolean
 		Boolean telling the funciton whether or not to plot L-curve results.
 	
@@ -1156,7 +1171,13 @@ def _calc_L_curve(
 		Updated Matplotlib axis containing L-curve plot.
 	'''
 	
-	#define arrays
+	#extract arrays
+	tex = he.tex
+	Gex = he.Gex
+	lam = np.linspace(lam_min, lam_max, nlam)
+	nt = len(tex)
+
+	#define additional arrays
 	log_om_vec = np.linspace(np.log10(omega_min), np.log10(omega_max), nom)
 	om_vec = 10**log_om_vec
 
@@ -1166,18 +1187,11 @@ def _calc_L_curve(
 	#for each omega value in the vector, calculate the errors
 	for i, w in enumerate(om_vec):
 
-		#THIS NEEDS TO BE UPDATED TO CONFORM TO FUNCTION INPUTS!!!!
-		_, resid, rgh = _fit_HH20inv(t_e,
-			alpha_e,
-			w,
-			lam_max = lam_max,
-			lam_min = lam_min,
-			nlam = nlam
-			)
+		#call the inverse fit parent function
+		_, _, resid, rgh = _fit_HH20inv(he, lam_max, lam_min, nlam, w)
 
-		# _fit_HH20inv(he, lam_max, lam_min, nlam, omega,
-
-		res_vec[i] = res
+		#store results
+		res_vec[i] = resid
 		rgh_vec[i] = rgh
 
 	#convert to log space
@@ -1195,20 +1209,23 @@ def _calc_L_curve(
 	#function for curvature
 	k = np.abs(dy2d2x / ((1 + dydx**2)**1.5))
 	
-	#make any infs and nans into zeros
-	k[np.abs(k) == np.inf] = 0
+	#make any infs and nans into zeros just in case these exist
+	k[k == np.inf] = 0
 	k[k == np.nan] = 0
 
 	#extract peak indices
 	pkinds = argrelmax(k)[0]
-	pki = np.argsort(k[pkinds])[::-1][:n_peaks]
-	i = pkinds[pki]
+	pki = np.argsort(k[pkinds])[::-1][:kink+1] #keep top 2 "kink" points
+	ivals = pkinds[pki]
+
+	#choose either lower or upper kink to keep
+	i = np.sort(ivals)[kink-1]
 
 	#extract om_best
 	om_best = om_vec[i]
 
 	#plot if necessary
-	if plot:
+	if plot is True:
 
 		#create axis if necessary
 		if ax is None:
@@ -1229,7 +1246,7 @@ def _calc_L_curve(
 			facecolor = 'k',
 			edgecolor = 'w',
 			linewidth = 1.5,
-			label = r'best-fit $\lambda$')
+			label = r'best-fit $\omega$')
 
 		#set axis labels and text
 
@@ -1243,40 +1260,23 @@ def _calc_L_curve(
 
 		ax.set_ylabel(ylab)
 
-		if n_peaks == 1:
-			label1 = r'best-fit $\omega$ = %.3f' %(om_best)
+		label1 = r'best-fit $\omega$ = %.3f (kink = %.0f)' %(om_best, kink)
 
-			label2 = (
-				r'$log_{10}$ (resid. err.) = %.3f' %(res_vec[i]))
+		label2 = (
+			r'$log_{10}$ (resid. err.) = %.3f' %(res_vec[i]))
 
-			label3 = (
-				r'$log_{10}$ (roughness)  = %0.3f' %(rgh_vec[i]))
+		label3 = (
+			r'$log_{10}$ (roughness)  = %0.3f' %(rgh_vec[i]))
 		
-		else:
-			label1 = r'best-fit $\omega$ = %.3f, %.3f' %(om_best[0], om_best[1])
-
-			label2 = (
-				r'$log_{10}$ (resid. err.) = %.3f, %.3f' %(res_vec[i[0]], res_vec[i[1]]))
-
-			label3 = (
-				r'$log_{10}$ (roughness)  = %0.3f, %.3f' %(rgh_vec[i[0]], rgh_vec[i[1]]))
-
 		ax.text(
 			0.3,
 			0.95,
 			label1 + '\n' + label2 + '\n' + label3,
-			verticalalignment='top',
-			horizontalalignment='left',
-			transform=ax.transAxes)
+			verticalalignment = 'top',
+			horizontalalignment = 'left',
+			transform = ax.transAxes)
 
 		return om_best, ax
 
 	else:
 		return om_best
-
-
-
-
-
-
-	# return om_best, ax
