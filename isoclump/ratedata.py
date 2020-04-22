@@ -1,5 +1,8 @@
 '''
-This module contains the RateData superclass and all corresponding subclasses.
+This module contains the kDistribution and EDistribution classes.
+
+Updated: 22/4/20
+By: JDH
 '''
 
 #for python 2 compatibility
@@ -20,150 +23,220 @@ import numpy as np
 
 #import helper functions
 from .ratedata_helper import(
-	_fit_PH12,
-	_fit_Hea14,
-	_fit_SE15,
-	_fit_HH20,
-	_fit_HH20inv,
-	_Gaussian,
+	fit_Hea14,
+	fit_HH20,
+	fit_HH20inv,
+	fit_PH12,
+	fit_SE15,
 	)
-
-#TO DO: 
-# * CONVERT ALL K VALUES TO LN SPACE FOR CONSISTENCY??
-# * CHANGE INVERT_EXPERIMENT CALL SUCH THAT MODEL-SPECIFIC ARGUMENTS ARE CALLED
-#	WITH **KWARGS. THIS WILL REQUIRE CHANGING ARGUMENTS TO KEYWORD ARGUMENTS IN
-#	RATEDATA_HELPER FUNCTIONS.
-# *
 
 class kDistribution(object):
 	__doc__='''
-	Add docstring here
+	Class description synopsis.
+
+	Parameters
+	----------
+
+	Raises
+	------
+
+	Warnings
+	--------
+
+	Notes
+	-----
+
+	See Also
+	--------
+
+	Examples
+	--------
+
+	References
+	----------
+	
+	**Attributes**
+
 	'''
 
-	def __init__(self, k, 
-		k_std = None, 
-		lam = None,
-		model = 'HH20', 
-		npt = None, 
-		omega = None,
-		rho_lam = None,
-		rho_lam_inv = None,
-		resid = None,
-		rgh = None,
-		rmse = None
-		):
+	#define all the possible attributes for __init__ using _attrs
+	_attrs = [
+		'lam', 
+		'model', 
+		'npt', 
+		'omega', 
+		'params',
+		'params_std', 
+		'rho_lam', 
+		'rho_lam_inv',
+		'res_inv',
+		'rgh_inv',
+		'rmse',
+		]
+
+	#initialize the object
+	def __init__(self, params, **kwargs):
 		'''
-		Initializes the class
+		Initilizes the object.
+
+		Parameters
+		----------
+		params : array-like
+			The kinetic parameters associated with this instance; the exact
+			length and values of `params` depends on the model used.
+
+		Returns
+		-------
+		kd : ic.kDistribution
+			The returned `kDistribution` instance.
 		'''
 
-		#input all attributes
-		self.k = k
-		self.k_std = k_std
-		self.lam = lam
-		self.model = model
-		self.npt = npt
-		self.omega = omega
-		self.rho_lam = rho_lam
-		self.rho_lam_inv = rho_lam_inv
-		self.resid = resid
-		self.rgh = rgh
-		self.rmse = rmse
+		#first make everything in _attrs = None
+		for k in self._attrs:
+			setattr(self, k, None)
 
+		#then set arguments
+		self.params = params
+
+		#finally set all attributes in kwargs and raise exception if unknown
+		for k, v in kwargs.items():
+
+			if k in self._attrs:
+				setattr(self, k, v)
+
+			else:
+				raise TypeError(
+					'__init__() got an unexpected keyword argument %s' % k)
+
+	#define classmethod for generating kDistribution instance from data
 	@classmethod
-	def invert_experiment(cls,
-		heatingexperiment,
-		fit_regularized = False, #for HH20inv
-		k0 = [1e-3, 1e-4, 1.0001], #for SE15
-		L_curve_kink = 1, #for HH20inv
-		lam_max = 10, #for HH20
-		lam_min = -50, #for HH20
-		nlam = 300, #for HH20
-		model = 'HH20',
-		omega = 'auto', #for HH20inv
-		thresh = 1e-6, #for PH12 and Hea14
-		z = 6, #for SE15
-		**kwargs
-		):
+	def invert_experiment(cls, he, model = 'HH20', fit_reg = False, **kwargs):
 		'''
-		Inverst a HeatingExperiment instance to generate rates
+		Method description synopsis.
+
+		Parameters
+		----------
+		he : isoclump.HeatingExperiment
+			The `ic.HeatingExperiment` instance to fit.
+
+		model : string
+			The type of model to use for fitting. Must be one of:
+
+				"PH12", \n
+				"Hea14", \n
+				"SE15", \n
+				"HH10"
+
+		fit_reg : boolean
+			Tells the function whether or not to find the regularized inverse
+			solution in addition to the lognormal solution. This only applies
+			if `model = 'HH20'`.
+
+		Returns
+		-------
+		kd : isoclump.kDistribution
+			The resutling `ic.kDistribution` instance containing the fit
+			parameters.
+
+		Raises
+		------
+		ValueError
+			If `model` is not an acceptable string.
+
+		TypeError
+			If `model` is not a string.
+
+		Warnings
+		--------
+
+		Notes
+		-----
+
+		See Also
+		--------
+
+		Examples
+		--------
+
+		References
+		----------
+		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+		[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
+		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
+		[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 		'''
 
-		#check which model and run the inversion
+		#check which model and run the corresponding inversion method:
+
 		#Passey and Henkes 2012
 		if model == 'PH12':
 
 			#fit the model
-			k, k_std, rmse, npt = _fit_PH12(heatingexperiment, thresh)
-
-			#this model has no lam, rho_lam, or inverse statistics
-			lam = rho_lam = rho_lam_inv = omega = resid = rgh = None
+			params, params_std, rmse, npt = fit_PH12(he, **kwargs)
 
 		#Henkes et al. 2014
 		elif model == 'Hea14':
 
 			#fit the model
-			k, k_std, rmse, npt = _fit_Hea14(heatingexperiment, thresh)
-
-			#this model has no lam, rho_lam, or inverse statistics
-			lam = rho_lam = rho_lam_inv = omega = resid = rgh = None
+			params, params_std, rmse, npt = fit_Hea14(he, **kwargs)
 
 		#Stolper and Eiler 2015
 		elif model == 'SE15':
 
 			#fit the model
-			k, k_std, rmse, npt = _fit_SE15(heatingexperiment, k0, z)
-
-			#this model has no lam, rho_lam, or inverse statistics
-			lam = rho_lam = rho_lam_inv = omega = resid = rgh = None
+			params, params_std, rmse, npt = fit_SE15(he, **kwargs)
 
 		#Hemingway and Henkes 2020
 		elif model == 'HH20':
 
-			#fit the model
-			k, k_std, rmse, npt = _fit_HH20(
-				heatingexperiment, 
-				lam_max, 
-				lam_min, 
-				nlam
-				)
+			#extract appropriate kwargs to pass
+			a = [k for k, v in inspect.signature(_fit_HH20).parameters.items()]
+			kwa = {k : kwargs[k] for k in dict(kwargs) if k in a}
 
-			#include lam vector and gaussian rho_lam
-			lam = np.linspace(lam_min, lam_max, nlam)
-			rho_lam = _Gaussian(lam, k[0], k[1])
+			#fit the model
+			params, params_std, rmse, npt, lam, rho_lam = fit_HH20(he, **kwa)
 
 			#include regularized data if necessary
-			if fit_regularized is True:
+			if fit_reg is True:
 
 				#fit the model using the inverse function
-				rho_lam_inv, omega, resid, rgh = _fit_HH20inv(
-					heatingexperiment, 
-					lam_max,
-					lam_min,
-					nlam,
-					omega,
-					**kwargs
-					)
+				rho_lam_inv, omega, res_inv, rgh_inv = fit_HH20inv(he, **kwargs)
 
 			else:
 				
 				#this model has no rho_lam_inv and associated statistics
-				rho_lam_inv = omega = resid = rgh = None
+				rho_lam_inv = omega = res_inv = rgh_inv = None
 
+		#raise exception if it's not an acceptable string
+		elif isinstance(model, str):
+			raise ValueError(
+				'%s is an invalid model string. Must be one of: "PH12",'
+				'"Hea14", "SE15", or "HH20"' % model)
+
+		#raise different exception if it's not a string
 		else:
-			raise ValueError('Invalid model string.')
 
-		#run __init__ and return class instance
+			mdt = type(mdodel).__name__
+
+			raise TypeError(
+				'Unexpected model of type %s. Must be string.' % mdt)
+
+		#set HH20 specific attributes to not if model is not HH20
+		if model != 'HH20':
+			lam = omega = rho_lam = rho_lam_inv = res_inv = rgh_inv = None
+
+		#return class instance
 		return cls(
-			k, 
-			k_std = k_std,
+			params,
 			lam = lam,
-			model = model, 
-			npt = npt, 
+			model = model,
+			npt = npt,
 			omega = omega,
+			params_std = params_std,
 			rho_lam = rho_lam,
 			rho_lam_inv = rho_lam_inv,
-			resid = resid,
-			rgh = rgh,
+			res_inv = res_inv,
+			rgh_inv = rgh_inv,
 			rmse = rmse
 			)
 
@@ -200,6 +273,15 @@ class kDistribution(object):
 
 		#return table
 		return sum_table
+
+
+	#customize __repr__ method for printing summary
+	def __repr__(self):
+		return str(self.params)
+
+	#TODO: Customize other magic method behavior?
+	#TODO: Customize @property behavior?
+
 
 
 class EDistribution(object):
@@ -250,3 +332,6 @@ class EDistribution(object):
 		'''
 		ADD DOCSTRING
 		'''
+
+
+# if __name__ == __main__:
