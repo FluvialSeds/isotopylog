@@ -38,9 +38,6 @@ from numpy.linalg import (
 	norm,
 	)
 
-#import signal processing functions
-from scipy.signal import argrelmax
-
 #import necessary isoclump core functions
 from .core_functions import(
 	derivatize,
