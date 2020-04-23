@@ -288,19 +288,112 @@ class kDistribution(object):
 			rmse = rmse
 			)
 
-	#DOES THIS PLOTTING METHOD MAKE SENSE? IT IS USELESS FOR ALL MODELS EXCEPT
-	# FOR HH20 INVERSE! PROBABLY GET RID OF IT?
-	def plot(ax = None, **kwargs):
+	#define method for plotting HH20 results
+	def plot(self, ax = None, lnargs = {}, invargs = {}):
 		'''
-		Method for plotting data
+		Generates a plot of ln(k) distributions for 'HH20'-type models.
+
+		Parameters
+		----------
+		ax : None or plt.axis
+			Axis for plotting results; defaults to `None`.
+
+		lnargs : dict
+			Dictionary of stylistic keyword arguments to pass to `plt.plot()`
+			when plotting lognormal results. Defaults to empty dict.
+
+		invargs : dict
+			Dictionary of stylistic keyword arguments to pass to `plt.plot()`
+			when plotting inversion results, if they exist. Defaults to empty
+			dict.
+
+		Returns
+		-------
+		ax : plt.axis
+			Updated axis containing results.
+
+		Raises
+		------
+		TypeError
+			If the `kDistribution` instance is of a model type that does not
+			support plotting. Currently, only 'HH20' supports plotting.
+
+		See Also
+		--------
+		matplotlib.pyplot.plot
+			Underlying plotting function that is called.
+
+		Examples
+		--------
+		Basic implementation, assuming `ic.kDistribution` instance `kd` exists
+		and is of 'HH20' model type::
+
+			#import modules
+			import isoclump as ic
+			import matplotlib.pyplot as plt
+
+			#make figure
+			fig, ax = plt.subplots(1,1)
+
+			#plot results
+			kd.plot(ax = ax)
+
+		Similar implementation, but now putting in stylistic keyword args::
+
+			#import modules
+			import isoclump as ic
+			import matplotlib.pyplot as plt
+
+			#make figure
+			fig, ax = plt.subplots(1,1)
+
+			#define plotting style
+			lnargs = {'linewidth':2, 'c':'k'}
+			invargs = {'linewidth':1.5, 'c':'g'}
+
+			#plot results
+			kd.plot(ax = ax, lnargs = lnargs, invargs = invargs)
 		'''
+
+		#check if model is right
+		if self.model != 'HH20':
+			raise TypeError(
+				'Plotting is not implemented for model type %s; only "HH20"'
+				' fits can be plotted. Consider extracting k values directly'
+				' from summary table instead.' % self.model)
 
 		#make axis if necessary
 		if ax is None:
 			_, ax = plt.subplots(1,1)
 
-		#plot data
-		ax.plot(self.pk, self.k, **kwargs)
+		#plot lognormal data
+		ax.plot(
+			self.lam,
+			self.rho_lam,
+			label = 'lognormal fit',
+			**lnargs
+			)
+
+		#plot inverse data if it exists
+		if self.rho_lam_inv is not None:
+
+			#make label
+			invlab = r'inverse model fit ($\omega$ = %.2f)' % self.omega
+
+			#plot data
+			ax.plot(
+				self.lam,
+				self.rho_lam_inv,
+				label = invlab,
+				**invargs
+				)
+
+		#set axis labels
+		ax.set_xlabel(r'$\lambda$ ($min^{-1}$)')
+		ax.set_ylabel(r'$\rho(\lambda)$')
+
+		#add legend
+		ax.legend(loc = 'best')
 
 		#return result
 		return ax

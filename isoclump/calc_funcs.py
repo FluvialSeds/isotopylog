@@ -68,8 +68,8 @@ def _calc_A(t, lam):
 
 	References
 	----------
-	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
-	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
+	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
+	[2] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
 	#extract constants
@@ -236,15 +236,15 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 	Rpeq : float
 		The equilibrium pair concentration, normalied to [44].
 
-	References
-	----------
-	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
-
 	Notes
 	-----
 	This function uses the average of both methods for calcuating [p] (i.e.,
 	Eqs. 13a and 13b in SE15). The difference between the two functions is ~1-2
 	percent relative, so this choice is essentially arbitrary.
+
+	References
+	----------
+	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
 	'''
 
 	#calcualte f values
@@ -415,15 +415,15 @@ def _fSE15(t, k1f, k2f, Dpp0, Dppeq, Dp470, Dp47eq):
 		Array of calculated Dp47 values at each time point. To be used for
 		'curve_fit' solving. 
 
-	References
-	----------
-	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
-
 	Notes
 	-----
 	Because of the requirements for 'curve_fit', this funciton is only for
 	solving the inverse problem for heating experiment data. Geological
 	history forward-model solution is in a separate function.
+
+	References
+	----------
+	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
 	'''
 
 	#make A matrix and B array
