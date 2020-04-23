@@ -37,9 +37,6 @@ from .dictionaries import(
 	mod_params
 	)
 
-#TODO:
-# * Update @property for *all* attributes (also good for docstrings)
-
 class kDistribution(object):
 	__doc__='''
 	Class for inputting and storing clumped isotope rate data. Currently only
@@ -294,7 +291,7 @@ class kDistribution(object):
 
 		Raises
 		------
-		
+
 		ValueError
 			If `model` is not an acceptable string.
 
