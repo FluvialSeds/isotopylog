@@ -36,7 +36,10 @@ from .ratedata_helper import(
 # * Define @property functions
 # * Update __repr__ to output summary table
 # * Customize other magic method behavior??
-# * Write docstring
+# * Write docstrings
+# * Move calc_L_curve to core_functions and import in __init__
+# * Make summary method
+# * Make plot method
 
 class kDistribution(object):
 	__doc__='''
@@ -142,7 +145,16 @@ class kDistribution(object):
 				"PH12", \n
 				"Hea14", \n
 				"SE15", \n
-				"HH20"
+				"HH20" \n
+
+			See the relevant documentation on each model fit function for
+			details and descriptions of a given model:
+
+				fit_PH12 \n
+				fit_Hea14 \n
+				fit_SE15 \n
+				fit_HH20 \n
+				fit_HH20inv \n
 
 		fit_reg : boolean
 			Tells the function whether or not to find the regularized inverse
@@ -206,21 +218,38 @@ class kDistribution(object):
 		#Hemingway and Henkes 2020
 		elif model == 'HH20':
 
-			#extract appropriate kwargs to pass
-			a = [k for k, v in inspect.signature(fit_HH20).parameters.items()]
-			kwa = {k : kwargs[k] for k in dict(kwargs) if k in a}
-
-			#fit the model
-			params, params_std, rmse, npt, lam, rho_lam = fit_HH20(he, **kwa)
+			#running the model in this order properly catches any nonsense
+			# kwargs!
 
 			#include regularized data if necessary
 			if fit_reg is True:
 
 				#fit the model using the inverse function
-				rho_lam_inv, omega, res_inv, rgh_inv = fit_HH20inv(he, **kwargs)
+				rho_lam_inv, omega, res_inv, rgh_inv = fit_HH20inv(
+					he, 
+					**kwargs
+					)
+
+				#extract fit_HH20 kwargs and run Gaussian fit.
+				ars = [k for k, v in inspect.signature(
+					fit_HH20).parameters.items()]
+
+				kwa = {k : kwargs[k] for k in dict(kwargs) if k in ars}
+
+				#run Gaussian fit
+				params, params_std, rmse, npt, lam, rho_lam = fit_HH20(
+					he, 
+					**kwa
+					)
 
 			else:
-				
+
+				#run Gaussian fit
+				params, params_std, rmse, npt, lam, rho_lam = fit_HH20(
+					he, 
+					**kwargs
+					)
+
 				#this model has no rho_lam_inv and associated statistics
 				rho_lam_inv = omega = res_inv = rgh_inv = None
 

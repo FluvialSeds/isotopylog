@@ -51,6 +51,7 @@ from .core_functions import(
 	Arrhenius_plot,
 	assert_len,
 	change_ref_frame,
+	calc_L_curve,
 	calc_cooling_rate,
 	calc_d,
 	calc_R,

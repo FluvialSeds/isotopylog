@@ -22,6 +22,7 @@ __all__ = ['fit_Hea14',
 		  ]
 
 #import packages
+import matplotlib.pyplot as plt
 import numpy as np
 
 #import necessary linear algebra functions
@@ -354,6 +355,9 @@ def fit_HH20inv(
 	------
 	TypeError
 		If `omega` is not 'Auto' or float or int type.
+
+	TypeError
+		If unexpected keyword arguments are passed to `calc_L_curve`.
 
 	References
 	----------
