@@ -37,48 +37,199 @@ from .dictionaries import(
 	mod_params
 	)
 
-# TODO: 
-# * Define @property functions
-# * Write docstrings
-# * Make plot method
-# * Customize other magic method behavior??
-
 class kDistribution(object):
 	__doc__='''
-	Class description synopsis.
+	Class for inputting and storing clumped isotope rate data. Currently only
+	accepts D47 clumps, but will be expanded in the future as new clumped
+	system data becomes available.
 
 	Parameters
 	----------
+	params : array-like
+		A list of the rate parameters associated with a given kDistribution.
+		The values and length of this array depend on the type of model being
+		implemented:
+
+			`'Hea14'`: [ln(kc), ln(kd), ln(k2)] \n
+			`'HH20'`: [mu_lam, sig_lam] \n
+			`'PH12'`: [ln(k), -intercept] \n
+			`'SE15'`: [ln(k1), ln(k_dif_single), [pair]_0/[pair]_eq] \n
+
+		See discussion in each reference for parameter definitions and
+		further details. All `k` values should be in units of inverse time,
+		although the exact time unit can change depending on inputs.
+
+	model : string
+		The type of model associated with a given kDistribution. Options are:
+
+			`'Hea14'` \n
+			`'HH20'` \n
+			`'PH12'` \n
+			`'SE15'`
+
+	lam : None or array-like
+		The ln(k) values over which the rate distribution is calculated. `lam`
+		only applies when `model = 'HH20'`. Defaults to `None`.
+
+	npt : None or int
+		The number of data points used in the model fit. If `model = 'Hea14'`
+		or `model = 'PH12'`, then `npt` is the number of points deemed to be
+		in the linear region of the curve; otherwise, it is all data points.
+		Defaults to `None`.
+
+	omega : None or scalar
+		The Tikhonov omega value used for inverse regularization. `omega` only
+		applies when `model = 'HH20'` and `fit_reg = True`. Defaults to `None`.
+
+	params_std : None or array-like
+		Uncertainty associated with each parameter value, as +/- 1 sigma.
+		Defaults to `None`.
+
+	rho_lam : None or array-like
+		The modeled lognormal probability density function of ln(k) values.
+		`rho_lam` only applies when `model = 'HH20'`. Defaults to `None`.
+
+	rho_lam_inv : None or array-like
+		The modeled inverse probability density function of ln(k) values
+		calculated using Tikhonov regularization. `rho_lam_inv` only applies
+		when `model = 'HH20'` and `fit_reg = True`. Defaults to `None`.
+
+	res_inv : None or float
+		The residual norm the Tikhonov regularization model-data fit. `res_inv`
+		only applies when `model = 'HH20'` and `fit_reg = True`. Defaults to
+		`None`.
+
+	rgh_inv : None or float
+		The roughness norm the Tikhonov regularization model-data fit. `res_inv`
+		only applies when `model = 'HH20'` and `fit_reg = True`. Defaults to
+		`None`.
+
+	rmse : None or float
+		The root-mean-square-error of the model-data fit. Defaults to `None`.
 
 	Raises
 	------
+	ValueError
+		If an unexpected keyword argument is trying to be inputted.
 
-	Warnings
-	--------
+	TypeError
+		If inputted parameters of an unacceptable type.
 
-	Notes
-	-----
+	ValueError
+		If an unexpected model name is trying to be inputted.
 
 	See Also
 	--------
+	isoclump.EDistribution
+		The class for combining multiple `kDistribution` instances and
+		determining the underlying activation energies.
+
+	isoclump.HeatingExperiment
+		The class containing heating experiment clumped isotope data whose
+		rate data are determined.
 
 	Examples
 	--------
+	Generating a bare-bones kDistribution instance without fitting any
+	actual data::
+
+		#import packages
+		import isoclump as ic
+
+		#assume some values for HH20 model parameters
+		params = [-14., 5.]
+
+		#make instance
+		kd = ic.kDistribution(params, 'HH20')
+
+	Generating a kDistribution instance by fitting some experimental D47
+	data contained in a HeatingExperiment object::
+
+		#assume some he is a HeatingExperiment object
+		kd = ic.kDistribution.invert_experiment(he, model = 'PH12')
+
+	Same as above, but now including the Tikhonov regularization inverse fit
+	for 'HH20' model type::
+
+		#assume some he is a HeatingExperiment object
+		kd = ic.kDistribution.invert_experiment(
+			he,
+			model = 'HH20',
+			fit_reg = True
+			)
+
+	To visualize these results, we can generate a plot of 'HH20' model k
+	distributions::
+
+		#import necessary packages
+		import matplotlib.pyplot as plt
+
+		#make axis
+		fig, ax = plt.subplots(1,1)
+
+		#plot data
+		kd.plot(ax = ax)
+
+	Export summary information for storing and saving::
+
+		sum_tab = kd.summary
+		sum_tab.to_csv('file_name.csv')
+
+	**Attributes**
+
+	lam : None or array-like
+		The ln(k) values over which the rate distribution is calculated.
+
+	model : string
+		The type of model associated with a given kDistribution.
+
+	npt : None or int
+		The number of data points used in the model fit.
+
+	omega : None or scalar
+		The Tikhonov omega value used for inverse regularization.
+
+	params : array-like
+		A list of the rate parameters associated with a given kDistribution.
+
+	params_std : None or array-like
+		Uncertainty associated with each parameter value, as +/- 1 sigma.
+
+	summary : pd.DataFrame
+		DataFrame containing all the summary data.
+
+	rho_lam : None or array-like
+		The modeled lognormal probability density function of ln(k) values.
+
+	rho_lam_inv : None or array-like
+		The modeled inverse probability density function of ln(k) values
+		calculated using Tikhonov regularization.
+
+	res_inv : None or float
+		The residual norm the Tikhonov regularization model-data fit.
+
+	rgh_inv : None or float
+		The roughness norm the Tikhonov regularization model-data fit.
+
+	rmse : None or float
+		The root-mean-square-error of the model-data fit.
 
 	References
 	----------
-	
-	**Attributes**
-
+	[1] Hansen (1994) *Numerical Algorithms*, **6**, 1-35.
+	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
+	[3] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+	[4] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
+	[5] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
+	[6] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.
+	[7] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
 	#define all the possible attributes for __init__ using _attrs
-	_attrs = [
+	_kwattrs = [
 		'lam', 
-		'model', 
 		'npt', 
 		'omega', 
-		'params',
 		'params_std', 
 		'rho_lam', 
 		'rho_lam_inv',
@@ -95,46 +246,111 @@ class kDistribution(object):
 		Parameters
 		----------
 		params : array-like
-			The kinetic parameters associated with this instance; the exact
-			length and values of `params` depends on the model used.
+			A list of the rate parameters associated with a given kDistribution.
+			The values and length of this array depend on the type of model
+			being implemented:
+
+				`'Hea14'`: [ln(kc), ln(kd), ln(k2)] \n
+				`'HH20'`: [mu_lam, sig_lam] \n
+				`'PH12'`: [ln(k), -intercept] \n
+				`'SE15'`: [ln(k1), ln(k_dif_single), [pair]_0/[pair]_eq] \n
+
+			See discussion in each reference for parameter definitions and
+			further details. All `k` values should be in units of inverse time,
+			although the exact time unit can change depending on inputs.
 
 		model : string
-			The type of model to use for fitting. Must be one of:
+			The type of model associated with a given kDistribution. Options
+			are:
 
-				"PH12", \n
-				"Hea14", \n
-				"SE15", \n
-				"HH20"
+				`'Hea14'` \n
+				`'HH20'` \n
+				`'PH12'` \n
+				`'SE15'`
+
+		lam : None or array-like
+			The ln(k) values over which the rate distribution is calculated.
+			`lam` only applies when `model = 'HH20'`. Defaults to `None`.
+
+		npt : None or int
+			The number of data points used in the model fit. If `model = 'Hea14'`
+			or `model = 'PH12'`, then `npt` is the number of points deemed to
+			be in the linear region of the curve; otherwise, it is all data
+			points. Defaults to `None`.
+
+		omega : None or scalar
+			The Tikhonov omega value used for inverse regularization. `omega`
+			only applies when `model = 'HH20'` and `fit_reg = True`. Defaults
+			to `None`.
+
+		params_std : None or array-like
+			Uncertainty associated with each parameter value, as +/- 1 sigma.
+			Defaults to `None`.
+
+		rho_lam : None or array-like
+			The modeled lognormal probability density function of ln(k) values.
+			`rho_lam` only applies when `model = 'HH20'`. Defaults to `None`.
+
+		rho_lam_inv : None or array-like
+			The modeled inverse probability density function of ln(k) values
+			calculated using Tikhonov regularization. `rho_lam_inv` only applies
+			when `model = 'HH20'` and `fit_reg = True`. Defaults to `None`.
+
+		res_inv : None or float
+			The residual norm the Tikhonov regularization model-data fit.
+			`res_inv` only applies when `model = 'HH20'` and `fit_reg = True`.
+			Defaults to `None`.
+
+		rgh_inv : None or float
+			The roughness norm the Tikhonov regularization model-data fit.
+			`res_inv` only applies when `model = 'HH20'` and `fit_reg = True`.
+			Defaults to `None`.
+
+		rmse : None or float
+			The root-mean-square-error of the model-data fit. Defaults to `None`.
 
 		Returns
 		-------
 		kd : ic.kDistribution
 			The returned `kDistribution` instance.
+
+		Raises
+		------
+		ValueError
+			If an unexpected keyword argument is trying to be inputted.
+
+		TypeError
+			If inputted parameters of an unacceptable type.
+
+		ValueError
+			If an unexpected model name is trying to be inputted.
 		'''
 
 		#first make everything in _attrs = None
-		for k in self._attrs:
+		for k in self._kwattrs:
 			setattr(self, k, None)
 
 		#then set arguments
-		self.params = params
-		self.model = model
+		self._params = params
+		self._model = model
 
 		#finally set all attributes in kwargs and raise exception if unknown
 		for k, v in kwargs.items():
 
-			if k in self._attrs:
+			if k in self._kwattrs:
 				setattr(self, k, v)
 
 			else:
-				raise TypeError(
+				raise ValueError(
 					'__init__() got an unexpected keyword argument %s' % k)
 
 	#define classmethod for generating kDistribution instance from data
 	@classmethod
 	def invert_experiment(cls, he, model = 'HH20', fit_reg = False, **kwargs):
 		'''
-		Method description synopsis.
+		Classmethod for generating a `kDistribution` instance directly by
+		inverting a `ic.HeatingExperiment` object that contains clumped isotope
+		heating experiment data.
 
 		Parameters
 		----------
@@ -142,12 +358,13 @@ class kDistribution(object):
 			The `ic.HeatingExperiment` instance to fit.
 
 		model : string
-			The type of model to use for fitting. Must be one of:
+			The type of model associated with a given kDistribution. Options
+			are:
 
-				"PH12", \n
-				"Hea14", \n
-				"SE15", \n
-				"HH20" \n
+				`'Hea14'` \n
+				`'HH20'` \n
+				`'PH12'` \n
+				`'SE15'`
 
 			See the relevant documentation on each model fit function for
 			details and descriptions of a given model:
@@ -177,17 +394,52 @@ class kDistribution(object):
 		TypeError
 			If `model` is not a string.
 
-		Warnings
-		--------
-
-		Notes
-		-----
-
 		See Also
 		--------
+		isoclump.fit_Hea14
+			Fitting function for Henkes et al. (2014) model.
+
+		isoclump.fit_HH20
+			Fitting function for Hemingway and Henkes (2020) lognormal model.
+
+		isoclump.fit_HH20inv
+			Fitting function for Tikhonov regularization inversion model of
+			Hemingway and Henkes (2020).
+
+		isoclump.fit_PH12
+			Fitting function for Passey and Henkes (2012) model.
+
+		isoclump.fit_SE15
+			Fitting function for Stolper and Eiler (2015) model.
 
 		Examples
 		--------
+		Generating a kDistribution instance by fitting some experimental D47
+		data contained in a HeatingExperiment object::
+
+			#import packages
+			import isoclump as ic
+
+			#assume some he is a HeatingExperiment object
+			kd = ic.kDistribution.invert_experiment(
+				he,
+				model = 'PH12',
+				p0 = [-7., 0.5], #passing initial guess for model fit
+				thresh = 1e-6 #passing threshold for linear region
+				)
+
+		Same as above, but now including the Tikhonov regularization inverse
+		fit for 'HH20' model type::
+
+			#assume some he is a HeatingExperiment object
+			kd = ic.kDistribution.invert_experiment(
+				he,
+				model = 'HH20',
+				fit_reg = True,
+				omega = 'auto', #passing omega value for model fit
+				lam_min = -30, #passing lambda bounds
+				lam_max = 10
+				)	
 
 		References
 		----------
@@ -264,7 +516,7 @@ class kDistribution(object):
 		#raise different exception if it's not a string
 		else:
 
-			mdt = type(mdodel).__name__
+			mdt = type(model).__name__
 
 			raise TypeError(
 				'Unexpected model of type %s. Must be string.' % mdt)
@@ -314,7 +566,7 @@ class kDistribution(object):
 
 		Raises
 		------
-		TypeError
+		ValueError
 			If the `kDistribution` instance is of a model type that does not
 			support plotting. Currently, only 'HH20' supports plotting.
 
@@ -357,7 +609,7 @@ class kDistribution(object):
 
 		#check if model is right
 		if self.model != 'HH20':
-			raise TypeError(
+			raise ValueError(
 				'Plotting is not implemented for model type %s; only "HH20"'
 				' fits can be plotted. Consider extracting k values directly'
 				' from summary table instead.' % self.model)
@@ -398,7 +650,74 @@ class kDistribution(object):
 		#return result
 		return ax
 
-	#method for printing a summary table
+	#customize __repr__ method for printing summary
+	def __repr__(self):
+		'''
+		Sets how kDistribution is represented when called on the command line.
+
+		Returns
+		-------
+		summary : str
+			String representation of the summary attribute data frame.
+		'''
+		return str(self.summary)
+
+	#make @property functions to ensure data format
+	#ensure params is an acceptable format
+	@property
+	def params(self):
+		return self._params
+	
+	@params.setter
+	def params(self, value):
+		#make into np.array
+		p = np.array(value)
+
+		#check dtype
+		try:
+			self._params = p.astype('float')
+
+		except ValueError:
+			raise TypeError(
+				'Attempting to input params of type %s. Must be array-like'
+				' containing int or float values.' % p.dtype.name)
+
+	#ensure model is an acceptable string
+	@property
+	def model(self):
+		return self._model
+
+	@model.setter
+	def model(self, value):
+		#set value if it closely matches a valid model
+		if value in ['Hea14','H14','hea14','Henkes14','Henkes2014','Henkes']:
+			self._model = 'Hea14'
+
+		elif value in ['HH20','hh20','Hemingway20','Hemingway2020','Hemingway']:
+			self._model = 'HH20'
+
+		elif value in ['PH12','ph12','Passey12','Passey2012','Passey']:
+			self._model = 'PH12'
+
+		elif value in ['SE15','se15','Stolper15','Stolper2015','Stolper']:
+			self._model = 'SE15'
+
+		#raise exception if it's not an acceptable string
+		elif isinstance(value, str):
+			raise ValueError(
+				'%s is an invalid model string. Must be one of: "PH12",'
+				'"Hea14", "SE15", or "HH20"' % value)
+
+		#raise different exception if it's not a string
+		else:
+
+			mdt = type(value).__name__
+
+			raise TypeError(
+				'Unexpected model of type %s. Must be string.' % mdt)
+
+	#make a summary table
+	@property
 	def summary(self):
 		'''
 		Prints a summary of model parameters as a `pandas.DataFrame`.
@@ -428,54 +747,6 @@ class kDistribution(object):
 		resdf = pd.DataFrame(restab)
 
 		return resdf
-
-	#customize __repr__ method for printing summary
-	def __repr__(self):
-
-		try :
-			l1 = 'model: %s' % self.model
-
-		except TypeError: #model is None
-			l1 = 'model: None'
-
-		try:
-			l2 = 'rmse: %.3f' % self.rmse
-
-		except TypeError: #model is None
-			l2 = 'rmse: None'
-
-		try:
-			l3 = 'npt: %s' % self.npt
-
-		except TypeError: #npt is None
-			l3 = 'npt: None'
-
-		try:
-			l4 = 'params: '+', '.join([p for p in mod_params[self.model]])
-
-		except KeyError: #model not in possible list
-			l4 = 'params: unknown'
-
-		try:
-			l5 = 'mean: '+', '.join([str('%.4f') %p for p in self.params])
-
-		except TypeError: #parameters is None
-			l5 = 'mean: None'
-
-		try:
-			l6 = 'std. dev.: '+', '.join([str('%.4f') %p for p in self.params_std])
-
-		except TypeError: #parameter standard devaitions is None
-			l6 = 'std. dev.: None'
-
-		ls = [l1, l2, l3, l4, l5, l6]
-		#combine
-		lines = '\n'.join([l for l in ls])
-
-		return lines
-
-	#make custom @property functions to ensure data format
-
 
 
 class EDistribution(object):
