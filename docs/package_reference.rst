@@ -8,26 +8,20 @@ isoclump classes
 	:toctree: _generated/
 
 	isoclump.HeatingExperiment
-	isoclump.GeologicHistory
 	isoclump.kDistribution
-	isoclump.EDistribution
 
 isoclump methods
 ----------------
 .. autosummary::
 	:toctree: _generated/
 
-	isoclump.Arrhenius_plot
-	isoclump.assert_len
-	isoclump.change_ref_frame
-	isoclump.calc_cooling_rate
-	isoclump.calc_ds
-	isoclump.calc_fs
 	isoclump.calc_L_curve
-	isoclump.calc_Teq
-	isoclump.calc_Deq
-	isoclump.resetting_plot
-	isoclump.cooling_plot
+	isoclump.derivatize
+	isoclump.fit_Hea14
+	isoclump.fit_HH20
+	isoclump.fit_HH20inv
+	isoclump.fit_PH12
+	isoclump.fit_SE15
 
 References
 ----------

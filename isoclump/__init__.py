@@ -43,7 +43,7 @@ from .timedata import(
 #import ratedata classes
 from .ratedata import(
 	kDistribution,
-	EDistribution,
+	# EDistribution,
 	)
 
 #import package-level functions
@@ -52,10 +52,10 @@ from .core_functions import(
 	# assert_len,
 	# change_ref_frame,
 	# calc_cooling_rate,
-	calc_d,
-	calc_R,
-	calc_Teq,
-	calc_Deq,
+	# calc_d,
+	# calc_R,
+	# calc_Teq,
+	# calc_Deq,
 	# resetting_plot,
 	# cooling_plot,
 	derivatize,

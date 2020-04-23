@@ -16,10 +16,26 @@ isoclump.kDistribution
       ~kDistribution.__init__
       ~kDistribution.invert_experiment
       ~kDistribution.plot
-      ~kDistribution.summary
    
    
 
    
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~kDistribution.lam
+      ~kDistribution.model
+      ~kDistribution.npt
+      ~kDistribution.omega
+      ~kDistribution.params
+      ~kDistribution.params_std
+      ~kDistribution.res_inv
+      ~kDistribution.rgh_inv
+      ~kDistribution.rho_lam
+      ~kDistribution.rho_lam_inv
+      ~kDistribution.rmse
+      ~kDistribution.summary
    
    

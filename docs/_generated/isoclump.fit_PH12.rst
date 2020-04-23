@@ -1,6 +1,6 @@
-isoclump.calc\_Deq
+isoclump.fit\_PH12
 ==================
 
 .. currentmodule:: isoclump
 
-.. autofunction:: calc_Deq
+.. autofunction:: fit_PH12

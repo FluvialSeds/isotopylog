@@ -1,6 +1,6 @@
-isoclump.calc\_Teq
+isoclump.fit\_HH20
 ==================
 
 .. currentmodule:: isoclump
 
-.. autofunction:: calc_Teq
+.. autofunction:: fit_HH20

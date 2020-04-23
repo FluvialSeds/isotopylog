@@ -93,8 +93,9 @@ def calc_L_curve(
 	
 	Parameters
 	----------
-	he : ic.HeatingExperiment
-		HeatingExperiment instance containing the D data to be modeled.
+
+	he : isoclump.HeatingExperiment
+		`ic.HeatingExperiment` instance containing the D data to be modeled.
 
 	ax : `None` or plt.axis
 		Matplotlib axis to plot on, only relevant if `plot = True`.
@@ -130,6 +131,7 @@ def calc_L_curve(
 	
 	Returns
 	-------
+
 	om_best : float
 		The 'best fit' omega value.
 	
@@ -138,6 +140,7 @@ def calc_L_curve(
 	
 	See Also
 	--------
+
 	isoclump.fit_HH20inv
 		Method for fitting heating experiment data using the L-curve approach
 		of Hemingway and Henkes (2020).
@@ -148,6 +151,7 @@ def calc_L_curve(
 
 	Examples
 	--------
+
 	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
 	exists::
 		
@@ -171,8 +175,11 @@ def calc_L_curve(
 
 	References
 	----------
+
 	[1] Hansen (1994) *Numerical Algorithms*, **6**, 1-35.
+	
 	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
+	
 	[3] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 	
@@ -302,8 +309,9 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 
 	Parameters
 	----------
-	he : ic.HeatingExperiment
-		HeatingExperiment instance containing the D data to be modeled.
+
+	he : isoclump.HeatingExperiment
+		`ic.HeatingExperiment` instance containing the D data to be modeled.
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
@@ -316,6 +324,7 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 
 	Returns
 	-------
+
 	params : np.ndarray
 		Array of resulting parameter values, in the order
 		[ln(kc), ln(kd), ln(k2)].
@@ -332,17 +341,20 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 
 	Raises
 	------
+
 	ValueError
 		If the curvature in t vs. ln(G) space never drops below the inputted
 		`thresh` value.
 	
 	Notes
 	-----
+
 	Results are bounded to be non-negative. All calculations are done in lnG
 	space and thus only depend on relative changes in D47.
 
 	See Also
 	--------
+
 	isoclump.fit_PH12
 		Method for fitting heating experiment data using the pseudo first-
 		order method of Passey and Henkes (2012). Called to determine
@@ -354,6 +366,7 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 
 	Examples
 	--------
+
 	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
 	exists::
 		
@@ -365,7 +378,9 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 
 	References
 	----------
+
 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+	
 	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
 	'''
 
@@ -439,6 +454,7 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 
 	Parameters
 	----------
+
 	he : isoclump.HeatingExperiment
 		`ic.HeatingExperiment` instance containing the D data to be modeled.
 
@@ -458,6 +474,7 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 
 	Returns
 	-------
+
 	params : np.ndarray
 		Array of resulting parameter values, in the order [mu_lam, sig_lam].
 
@@ -480,12 +497,14 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 
 	Notes
 	-----
+
 	Results are bounded such that mu_lam is between lam_min and lam_max; sig_lam
 	<= (lam_max - lam_min)/2. All calculations are done in lnG space and thus
 	only depend on relative changes in D47.
 
 	See Also
 	--------
+
 	isoclump.fit_HH20inv
 		Method for fitting heating experiment data using the L-curve approach
 		of Hemingway and Henkes (2020).
@@ -496,6 +515,7 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 
 	Examples
 	--------
+
 	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
 	exists::
 		
@@ -507,6 +527,7 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 
 	References
 	----------
+
 	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
@@ -581,6 +602,7 @@ def fit_HH20inv(
 	
 	Parameters
 	----------
+
 	he : isoclump.HeatingExperiment
 		`ic.HeatingExperiment` instance containing the D data to be modeled.
 
@@ -601,6 +623,7 @@ def fit_HH20inv(
 	
 	Returns
 	-------
+
 	rho_lam_inv : array-like
 		Resulting regularized rho distribution, of length `n_lam`.
 
@@ -617,6 +640,7 @@ def fit_HH20inv(
 
 	Raises
 	------
+
 	TypeError
 		If `omega` is not 'Auto' or float or int type.
 
@@ -625,6 +649,7 @@ def fit_HH20inv(
 
 	See Also
 	--------
+
 	isoclump.fit_HH20
 		Method for fitting heating experiment data using the lognormal model
 		of Hemingway and Henkes (2020).
@@ -635,6 +660,7 @@ def fit_HH20inv(
 
 	Examples
 	--------
+
 	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
 	exists::
 		
@@ -657,7 +683,9 @@ def fit_HH20inv(
 
 	References
 	----------
+
 	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
+	
 	[2] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
@@ -726,6 +754,7 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 
 	Parameters
 	----------
+
 	he : isoclump.HeatingExperiment
 		`ic.HeatingExperiment` instance containing the D data to be modeled.
 
@@ -740,6 +769,7 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 
 	Returns
 	-------
+
 	params : np.ndarray
 		Array of resulting parameter values, in the order
 		[ln(k), -ln(intercept)].
@@ -756,12 +786,14 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 
 	Raises
 	------
+
 	ValueError
 		If the curvature in t vs. ln(G) space never drops below the inputted
 		`thresh` value.
 
 	Notes
 	-----
+
 	Results are bounded such that k is non-negative and intercept is negative;
 	intercept value in `params` is the negative of the intercept in lnG vs. t
 	space. All calculations are done in lnG space and thus only depend on 
@@ -769,6 +801,7 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 
 	See Also
 	--------
+
 	isoclump.fit_Hea14
 		Method for fitting heating experiment data using the transient defect/
 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
@@ -780,6 +813,7 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 
 	Examples
 	--------
+
 	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
 	exists::
 		
@@ -791,6 +825,7 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 
 	References
 	----------
+
 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
 	'''
 
@@ -866,8 +901,9 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	Parameters
 	----------
-	he : ic.HeatingExperiment
-		HeatingExperiment instance containing the D data to be modeled.
+
+	he : isoclump.HeatingExperiment
+		`ic.HeatingExperiment` instance containing the D data to be modeled.
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
@@ -881,6 +917,7 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	Returns
 	-------
+
 	params : np.ndarray
 		Array of resulting parameter values, in the order
 		`[ln(k1), ln(k_dif_single), p0/peq]`.
@@ -897,6 +934,7 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	Notes
 	-----
+
 	This function uses the average of all experimental d13C and d18O values
 	when calculating stochastic statistics. If d13C and d18O values change
 	considerably throughout the course of an experiment, this could cause
@@ -918,12 +956,14 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	See Also
 	--------
+
 	kDistribution.invert_experiment
 		Method for generating a `kDistribution` instance from experimental
 		data.
 
 	Examples
 	--------
+
 	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
 	exists::
 		
@@ -939,7 +979,9 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	References
 	----------
+
 	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
+	
 	[2] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.
 	'''
 

@@ -407,6 +407,7 @@ def derivatize(num, denom):
 
     Parameters
     ----------
+
     num : int or array-like
         The numerator of the numerical derivative function.
 
@@ -415,21 +416,25 @@ def derivatize(num, denom):
 
     Returns
     -------
+
     derivative : rparray
         An ``np.ndarray`` instance of the derivative. Length `n`.
 
     Raises
     ------
+
     ArrayError
         If `denom` is not array-like.
 
     See Also
     --------
+
     numpy.gradient
         The method used to calculate derivatives
 
     Notes
     -----
+    
     This method uses the ``np.gradient`` method to calculate derivatives. If
     `denom` is a scalar, resulting array will be all ``np.inf``. If both `num`
     and `denom` are scalars, resulting array will be all ``np.nan``. If 

@@ -30,6 +30,16 @@ from .dictionaries import(
 	caleqs
 	)
 
+
+# TODO:
+# * Update HeatingExperiment __init__ function to be more elegant and constent
+#	with kDistribution
+# * Update HeatingExperiment @properties, including summary property
+# * Update HeatingExperiment __repr__ function
+# * Write forward_model function
+# * Write plot function
+
+
 class HeatingExperiment(object):
 	__doc__='''
 	Add docstring here
@@ -108,7 +118,7 @@ class HeatingExperiment(object):
 			model = None, ref_frame = ref_frame, tex = tex, T_std = None)
 
 
-	def forward_model(kdistribution):
+	def forward_model(kd):
 		'''
 		Forward models a given kDistribution instance to produce predicted
 		evolution.
