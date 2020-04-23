@@ -31,15 +31,19 @@ from .ratedata_helper import(
 	fit_SE15,
 	)
 
+#import necessary dictionaries
+from .dictionaries import(
+	mod_params
+	)
+
 # TODO: 
-# * Update fit_HH20inv to throw error if unexpected **kwargs passed to L-curve
 # * Define @property functions
 # * Update __repr__ to output summary table
-# * Customize other magic method behavior??
 # * Write docstrings
 # * Move calc_L_curve to core_functions and import in __init__
 # * Make summary method
 # * Make plot method
+# * Customize other magic method behavior??
 
 class kDistribution(object):
 	__doc__='''
@@ -308,22 +312,46 @@ class kDistribution(object):
 		Method for printing summary information
 		'''
 
-		#make a summary table
-		sum_vars = {
-			'Model' : self.model,
-			'k' : self.k
-			}
+		# #make a summary table
+		# sum_vars = {
+		# 	'Model' : self.model,
+		# 	'k' : self.k
+		# 	}
 
-		#make into a table
-		sum_table = pd.Series(sum_vars)
+		# #make into a table
+		# sum_table = pd.Series(sum_vars)
 
 		#return table
-		return sum_table
+
+		# l1 = 'model: %s' % self.model
+		# l2 = 'rmse: %.3f' % self.rmse
+		# l3 = 'npt: %s' % self.npt
+		# l4 = 'params: ' + ', '.join([p for p in mod_params[self.model]])
+		# l5 = 'mean: ' + ', '.join([str('%.4f') %p for p in self.params])
+		# l6 = 'std. dev.: ' + ', '.join([str('%.4f') %p for p in self.params_std])
+
+		# ls = [l1, l2, l3, l4, l5, l6]
+		# #combine
+		# stab = '\n'.join([l for l in ls])
+
+		# return stab
 
 
 	#customize __repr__ method for printing summary
 	def __repr__(self):
-		return str(self.params)
+
+		l1 = 'model: %s' % self.model
+		l2 = 'rmse: %.3f' % self.rmse
+		l3 = 'npt: %s' % self.npt
+		l4 = 'params: '+', '.join([p for p in mod_params[self.model]])
+		l5 = 'mean: '+', '.join([str('%.4f') %p for p in self.params])
+		l6 = 'std. dev.: '+', '.join([str('%.4f') %p for p in self.params_std])
+
+		ls = [l1, l2, l3, l4, l5, l6]
+		#combine
+		stab = '\n'.join([l for l in ls])
+
+		return stab
 
 	#TODO: Customize other magic method behavior?
 	#TODO: Customize @property behavior?
