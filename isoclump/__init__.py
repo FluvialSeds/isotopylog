@@ -48,17 +48,24 @@ from .ratedata import(
 
 #import package-level functions
 from .core_functions import(
-	Arrhenius_plot,
-	assert_len,
-	change_ref_frame,
-	calc_L_curve,
-	calc_cooling_rate,
+	# Arrhenius_plot,
+	# assert_len,
+	# change_ref_frame,
+	# calc_cooling_rate,
 	calc_d,
 	calc_R,
-	calc_L_curve,
 	calc_Teq,
 	calc_Deq,
-	resetting_plot,
-	cooling_plot,
+	# resetting_plot,
+	# cooling_plot,
 	derivatize,
+	)
+
+from .ratedata_helper import(
+	calc_L_curve,
+	fit_Hea14,
+	fit_HH20,
+	fit_HH20inv,
+	fit_PH12,
+	fit_SE15
 	)

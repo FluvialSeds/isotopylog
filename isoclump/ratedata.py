@@ -21,6 +21,7 @@ __all__ = [
 import inspect
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 
 #import helper functions
 from .ratedata_helper import(
@@ -38,10 +39,7 @@ from .dictionaries import(
 
 # TODO: 
 # * Define @property functions
-# * Update __repr__ to output summary table
 # * Write docstrings
-# * Move calc_L_curve to core_functions and import in __init__
-# * Make summary method
 # * Make plot method
 # * Customize other magic method behavior??
 
@@ -307,54 +305,83 @@ class kDistribution(object):
 		#return result
 		return ax
 
+	#method for printing a summary table
 	def summary(self):
 		'''
-		Method for printing summary information
+		Prints a summary of model parameters as a `pandas.DataFrame`.
+
+		Returns
+		-------
+		resdf : pd.DataFrame
+			DataFrame containing summary statistics
 		'''
 
-		# #make a summary table
-		# sum_vars = {
-		# 	'Model' : self.model,
-		# 	'k' : self.k
-		# 	}
+		#extract parameters
+		try:
+			params = mod_params[self.model]
 
-		# #make into a table
-		# sum_table = pd.Series(sum_vars)
+		except KeyError: #model not in list
+			params = None
 
-		#return table
+		#make summary table
+		restab = {'model' : self.model,
+				  'rmse' : self.rmse,
+				  'npt' : self.npt,
+				  'params' : params,
+				  'mean' : self.params,
+				  'std. dev.' : self.params_std
+				  }
 
-		# l1 = 'model: %s' % self.model
-		# l2 = 'rmse: %.3f' % self.rmse
-		# l3 = 'npt: %s' % self.npt
-		# l4 = 'params: ' + ', '.join([p for p in mod_params[self.model]])
-		# l5 = 'mean: ' + ', '.join([str('%.4f') %p for p in self.params])
-		# l6 = 'std. dev.: ' + ', '.join([str('%.4f') %p for p in self.params_std])
+		resdf = pd.DataFrame(restab)
 
-		# ls = [l1, l2, l3, l4, l5, l6]
-		# #combine
-		# stab = '\n'.join([l for l in ls])
-
-		# return stab
-
+		return resdf
 
 	#customize __repr__ method for printing summary
 	def __repr__(self):
 
-		l1 = 'model: %s' % self.model
-		l2 = 'rmse: %.3f' % self.rmse
-		l3 = 'npt: %s' % self.npt
-		l4 = 'params: '+', '.join([p for p in mod_params[self.model]])
-		l5 = 'mean: '+', '.join([str('%.4f') %p for p in self.params])
-		l6 = 'std. dev.: '+', '.join([str('%.4f') %p for p in self.params_std])
+		try :
+			l1 = 'model: %s' % self.model
+
+		except TypeError: #model is None
+			l1 = 'model: None'
+
+		try:
+			l2 = 'rmse: %.3f' % self.rmse
+
+		except TypeError: #model is None
+			l2 = 'rmse: None'
+
+		try:
+			l3 = 'npt: %s' % self.npt
+
+		except TypeError: #npt is None
+			l3 = 'npt: None'
+
+		try:
+			l4 = 'params: '+', '.join([p for p in mod_params[self.model]])
+
+		except KeyError: #model not in possible list
+			l4 = 'params: unknown'
+
+		try:
+			l5 = 'mean: '+', '.join([str('%.4f') %p for p in self.params])
+
+		except TypeError: #parameters is None
+			l5 = 'mean: None'
+
+		try:
+			l6 = 'std. dev.: '+', '.join([str('%.4f') %p for p in self.params_std])
+
+		except TypeError: #parameter standard devaitions is None
+			l6 = 'std. dev.: None'
 
 		ls = [l1, l2, l3, l4, l5, l6]
 		#combine
-		stab = '\n'.join([l for l in ls])
+		lines = '\n'.join([l for l in ls])
 
-		return stab
+		return lines
 
-	#TODO: Customize other magic method behavior?
-	#TODO: Customize @property behavior?
+	#make custom @property functions to ensure data format
 
 
 
