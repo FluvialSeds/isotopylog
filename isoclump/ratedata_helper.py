@@ -176,10 +176,8 @@ def calc_L_curve(
 	References
 	----------
 
-	[1] Hansen (1994) *Numerical Algorithms*, **6**, 1-35.
-	
-	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
-	
+	[1] Hansen (1994) *Numerical Algorithms*, **6**, 1-35.\n
+	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.\n
 	[3] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 	
@@ -379,8 +377,7 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 	References
 	----------
 
-	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
-	
+	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
 	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
 	'''
 
@@ -686,8 +683,7 @@ def fit_HH20inv(
 	References
 	----------
 
-	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
-	
+	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.\n
 	[2] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
@@ -983,8 +979,7 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 	References
 	----------
 
-	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
-	
+	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
 	[2] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.
 	'''
 

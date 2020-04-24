@@ -23,8 +23,8 @@ from types import LambdaType
 
 #import helper functions
 from .timedata_helper import(
-	# _read_csv,
-	# _cull_data,
+	_read_csv,
+	_cull_data,
 	_calc_G_from_D,
 	)
 
@@ -35,7 +35,7 @@ from .dictionaries import(
 
 
 # TODO FRIDAY 24 APRIL:
-
+# * Update from_csv function
 # * Write forward_model function
 # * Write plot function
 # * Write docstrings
@@ -58,13 +58,95 @@ class HeatingExperiment(object):
 	Parameters
 	----------
 
+	dex : array-like
+		Array of experimental isotope values, written for each time point as
+		[D, d1, d2] where D is the clumped isotope measurement (e.g., D47) and
+		d1 and d2 are the corresponding major isotope values, listed from
+		lowest to highest amu (e.g., d13C, d18O). Length ``ntex``.
+
+	T : int, float, or array-like
+		The equilibrium temperature at which the experiment was performed, in
+		Kelvin. If array-like, must be length ``ntex``.
+
+	tex : array-like
+		Array of experimental time points, in units of time. While the exact
+		time unit is flexible, all subsequent calculations will depend on
+		time unit chosen (e.g., if minutes, then rates are inverse minutes).
+		Length ``ntex``. 
+
+	calibration : string or LambdaType
+		The D-T calibration curve to use, either from the literature or as
+		a user-inputted lambda function. If from the literature for D47
+		clumps, options are: \n
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
+		If as a lambda function, must have T in Kelvin. Note that literature
+		equations will be adjusted to be consistent with any reference frame,
+		but lambda functions will be reference-frame-specific.
+		Defaults to ``'Bea17'``.
+
+	clumps : string
+		The clumped isotope system under consideration. Currently only
+		accepts 'CO47' for D47 clumped isotopes, but will include other
+		isotope systems as they become more widely used and data become
+		available. Defaults to ``'CO47'``.
+
+	d : None or array-like
+		Array of forward-modeled isotope values, written for each time point 
+		as [D, d1, d2] where D is the clumped isotope measurement (e.g., D47) 
+		and d1 and d2 are the corresponding major isotope values, listed from 
+		lowest to highest amu (e.g., d13C, d18O). Shape ``nt`` x 3. Defaults  to 
+		``None``.
+
+	d_std : None or array-like
+		Propagated standard deviation of forward-modeled d values.
+		Shape [``nt`` x 3]. Defaults to ``None``.
+
+	dex_std : None or array-like
+		Analytical standard deviation of experimentally measured d values.
+		Shape [``nt`` x 3]. Defaults to ``None``.
+
+	iso_params : string
+		The isotope parameters used to calculate clumped data. For example, if
+		``clumps = 'CO47'``, then isotope parameters are R13_vpdb, R17_vpdb,
+		R18_vpdb, and lam17. Following Daëron et al. (2016) nomenclature,
+		options are: \n
+			``'Barkan'``: for Barkan and Luz (2005) lam17\n
+			``'Brand'`` (equivalent to ``'Chang+Assonov'`): for Brand (2010)\n
+			``'Chang+Li'``: for Chang and Li (1990) + Li et al. (1988) \n
+			``'Craig+Assonov'``: for Craig (1957) + Assonov and Brenninkmeijer 
+			(2003)\n
+			``'Craig+Li'``: for Craig (1957) + Li et al. (1988)\n
+			``'Gonfiantini'``: for Gonfiantini et al. (1995)\n
+			`'Passey'``: for Passey et al. (2014) lam17\n
+		Defaults to ``'Gonfiantini'``.
+
+	ref_frame : string
+		The reference frame used to calculate clumped isotope data. Options
+		are:\n
+			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.
+			``'CDES90`'': Carbon Dioxide Equilibrium Scale acidified at 90 C.
+			``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. (2006)
+			acidified at 25 C.\n
+		Defaults to ``'CDES90'``.
+
+	t : None or array-like
+		Array of forward-modeled time points, in the same time units as ``tex``.
+		Defaults to ``None``.
+
+	T_std : None, int, or float
+		The standard deviation of experimental temperature, in Kelvin. Defaults
+		to ``None``.
+
 	Raises
 	------
-	ValueError
-		If an unexpected keyword argument is trying to be inputted.
 
 	TypeError
 		If inputted parameters of an unacceptable type.
+
+	ValueError
+		If an unexpected keyword argument is trying to be inputted.
 
 	ValueError
 		If an unexpected 'calibration', 'clumps', 'iso_params', or 'ref_frame'
@@ -76,23 +158,67 @@ class HeatingExperiment(object):
 
 	Notes
 	-----
-	If inputted T is array-like, T setter will take the average and std. dev.
+
+	If inputted ``T`` is array-like, then the average and standard deviation
+	will be extracted and stored.
+
+	If ``clumps = 'CO47'``, then all calculations assume mass-dependent d17O.
+
+	If ``clumps = 'CO47'``, then inputted d18O data must be in permille
+	relative to VPDB, not VSMOW.
 
 	See Also
 	--------
 
+	isoclump.kDistribution
+		The class for extracting and visualizing rate data from a given 
+		``HeatingExperiment`` instance.
+
+	isoclump.GeologicHistory
+		The class for forward-modeling kinetic information onto a geologic
+		time-temperature history.
+
 	Examples
 	--------
 
+	Generating a bare-bones HeatingExperiment instance without fitting any
+	actual data::
+
+		#import packages
+		import isoclump as ic
+		import numpy as np
+
+		#make arbitrary dex, T, and tex
+		dex = np.ones(4,4)
+		tex = np.arange(0,4)
+		T = 450 + 273.15 #get to K
+
+		#make instance
+		he = ic.HeatingExperiment(dex, T, tex)
+
+	Generating a HeatingExperiment instance by extracting data from a csv
+	file::
+
+
+
 	References
 	----------
-	[1] Ghosh et al. (2006)
-	[2] Dennis et al. (2011)
-	[3] Passey Henkes (2012)
-	[4] Stolper Eiler (2015)
-	[5] Daëron et al. (2016)
-	[6] Bonifacie et al. (2017)
 
+	[1] Craig (1957) *Geochim. Cosmochim. Ac.*, **12**, 133--149.\n
+	[2] Li et al. (1988) *Chin. Sci. Bull.*, **33**, 1610--1613.\n
+	[3] Chang and Li (1990) *Chin. Sci. Bull.*, **35**, 290.\n
+	[4] Gonfiantini (1995) *IAEA Technical Report*, 825.\n
+	[5] Assonov and Brenninkmeijer (2003) *Rapid Comm. Mass Spec.*, **17**, 
+	1017--1029.\n
+	[6] Barkan and Luz (2005) *Rapid Comm. Mass Spec.*, **19**, 3737--3742.\n
+	[7] Ghosh et al. (2006) *Geochim. Cosmochim. Ac.*, **70**, 1439--1456.\n
+	[8] Brand (2010) *Pure Appl. Chem.*, **82**, 1719--1733.\n
+	[9] Dennis et al. (2011) *Geochim. Cosmochim. Ac.*, **75**, 7117--7131.\n
+	[10] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
+	[11] Passey et al. (2014) *Geochim. Cosmochim. Ac.*, **141**, 1--25.\n
+	[12] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+	[13] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.\n
+	[14] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279.
 	'''
 
 	#define all the possible attributes for __init__ using _kwattrs
@@ -120,16 +246,17 @@ class HeatingExperiment(object):
 			The ``HeatingExperiment`` object.
 		'''
 
-		#set arguments
-		self.tex = tex #tex first since dex setter will check length
-		self.dex = dex
-		self.T = T
-
 		#first make everything in _kwattrs equal to its default value
 		for k, v in self._kwattrs.items():
 			setattr(self, k, v)
 
-		#then overwrite all attributes in kwargs and raise exception if unknown
+		#then, set arguments
+		self.tex = tex #tex first since dex setter will check length
+		self.dex = dex
+		self.T = T
+
+		#finally, overwrite all attributes in kwargs and raise exception if
+		# unknown
 		for k, v in kwargs.items():
 			if k in self._kwattrs:
 				setattr(self, k, v)
@@ -172,11 +299,18 @@ class HeatingExperiment(object):
 			String representation of the summary attribute data frame.
 		'''
 
+		#get T uncertainty
+		try:
+			Tstd = '%.2f' % self.T_std
+
+		except TypeError:
+			Tstd = 'None'
+
 		attrs = {'calibration' : self.calibration,
 		 		 'clumps' : self.clumps,
 		 		 'iso_params' : self.iso_params,
 		 		 'ref_frame' : self.ref_frame,
-		 		 'T' : str(self.T) + '+/-' + str(self.T_std)
+		 		 'T' : str(self.T) + '+/-' + Tstd
 		 		}
 
 		s = pd.Series(attrs)
@@ -186,16 +320,35 @@ class HeatingExperiment(object):
 	#define @classmethods
 	#method for generating HeatingExperiment instance from csv file 
 	@classmethod
-	def from_csv(cls, file, calibration = 'Bea17', culled = True, nt = 300):
+	def from_csv(cls, file, culled = True, **kwargs):
 		'''
-		Imports data from a csv file
+		Imports data from a csv file and creates a HeatingExperiment object
+		from those data.
+
+		Parameters
+		----------
+
+		Returns
+		-------
+
+		Raises
+		------
+
+		See Also
+		--------
+
+		Examples
+		--------
+
+		References
+		----------
 		'''
 
-		#import experimental data (note: 'file' can be a DataFrame!)
+		#import experimental data
 		clumps, dex, dex_std, iso_params, ref_frame, tex, T = _read_csv(file)
 
 		#cull data if necessary
-		if culled:
+		if culled is True:
 			dex, dex_std, tex = _cull_data(calibration,
 				clumps, 
 				dex, 
@@ -204,15 +357,22 @@ class HeatingExperiment(object):
 				T,
 				tex)
 
-		#make t and T arrays
-		tex_max = np.ceil(np.max(tex)/1000)*1000 #round up to next 1000 minutes
-		t = np.linspace(0, tex_max, nt)
-		# T = T*np.ones(nt)
+		# #make t and T arrays
+		# tex_max = np.ceil(np.max(tex)/1000)*1000 #round up to next 1000 minutes
+		# t = np.linspace(0, tex_max, nt)
+		# # T = T*np.ones(nt)
 
-		#run __init__ and return instance
-		return cls(t, T, calibration = calibration, clumps = clumps, d = None,
-			d_std = None, dex = dex, dex_std = dex_std, iso_params = iso_params,
-			model = None, ref_frame = ref_frame, tex = tex, T_std = None)
+		#return class instance
+		return cls(
+			dex,
+			T,
+			tex,
+			clumps = clumps,
+			dex_std = dex_std,
+			iso_params = iso_params,
+			ref_frame = ref_frame,
+			**kwargs
+			)
 
 	def forward_model(kd):
 		'''

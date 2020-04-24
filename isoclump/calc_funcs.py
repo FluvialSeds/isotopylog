@@ -55,6 +55,7 @@ def _calc_A(t, lam):
 
 	Parameters
 	----------
+
 	t : array-like
 		Array of time points, of length `nt`.
 
@@ -63,12 +64,14 @@ def _calc_A(t, lam):
 
 	Returns
 	-------
+
 	A : np.ndarray
 		2-D array A matrix, of shape [`n_t` x `n_lam`]
 
 	References
 	----------
-	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
+
+	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.\n
 	[2] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
@@ -92,16 +95,19 @@ def _calc_R(n):
 
 	Parameters
 	----------
+
 	n : int
 		The number of points.
 
 	Returns
 	-------
+
 	R : np.ndarray
 		2-D array Tikhonov regularization matrix, of shape [`n+1` x `n`]
 
 	References
 	----------
+
 	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
 	'''
 
@@ -130,6 +136,7 @@ def _calc_R_stoch(d13C, d18O, iso_params):
 
 	Parameters
 	----------
+
 	d13C : float
 		13C composition, in permil VPDB.
 
@@ -141,6 +148,7 @@ def _calc_R_stoch(d13C, d18O, iso_params):
 
 	Returns
 	-------
+
 	R45_stoch : float
 		Stochastic R45 value.
 
@@ -152,6 +160,7 @@ def _calc_R_stoch(d13C, d18O, iso_params):
 
 	References
 	----------
+
 	[1] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.
 	'''
 
@@ -198,6 +207,7 @@ def _calc_rmse(y,yhat):
 
 	Parameters
 	----------
+
 	y : array-like
 		The true y values.
 
@@ -206,6 +216,7 @@ def _calc_rmse(y,yhat):
 
 	Returns
 	-------
+
 	rmse : float
 		Resulting root mean square error value.
 	'''
@@ -219,6 +230,7 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 
 	Parameters
 	----------
+
 	R45_stoch : float
 		Stochastic R45 value.
 
@@ -233,11 +245,13 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 
 	Returns
 	-------
+
 	Rpeq : float
 		The equilibrium pair concentration, normalied to [44].
 
 	Notes
 	-----
+
 	This function uses the average of both methods for calcuating [p] (i.e.,
 	Eqs. 13a and 13b in SE15). The difference between the two functions is ~1-2
 	percent relative, so this choice is essentially arbitrary.
@@ -270,6 +284,7 @@ def _fexp(x, c0, c1):
 
 	Parameters
 	----------
+
 	x : array-like
 		The x values.
 
@@ -281,6 +296,7 @@ def _fexp(x, c0, c1):
 
 	Returns
 	-------
+
 	yhat : array-like
 		Resulting array of y values.
 	'''
@@ -293,6 +309,7 @@ def _fexp_const(x, c0, c1):
 
 	Parameters
 	----------
+
 	x : array-like
 		The x values.
 
@@ -304,6 +321,7 @@ def _fexp_const(x, c0, c1):
 
 	Returns
 	-------
+
 	yhat : array-like
 		Resulting array of y values.
 	'''
@@ -317,6 +335,7 @@ def _fHea14(t, kc, kd, k2):
 
 	Parameters
 	----------
+
 	t : array-like
 		The array of time points.
 
@@ -331,11 +350,13 @@ def _fHea14(t, kc, kd, k2):
 
 	Returns
 	-------
+
 	Ghat : array-like
 		Resulting estimated G values.
 
 	References
 	----------
+
 	[1] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
 	'''
 
@@ -350,6 +371,7 @@ def _flin(x, c0, c1):
 
 	Parameters
 	----------
+
 	x : array-like
 		The x values.
 
@@ -361,6 +383,7 @@ def _flin(x, c0, c1):
 
 	Returns
 	-------
+
 	yhat : array-like
 		Resulting array of y values.
 	'''
@@ -375,6 +398,7 @@ def _fSE15(t, k1f, k2f, Dpp0, Dppeq, Dp470, Dp47eq):
 
 	Paramters
 	---------
+
 	t : array-like
 		Array of time points, in minutes.
 
@@ -411,18 +435,21 @@ def _fSE15(t, k1f, k2f, Dpp0, Dppeq, Dp470, Dp47eq):
 
 	Returns
 	-------
+
 	Dp47 : np.ndarray
 		Array of calculated Dp47 values at each time point. To be used for
 		'curve_fit' solving. 
 
 	Notes
 	-----
+
 	Because of the requirements for 'curve_fit', this funciton is only for
 	solving the inverse problem for heating experiment data. Geological
 	history forward-model solution is in a separate function.
 
 	References
 	----------
+
 	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
 	'''
 
@@ -466,6 +493,7 @@ def _Gaussian(x, mu, sigma):
 	
 	Parameters
 	----------
+
 	x : scalar or array-like
 		Input x value(s).
 	
@@ -477,6 +505,7 @@ def _Gaussian(x, mu, sigma):
 	
 	Returns
 	-------
+
 	y : scalar or array-like
 		Output y value(s).
 	'''
@@ -494,6 +523,7 @@ def _lognormal_decay(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 
 	Parameters
 	----------
+
 	t : array-like
 		Array of time, in seconds; of length `n_t`.
 
@@ -516,6 +546,7 @@ def _lognormal_decay(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 
 	Returns
 	-------
+	
 	G : array-like
 		Array of resulting G values at each time point.
 	'''

@@ -109,11 +109,11 @@ class kDistribution(object):
 	Raises
 	------
 
-	ValueError
-		If an unexpected keyword argument is trying to be inputted.
-
 	TypeError
 		If inputted parameters of an unacceptable type.
+		
+	ValueError
+		If an unexpected keyword argument is trying to be inputted.
 
 	ValueError
 		If an unexpected model name is trying to be inputted.
@@ -180,18 +180,12 @@ class kDistribution(object):
 	References
 	----------
 
-	[1] Hansen (1994) *Numerical Algorithms*, **6**, 1-35.
-
-	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.
-
-	[3] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
-
-	[4] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
-
-	[5] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
-
-	[6] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.
-
+	[1] Hansen (1994) *Numerical Algorithms*, **6**, 1-35.\n
+	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.\n
+	[3] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
+	[4] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
+	[5] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+	[6] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.\n
 	[7] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
@@ -216,18 +210,21 @@ class kDistribution(object):
 
 		Returns
 		-------
+
 		kd : isoclump.kDistribution
 			The ``kDistribution`` object.
 		'''
-		#set arguments
-		self.params = params
-		self.model = model
 
 		#first set everything in _kwattrs to its default value
 		for k, v in self._kwattrs.items():
 			setattr(self, k, v)
 
-		#then overwrite all attributes in kwargs and raise exception if unknown
+		#then, set arguments
+		self.params = params
+		self.model = model
+
+		#finally, overwrite all attributes in kwargs and raise exception if
+		# unknown
 		for k, v in kwargs.items():
 			if k in self._kwattrs:
 				setattr(self, k, v)
@@ -352,12 +349,9 @@ class kDistribution(object):
 		References
 		----------
 
-		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
-		
-		[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
-		
-		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
-		
+		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
+		[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
+		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
 		[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 		'''
 
