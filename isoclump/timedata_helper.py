@@ -99,7 +99,16 @@ def _cull_data(calibration, clumps, dex, dex_std, ref_frame, T, tex):
 	return dex, dex_std, tex
 
 
-def _calc_G_from_D(calibration, clumps, d, d_std, ref_frame, T):
+# def _calc_G_from_D(calibration, clumps, d, d_std, ref_frame, T):
+def _calc_G_from_D(
+	d, 
+	T, 
+	calibration = 'Bea17', 
+	clumps = 'CO47', 
+	d_std = None,
+	ref_frame = 'CDES90'
+	):
+
 	'''
 	Add docstring
 	'''
@@ -113,7 +122,11 @@ def _calc_G_from_D(calibration, clumps, d, d_std, ref_frame, T):
 
 		#convert to G
 		D = d[:,0]
-		sigD = d_std[:,0]
+		
+		try:
+			sigD = d_std[:,0]
+		except TypeError:
+			sigD = np.zeros(len(D))
 
 		D0 = D[0]
 		sigD0 = sigD[0]

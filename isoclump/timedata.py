@@ -19,10 +19,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+from types import LambdaType
+
 #import helper functions
 from .timedata_helper import(
-	_read_csv,
-	_cull_data,
+	# _read_csv,
+	# _cull_data,
 	_calc_G_from_D,
 	)
 
@@ -142,7 +144,7 @@ class HeatingExperiment(object):
 			self.T,
 			calibration = self.calibration,
 			clumps = self.clumps,
-			dex_std = self.dex_std,
+			d_std = self.dex_std,
 			ref_frame = self.ref_frame,
 			)
 
@@ -153,7 +155,7 @@ class HeatingExperiment(object):
 				self.T,
 				calibration = self.calibration,
 				clumps = self.clumps,
-				dex_std = self.d_std,
+				d_std = self.d_std,
 				ref_frame = self.ref_frame,
 				)
 
@@ -303,9 +305,20 @@ class HeatingExperiment(object):
 	#TODO: ADD METHODS FOR CHANGING ISO_PARAMS AND REF_FRAME
 
 	#define @property getters and setters
+	@property
+	def caleq(self):
+		'''
+		The lambda equation used for calculating T-D relationships.
+		'''
+		#if calibration is custom, extract directly
+		if self.calibration == 'Custom':
+			eq = self._caleq
 
-	#list of properties: 
-	# T_std
+		#else, extract it from the dictionary
+		else:
+			eq = caleqs[self.calibration][self.ref_frame]
+
+		return eq
 
 	@property
 	def calibration(self):
@@ -313,8 +326,7 @@ class HeatingExperiment(object):
 		The T-D calibration equation to be used for modeling data.
 		'''
 		return self._calibration
-
-	#TODO: ALLOW FOR LAMBDA EQ ENTRY AND SET _CALEQ PROPERTY ACCORDINGLY	
+	
 	@calibration.setter
 	def calibration(self, value):
 		'''
@@ -335,6 +347,11 @@ class HeatingExperiment(object):
 			raise ValueError(
 				'%s is an invalid T-D calibration. Must be one of: "Bea17",'
 				'"PH12", or "SE15"' % value)
+
+		#if it's a lambda function, store appropriately
+		elif isinstance(value, LambdaType):
+			self._calibration = 'Custom'
+			self._caleq = value
 
 		#raise different exception if it's not a string
 		else:
@@ -386,17 +403,7 @@ class HeatingExperiment(object):
 		'''
 		Setter for d
 		'''
-		#check that length is right
-		ntex = len(self.tex)
-		ndex = len(value)
-
-		if ndex == ntex:
-			self._d = value
-
-		else:
-			raise ValueError(
-				'cannot broadcast tex of length %s and dex of length %s'
-				% (ntex, ndex))
+		self._d = value
 
 	@property
 	def d_std(self):
@@ -425,7 +432,17 @@ class HeatingExperiment(object):
 		'''
 		Setter for dex
 		'''
-		self._dex = value
+		#check that length is right
+		ntex = len(self.tex)
+		ndex = len(value)
+
+		if ndex == ntex:
+			self._dex = value
+
+		else:
+			raise ValueError(
+				'cannot broadcast tex of length %s and dex of length %s'
+				% (ntex, ndex))
 
 	@property
 	def dex_std(self):
@@ -513,7 +530,7 @@ class HeatingExperiment(object):
 		Setter for iso_params
 		'''
 		#set value if it closely matches a valid parameter
-		elif value in ['Barkan','barkan']:
+		if value in ['Barkan','barkan']:
 			self._iso_params = 'Barkan'
 
 		elif value in ['Brand','brand','Chang + Assonov','Chang+Assonov']:
@@ -528,7 +545,7 @@ class HeatingExperiment(object):
 		elif value in ['Craig + Li','Craig+Li','craig + li','craig+li']:
 			self._iso_params = 'Craig + Li'
 
-		if value in ['Gonfiantini','gonfiantini']:
+		elif value in ['Gonfiantini','gonfiantini']:
 			self._iso_params = 'Gonfiantini'
 
 		elif value in ['Passey','passey']:
@@ -608,7 +625,7 @@ class HeatingExperiment(object):
 		b = pd.DataFrame(
 			self.dex_std,
 			index = self.tex,
-			columns = isos_stds
+			columns = iso_stds
 			)
 
 		b.index.name = 'tex'

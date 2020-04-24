@@ -17,10 +17,30 @@ isoclump.HeatingExperiment
       ~HeatingExperiment.forward_model
       ~HeatingExperiment.from_csv
       ~HeatingExperiment.plot
-      ~HeatingExperiment.summary
    
    
 
    
+   
+   .. rubric:: Attributes
+
+   .. autosummary::
+   
+      ~HeatingExperiment.G
+      ~HeatingExperiment.G_std
+      ~HeatingExperiment.Gex
+      ~HeatingExperiment.Gex_std
+      ~HeatingExperiment.T
+      ~HeatingExperiment.T_std
+      ~HeatingExperiment.calibration
+      ~HeatingExperiment.clumps
+      ~HeatingExperiment.d
+      ~HeatingExperiment.d_std
+      ~HeatingExperiment.dex
+      ~HeatingExperiment.dex_std
+      ~HeatingExperiment.iso_params
+      ~HeatingExperiment.ref_frame
+      ~HeatingExperiment.summary
+      ~HeatingExperiment.t
    
    
