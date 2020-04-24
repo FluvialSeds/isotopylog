@@ -27,6 +27,160 @@ from .dictionaries import(
 	caleqs
 	)
 
+#THESE FUNCTIONS ARE GOOD:
+
+#function to calcualte a D value for a given reaction progress, D0, and T
+def _calc_D_from_G(
+	D0,
+	G,
+	Teq,
+	calibration = 'Bea17',
+	clumps = 'CO47',
+	G_std = None,
+	ref_frame = 'CDES90'
+	):
+	'''
+	Calculates the clumped isotope value, D, for a given initial composition,
+	equilibrium temperature, and reaction progress remaining.
+
+	Parameters
+	----------
+	D0 : float
+		The initial clumped isotope composition.
+
+	G : array-like
+		The array of inputted reaction progress remaining data. Length ``nd``.
+
+	Teq : int or float
+		The equilibrium temperature (in Kelvin) used to calculate reaction
+		progress.
+
+	calibration : string
+		The T-D calibration to use for calculating equilibrium D. Defaults to
+		``'Bea17'``.
+
+	clumps : string
+		The clumped isotope system being analyzed. Defaults to ``'CO47'``.
+
+	G_std : None or array-like
+		Uncertainty for each entry in G. If ``None``, assumes no uncertainty;
+		defaults to ``None``. If not none, must have length ``nd``.
+
+	ref_frame : string
+		The reference frame to use for calculating equilibrium D. Defaults to
+		``'CDES90'``.
+
+	Returns
+	-------
+
+	D : np.ndarray
+		The resulting clumped isotope values. Length ``nd``.
+
+
+	D_std : np.ndarray
+		Uncertainty associated with each entry in D. Length ``nd``.
+	'''
+
+	#do some clump-specific math
+	if clumps == 'CO47':
+
+		#calculate equilibrium D value
+		Deq = caleqs[calibration][ref_frame](Teq)
+
+		#calculate D values
+		D = G*(D0 - Deq) + Deq
+
+		#calcualte D_std, assuming no uncertainty in D0 and Deq
+		# if it exists
+		try:
+			D_std = (D0 - Deq)*G_std
+
+		except TypeError:
+			D_std = np.zeros(len(D))
+
+	return D, D_std
+
+#function to calculate reaction progress for a given D and Teq
+def _calc_G_from_D(
+	d, 
+	Teq, 
+	calibration = 'Bea17', 
+	clumps = 'CO47', 
+	d_std = None,
+	ref_frame = 'CDES90'
+	):
+
+	'''
+	Calculates the reaction progress remaining, G, for a set of clumped isotope
+	measurements and an inputted equilibrium temperature.
+
+	Parameters
+	----------
+
+	d : array-like
+		The array of inputted isotope data, with clumped isotope data in
+		the first column. Reaction progress will be calculated relative to the
+		first row of d (i.e., D0). Length ``nd``.
+
+	Teq : int or float
+		The equilibrium temperature (in Kelvin) used to calculate reaction
+		progress.
+
+	calibration : string
+		The T-D calibration to use for calculating equilibrium D. Defaults to
+		``'Bea17'``.
+
+	clumps : string
+		The clumped isotope system being analyzed. Defaults to ``'CO47'``.
+
+	d_std : None or array-like
+		Analytical uncertainty for each entry in d. If ``None``, assumes no
+		uncertainty; defaults to ``None``. If not none, must have length ``nd``.
+
+	ref_frame : string
+		The reference frame to use for calculating equilibrium D. Defaults to
+		``'CDES90'``.
+
+	Returns
+	-------
+
+	G : np.ndarray
+		The resulting reaction progress remaining. Length ``nd``.
+
+
+	G_std : np.ndarray
+		Uncertainty associated with each entry in G. Length ``nd``.
+	'''
+
+	#do some clump-specific math
+	if clumps == 'CO47':
+
+		#calcualte equilibrium D value
+		Deq = caleqs[calibration][ref_frame](Teq)
+
+		#convert to G
+		D = d[:,0]
+		
+		#get uncertainty if it exists
+		try:
+			sigD = d_std[:,0]
+
+		except TypeError:
+			sigD = np.zeros(len(D))
+
+		#extract initial data and calculate G
+		D0 = D[0]
+		sigD0 = sigD[0]
+		G = 1 - (D0-D)/(D0-Deq)
+
+		#calculate G_std, assuming Deq is known perfectly
+		G_std = ((sigD0*(D-Deq)/((D0-Deq)**2))**2 + (sigD/(D0-Deq))**2)**0.5
+
+	return G, G_std
+
+
+#FUNCTIONS BELOW HERE NEED TO BE REASSESSED:
+
 #data importing functions
 def _read_csv(file):
 	'''
@@ -97,65 +251,6 @@ def _cull_data(calibration, clumps, dex, dex_std, ref_frame, T, tex):
 		tex = tex[ind]
 
 	return dex, dex_std, tex
-
-
-# def _calc_G_from_D(calibration, clumps, d, d_std, ref_frame, T):
-def _calc_G_from_D(
-	d, 
-	T, 
-	calibration = 'Bea17', 
-	clumps = 'CO47', 
-	d_std = None,
-	ref_frame = 'CDES90'
-	):
-
-	'''
-	Add docstring
-	'''
-
-	if clumps == 'CO47':
-
-		#TODO: ADD DEQ UNCERTAINTY!!!
-
-		#calcualte equilibrium D value
-		Deq = caleqs[calibration][ref_frame](T)
-
-		#convert to G
-		D = d[:,0]
-		
-		try:
-			sigD = d_std[:,0]
-		except TypeError:
-			sigD = np.zeros(len(D))
-
-		D0 = D[0]
-		sigD0 = sigD[0]
-
-		G = 1 - (D0-D)/(D0-Deq)
-
-		#calculate G_std (ASSUMES NO UNCERTAINTY IN Deq!)
-		G_std = ((sigD0*(D-Deq)/((D0-Deq)**2))**2 + (sigD/(D0-Deq))**2)**0.5
-		# G_std[0] = 0 #no uncertainty at t=0 by definition
-
-	return G, G_std
-
-def _calc_D_from_G(calibration, clumps, D0, G, G_std, ref_frame, T):
-	'''
-	Add docstring
-	'''
-
-	if clumps == 'CO47':
-
-		#calculate equilibrium D value
-		Deq = caleqs[calibration][ref_frame](T)
-
-		#calculate D values
-		D = G*(D0 - Deq) + Deq
-
-		#calcualte D_std (ASSUMES NO UNCERTAINTY IN Deq and D0!)
-		D_std = (D0 - Deq)*G_std
-
-		return D, D_std
 
 #forward modeling functions
 def _forward_PH12(kdistribution):

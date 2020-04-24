@@ -32,6 +32,7 @@ isoclump.HeatingExperiment
       ~HeatingExperiment.Gex_std
       ~HeatingExperiment.T
       ~HeatingExperiment.T_std
+      ~HeatingExperiment.caleq
       ~HeatingExperiment.calibration
       ~HeatingExperiment.clumps
       ~HeatingExperiment.d

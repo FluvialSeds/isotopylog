@@ -38,11 +38,11 @@ from .dictionaries import(
 
 # * Write forward_model function
 # * Write plot function
+# * Write docstrings
 
 
 # RUNNING TODO LIST:
-# * CHECK _CALC_G_FROM_D AND _CALC_D_FROM_G; CHANGE TO KWARGS; MAKE SURE IT'S
-#	CONSISTENT THROUGHOUT RATEDATA AND RATEDATA_HELPER
+# * 
 
 # DOCUMENTS TODO LIST:
 # * ADD PLOT RESULT IMAGES TO NECESSARY DOCSTRINGS

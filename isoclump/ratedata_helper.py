@@ -431,13 +431,14 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 
 	#convert to D47
 	D47hat, _ = _calc_D_from_G(
-		he.calibration, 
-		he.clumps, 
-		he.dex[0,0], 
-		Ghat, 
-		0, #just pass Gex_hat_std = 0 since we won't use it 
-		he.ref_frame, 
-		he.T)
+		he.dex[0,0],
+		Ghat,
+		he.T,
+		calibration = he.calibration,
+		clumps = he.clumps,
+		G_std = None,
+		ref_frame = he.ref_frame
+		)
 
 	#calcualte RMSE
 	rmse = _calc_rmse(he.dex[:,0], D47hat)
@@ -571,13 +572,14 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 
 	#convert to D47
 	D47hat, _ = _calc_D_from_G(
-		he.calibration, 
-		he.clumps, 
-		he.dex[0,0], 
-		Ghat, 
-		0, #just pass Gex_hat_std = 0 since we won't use it 
-		he.ref_frame, 
-		he.T)
+		he.dex[0,0],
+		Ghat,
+		he.T,
+		calibration = he.calibration,
+		clumps = he.clumps,
+		G_std = None,
+		ref_frame = he.ref_frame
+		)
 
 	#calcualte RMSE
 	rmse = _calc_rmse(he.dex[:,0], D47hat)
@@ -878,13 +880,14 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 
 	#convert to D47
 	D47hat, _ = _calc_D_from_G(
-		he.calibration, 
-		he.clumps, 
-		he.dex[0,0], 
-		Ghat, 
-		0, #just pass Ghat_std = 0 since we won't use it 
-		he.ref_frame, 
-		he.T)
+		he.dex[0,0],
+		Ghat,
+		he.T,
+		calibration = he.calibration,
+		clumps = he.clumps,
+		G_std = None,
+		ref_frame = he.ref_frame
+		)
 
 	#calcualte RMSE
 	rmse = _calc_rmse(he.dex[i0:,0], D47hat)
