@@ -2,27 +2,30 @@
 This module contains helper functions for the TimeData classes.
 '''
 
+#import from future for python 2
 from __future__ import(
 	division,
 	print_function,
 	)
 
+#set magic attributes
 __docformat__ = 'restructuredtext en'
-__all__ = ['_assert_calib',
-			'_assert_clumps',
-			'_assert_ref_frame',
+__all__ = ['_calc_D_from_G',
+		   '_calc_G_from_D',
+		   '_read_csv',
+			# '_assert_calib',
+			# '_assert_clumps',
+			# '_assert_ref_frame',
 			]
 
+#import packages
 import numpy as np
 import pandas as pd
 
+#import types for checking
 from types import LambdaType
 
-#import exceptions
-from .exceptions import(
-	StringError,
-	)
-
+#import necessary isoclump dictionaries
 from .dictionaries import(
 	caleqs
 	)
@@ -178,51 +181,139 @@ def _calc_G_from_D(
 
 	return G, G_std
 
-
-#FUNCTIONS BELOW HERE NEED TO BE REASSESSED:
-
 #data importing functions
 def _read_csv(file):
 	'''
-	Add docstring
+	Reads a csv file or pandas DataFrame and extracts the necessary information
+	for creating a HeatingExperiment instance.
+
+	Parameters
+	----------
+
+	file : str or pd.DataFrame
+		Either a string pointing to the csv file or a pd.DataFrame object
+		containing the data to import.
+
+	Returns
+	-------
+
+	dex : np.array
+		Array containing the isotope data.
+
+	T : np.array
+		Array containing the experimental temperature.
+
+	tex : np.array
+		Array containing the experimental time.
+
+	file_attrs : dict
+		Dictionary containing all the extracted attributes to be passed as
+		keyword agruments.
+
+	Raises
+	------
+
+	KeyError
+		If the inputted csv file does not contain any of the necessary columns.
+
+	TypeError
+		If the file parameter is not a path string or pandas DataFrame.
+
+	ValueError
+		If the inputted csv file doesn't contain appropriate data for CO47
+		clumps.
+
+	Notes
+	-----
+
+	If d13C, d18O, or any isotope uncertainty columns are not provided, they
+	are assumed to be zero.
 	'''
 
 	#check data format and raise appropriate errors
 	if isinstance(file, str):
+		
 		#import as dataframe
-		file = pd.read_csv(
-			file,
-			# index_col = 0,
-			)
+		file = pd.read_csv(file)
 
 	elif not isinstance(file, pd.DataFrame):
-		raise FileError(
-			'file must be pd.DataFrame instance or path string')
 
-	#check the clumped isotope system
+		#get type
+		ftn = type(file).__name__
+
+		raise TypeError(
+			'unexpected file of type %s. Must be a string containing path to'
+			' csv file or a pandas DataFrame object.' %s )
+
+	#pre-allocate dictionary for storing everything
+	file_attrs = {}
+
+	#do some clump-specific data extraction
 	if 'D47' in file.columns:
 
-		#set parameters
-		clumps = 'CO47'
-		iso_params = list(set(file['iso_params']))[0]
-		ref_frame = list(set(file['ref_frame']))[0]
-		T = list(set(file['T_C']))[0] + 273.15
+		#extract parameters and raise exceptions if columns do not exist
+		file_attrs['clumps'] = 'CO47'
 
-		#extract the necessary data
-		dex = file[['D47',
-				    'd13C_vpdb', 
-				    'd18O_vpdb']].values
+		#getting iso_params and ref_frame
+		for attr in ['iso_params', 'ref_frame']:
+			try:
+				file_attrs[attr] = list(set(file[attr]))[0]
 
-		dex_std = file[['D47_std',
-					    'd13C_std',
-					    'd18O_std']].values
+			except KeyError:
+				raise KeyError(
+					'csv file for import must contain a %s column' % attr)
 
-		tex = file['t_min'].values
+		#getting T_C
+		try:
+			T = file['T_C'].values + 273.15
+
+		except KeyError:
+			raise KeyError(
+				'csv file for import must contain a T_C column.')
+
+		#getting time (note that time can have any units; just begins with "t")
+		try:
+			#get column that starts with 't' since it could have different units
+			tc = [c for c in file if c.startswith('t')][0]
+			tex = file[tc].values
+		
+		except IndexError:
+			raise KeyError(
+				'csv file must contain a time column starting with "t"')
+
+		#getting isotope data, if it exists
+		isos = ['D47','d13C_vpdb','d18O_vpdb']
+		iso_dict = {}
+
+		for iso in isos:
+			try:
+				iso_dict[iso] = file[iso].values
+
+			except KeyError:
+				iso_dict[iso] = 0
+
+		dex = pd.DataFrame(iso_dict).values
+
+
+		#getting isotope uncertainty, if it exists
+		iso_stds = ['D47_std','d13C_std','d18O_std']
+		iso_std_dict = {}
+
+		for iso in iso_stds:
+			try:
+				iso_std_dict[iso] = file[iso].values
+
+			except KeyError:
+				iso_std_dict[iso] = 0
+
+		file_attrs['dex_std'] = pd.DataFrame(iso_std_dict).values
 
 	else:
-		raise ValueError('Must be CO47 clumps!')
+		raise ValueError('unexpected data in file; must contain CO47 clumps.')
 
-	return clumps, dex, dex_std, iso_params, ref_frame, tex, T
+	return dex, T, tex, file_attrs
+
+#FUNCTIONS BELOW HERE NEED TO BE REASSESSED:
 
 def _cull_data(calibration, clumps, dex, dex_std, ref_frame, T, tex):
 	'''
@@ -275,276 +366,276 @@ def _forward_HH20(kdistribution):
 
 
 
-#define hidden function for asserting calibration is okay
-def _assert_calib(clumps, calibration, ref_frame):
-	'''
-	Asserts that the 'calibration' input is an acceptable string or lambda
-	function and generates a calibration lambda equation.
+# #define hidden function for asserting calibration is okay
+# def _assert_calib(clumps, calibration, ref_frame):
+# 	'''
+# 	Asserts that the 'calibration' input is an acceptable string or lambda
+# 	function and generates a calibration lambda equation.
 
-	Paramters
-	---------
-	clumps : string
-		String of clumped isotope system being measured
+# 	Paramters
+# 	---------
+# 	clumps : string
+# 		String of clumped isotope system being measured
 
-	calibration : string or lambda
-		String or lambda function of T-D calibration equation to use. If str,
-		automatically ensures that the equation is in the right ref. frame.
+# 	calibration : string or lambda
+# 		String or lambda function of T-D calibration equation to use. If str,
+# 		automatically ensures that the equation is in the right ref. frame.
 
-	ref_frame : string
-		String of the reference frame being used
+# 	ref_frame : string
+# 		String of the reference frame being used
 
-	Returns
-	-------
-	calibration : string
-		String of T-D calibration to use
+# 	Returns
+# 	-------
+# 	calibration : string
+# 		String of T-D calibration to use
 
-	calib_eq : lambda function
-		The actual T-D calibration equation
+# 	calib_eq : lambda function
+# 		The actual T-D calibration equation
 
-	Raises
-	------
-	TypeError
-		If 'calibration' is not a string or lambda function
+# 	Raises
+# 	------
+# 	TypeError
+# 		If 'calibration' is not a string or lambda function
 
-	StringError
-		If 'calibration' is not an acceptable string
-	'''
+# 	StringError
+# 		If 'calibration' is not an acceptable string
+# 	'''
 
-	#check if string or lambda function
-	cal_type = type(calibration).__name__
+# 	#check if string or lambda function
+# 	cal_type = type(calibration).__name__
 
-	#check if string or lambda
-	if not isinstance(calibration, (str, LambdaType)):
-		raise TypeError(
-			'Attempting to input "calibration" of type %r. Must be a string'
-			' or a lambda function' % cal_type)
+# 	#check if string or lambda
+# 	if not isinstance(calibration, (str, LambdaType)):
+# 		raise TypeError(
+# 			'Attempting to input "calibration" of type %r. Must be a string'
+# 			' or a lambda function' % cal_type)
 
-	#if string, make sure it's an acceptable string and store
-	if isinstance(calibration, str):
+# 	#if string, make sure it's an acceptable string and store
+# 	if isinstance(calibration, str):
 
-		if clumps == 'CO47':
+# 		if clumps == 'CO47':
 
-			#compile all PH12 variants
-			if calibration in ['PH12', 'ph12', 'Passey', 'passey']:
-				calibration = 'PH12'
+# 			#compile all PH12 variants
+# 			if calibration in ['PH12', 'ph12', 'Passey', 'passey']:
+# 				calibration = 'PH12'
 
-			#compile all SE15 variants
-			elif calibration in ['SE15', 'se15', 'Stolper', 'stolper']:
-				calibration = 'SE15'
+# 			#compile all SE15 variants
+# 			elif calibration in ['SE15', 'se15', 'Stolper', 'stolper']:
+# 				calibration = 'SE15'
 
-			#compile all Bea17 variants
-			elif calibration in ['Bea17', 'bea17', 'BEA17' 'Bonifacie', 
-								 'bonifacie']:
-				calibration = 'Bea17'
+# 			#compile all Bea17 variants
+# 			elif calibration in ['Bea17', 'bea17', 'BEA17' 'Bonifacie', 
+# 								 'bonifacie']:
+# 				calibration = 'Bea17'
 
-			else:
-				raise StringError(
-					'Attempting to input calibration %r for CO47 measurements.'
-					' Must be one of "PH12", "SE15" or "Bea17"' % calibration)
+# 			else:
+# 				raise StringError(
+# 					'Attempting to input calibration %r for CO47 measurements.'
+# 					' Must be one of "PH12", "SE15" or "Bea17"' % calibration)
 
-		#store calibration equation
-		calib_eq = caleqs[calibration][ref_frame]
+# 		#store calibration equation
+# 		calib_eq = caleqs[calibration][ref_frame]
 
-	#if lambda function, store directly
-	else:
-		calib_eq = calibration
-		calibration = 'User Inputted Lambda Function'
+# 	#if lambda function, store directly
+# 	else:
+# 		calib_eq = calibration
+# 		calibration = 'User Inputted Lambda Function'
 
-	return calibration, calib_eq
+# 	return calibration, calib_eq
 
-#define hidden function for asserting clumped isotope system is okay
-def _assert_clumps(clumps):
-	'''
-	Asserts that the 'clumps' input is an acceptable string.
+# #define hidden function for asserting clumped isotope system is okay
+# def _assert_clumps(clumps):
+# 	'''
+# 	Asserts that the 'clumps' input is an acceptable string.
 
-	Paramters
-	---------
-	clumps : string
-		String of clumped isotope system being measured
+# 	Paramters
+# 	---------
+# 	clumps : string
+# 		String of clumped isotope system being measured
 
-	Returns
-	-------
-	clumps : string
-		String of clumped isotope system being measured
+# 	Returns
+# 	-------
+# 	clumps : string
+# 		String of clumped isotope system being measured
 
-	Raises
-	------
-	TypeError
-		If 'clumps' is not a string
+# 	Raises
+# 	------
+# 	TypeError
+# 		If 'clumps' is not a string
 
-	StringError
-		If 'clumps' is not an acceptable string
-	'''
+# 	StringError
+# 		If 'clumps' is not an acceptable string
+# 	'''
 
-	#check if string
-	cl_type = type(clumps).__name__
+# 	#check if string
+# 	cl_type = type(clumps).__name__
 
-	if not isinstance(clumps, str):
-		raise TypeError(
-			'Attempting to input "clumps" value of type %r. Must be string.'
-			% cl_type)
+# 	if not isinstance(clumps, str):
+# 		raise TypeError(
+# 			'Attempting to input "clumps" value of type %r. Must be string.'
+# 			% cl_type)
 
-	#check if acceptable string
-	#compile all variants into a single string
-	if clumps in ['CO47', 'co47', 'D47']:
-		clumps = 'CO47'
+# 	#check if acceptable string
+# 	#compile all variants into a single string
+# 	if clumps in ['CO47', 'co47', 'D47']:
+# 		clumps = 'CO47'
 
-	else:
-		raise StringError(
-			'Attempting to calculate the %r clumped isotope system. Model'
-			' currently only calculates C-O clumped isotopes. Please enter'
-			' "CO47"' % clumps)
+# 	else:
+# 		raise StringError(
+# 			'Attempting to calculate the %r clumped isotope system. Model'
+# 			' currently only calculates C-O clumped isotopes. Please enter'
+# 			' "CO47"' % clumps)
 
-	return clumps
+# 	return clumps
 
-#define hidden function for asserting reference frame is okay
-def _assert_ref_frame(clumps, ref_frame):
-	'''
-	Asserts the 'ref_frame' input is an acceptbale string.
+# #define hidden function for asserting reference frame is okay
+# def _assert_ref_frame(clumps, ref_frame):
+# 	'''
+# 	Asserts the 'ref_frame' input is an acceptbale string.
 
-	Paramters
-	---------
-	clumps : string
-		String of clumped isotope system being measured
+# 	Paramters
+# 	---------
+# 	clumps : string
+# 		String of clumped isotope system being measured
 
-	ref_frame : string
-		String of the reference frame being used
+# 	ref_frame : string
+# 		String of the reference frame being used
 
-	Returns
-	-------
-	ref_frame : string
-		String of the reference frame being used
+# 	Returns
+# 	-------
+# 	ref_frame : string
+# 		String of the reference frame being used
 
-	Raises
-	------
-	TypeError
-		If 'ref_frame' is not a string
+# 	Raises
+# 	------
+# 	TypeError
+# 		If 'ref_frame' is not a string
 
-	StringError
-		If 'ref_frame' is not an acceptable string
+# 	StringError
+# 		If 'ref_frame' is not an acceptable string
 
-	Warnings
-	--------
-	UserWarning
-		If 'CDES' is inputted but no tmperature is specified. Assumes 90 C.
-	'''
+# 	Warnings
+# 	--------
+# 	UserWarning
+# 		If 'CDES' is inputted but no tmperature is specified. Assumes 90 C.
+# 	'''
 
-	#check if string
-	rf_type = type(ref_frame).__name__
+# 	#check if string
+# 	rf_type = type(ref_frame).__name__
 
-	if not isinstance(ref_frame, str):
-		raise TypeError(
-			'Attempting to input "ref_frame" value of type %r. Must be string.'
-			% rf_type)
+# 	if not isinstance(ref_frame, str):
+# 		raise TypeError(
+# 			'Attempting to input "ref_frame" value of type %r. Must be string.'
+# 			% rf_type)
 
-	#check if acceptable string
+# 	#check if acceptable string
 	
-	#check if clumps is 'CO47'
-	if clumps == 'CO47':
+# 	#check if clumps is 'CO47'
+# 	if clumps == 'CO47':
 		
-		#compile all Ghosh variants
-		if ref_frame in ['Ghosh', 'ghosh', 'Gea06', 'Ghosh 2006']:
-			ref_frame = 'Ghosh'
+# 		#compile all Ghosh variants
+# 		if ref_frame in ['Ghosh', 'ghosh', 'Gea06', 'Ghosh 2006']:
+# 			ref_frame = 'Ghosh'
 
-		#compile all CDES90 variants
-		elif ref_frame in ['CDES90', 'cdes90', 'Cdes90', 'CDES 90', 'cdes 90']:
-			ref_frame = 'CDES90'
+# 		#compile all CDES90 variants
+# 		elif ref_frame in ['CDES90', 'cdes90', 'Cdes90', 'CDES 90', 'cdes 90']:
+# 			ref_frame = 'CDES90'
 
-		#compile all CDES25 variants
-		elif ref_Frame in ['CDES25', 'cdes25', 'Cdes25', 'CDES 25', 'cdes 25']:
-			ref_frame = 'CDES25'
+# 		#compile all CDES25 variants
+# 		elif ref_Frame in ['CDES25', 'cdes25', 'Cdes25', 'CDES 25', 'cdes 25']:
+# 			ref_frame = 'CDES25'
 
-		#warn if CDES but no temperature defined
-		elif ref_frame in ['cdes', 'CDES', 'Cdes']:
-			warnings.warn(
-				'Reference frame "CDES" being used but no temperature is'
-				' specified. Assuming 90 C!')
+# 		#warn if CDES but no temperature defined
+# 		elif ref_frame in ['cdes', 'CDES', 'Cdes']:
+# 			warnings.warn(
+# 				'Reference frame "CDES" being used but no temperature is'
+# 				' specified. Assuming 90 C!')
 
-			ref_frame = 'CDES90'
+# 			ref_frame = 'CDES90'
 
-		else:
-			raise StringError(
-				'Attempting to input reference frame %r for CO47 measurements.'
-				' Must be one of: "Ghosh", "CDES25", or "CDES90"' % ref_frame)
+# 		else:
+# 			raise StringError(
+# 				'Attempting to input reference frame %r for CO47 measurements.'
+# 				' Must be one of: "Ghosh", "CDES25", or "CDES90"' % ref_frame)
 
-	return ref_frame
+# 	return ref_frame
 
-#define hidden function for asserting iso_params is okay
-def _assert_iso_params(clumps, iso_params):
-	'''
-	Asserts the 'iso_params' is an acceptable string.
+# #define hidden function for asserting iso_params is okay
+# def _assert_iso_params(clumps, iso_params):
+# 	'''
+# 	Asserts the 'iso_params' is an acceptable string.
 
-	Paramters
-	---------
-	clumps : string
-		String of clumped isotope system being measured
+# 	Paramters
+# 	---------
+# 	clumps : string
+# 		String of clumped isotope system being measured
 
-	iso_params : string
-		String of the isotopic parameters beting used
+# 	iso_params : string
+# 		String of the isotopic parameters beting used
 
-	Returns
-	-------
-	iso_params : string
-		String of the isotopic parameters being used
+# 	Returns
+# 	-------
+# 	iso_params : string
+# 		String of the isotopic parameters being used
 
-	Raises
-	------
-	TypeError
-		If 'iso_params' is not a string
+# 	Raises
+# 	------
+# 	TypeError
+# 		If 'iso_params' is not a string
 
-	StringError
-		If 'iso_params' is not an acceptable string
-	'''
+# 	StringError
+# 		If 'iso_params' is not an acceptable string
+# 	'''
 
-	#check if string
-	ip_type = type(iso_params).__name__
+# 	#check if string
+# 	ip_type = type(iso_params).__name__
 
-	if not isinstance(iso_params, str):
-		raise TypeError(
-			'Attempting to input "iso_params" value of type %r. Must be string.'
-			% ip_type)
+# 	if not isinstance(iso_params, str):
+# 		raise TypeError(
+# 			'Attempting to input "iso_params" value of type %r. Must be string.'
+# 			% ip_type)
 
-	#check if acceptable string
+# 	#check if acceptable string
 	
-	#check if clumps is 'CO47'
-	if clumps == 'CO47':
+# 	#check if clumps is 'CO47'
+# 	if clumps == 'CO47':
 		
-		#compile all Gonfiantini
-		if iso_params in ['Gonfiantini','gonfiantini']:
-			iso_params = 'Gonfiantini'
+# 		#compile all Gonfiantini
+# 		if iso_params in ['Gonfiantini','gonfiantini']:
+# 			iso_params = 'Gonfiantini'
 
-		#compile all Brand
-		elif iso_params in ['Brand','brand']:
-			iso_params = 'Brand'
+# 		#compile all Brand
+# 		elif iso_params in ['Brand','brand']:
+# 			iso_params = 'Brand'
 
-		#compile all Craig + Assonov
-		elif iso_params in ['Craig + Assonov', 'craig + assonov', 
-						 'Craig+Assonov', 'craig+assonov',
-						]:
-			iso_params = 'Craig + Assonov'
+# 		#compile all Craig + Assonov
+# 		elif iso_params in ['Craig + Assonov', 'craig + assonov', 
+# 						 'Craig+Assonov', 'craig+assonov',
+# 						]:
+# 			iso_params = 'Craig + Assonov'
 
-		#compile all Chang + Li
-		elif iso_params in ['Chang + Li', 'chang + li', 'Chang+Li', 'chang+li']:
-			iso_params = 'Chang + Li'
+# 		#compile all Chang + Li
+# 		elif iso_params in ['Chang + Li', 'chang + li', 'Chang+Li', 'chang+li']:
+# 			iso_params = 'Chang + Li'
 
-		#compile all Craig + Li
-		elif iso_params in ['Craig + Li', 'craig + li', 'Craig+Li', 'craig+li']:
-			iso_params = 'Craig + Li'
+# 		#compile all Craig + Li
+# 		elif iso_params in ['Craig + Li', 'craig + li', 'Craig+Li', 'craig+li']:
+# 			iso_params = 'Craig + Li'
 
-		#compile all Barkan
-		elif iso_params in ['Barkan', 'barkan']:
-			iso_params = 'Barkan'
+# 		#compile all Barkan
+# 		elif iso_params in ['Barkan', 'barkan']:
+# 			iso_params = 'Barkan'
 
-		#compile all Passey
-		elif iso_params in ['Passey', 'passey']:
-			iso_params = 'Passey'
+# 		#compile all Passey
+# 		elif iso_params in ['Passey', 'passey']:
+# 			iso_params = 'Passey'
 
-		else:
-			raise StringError(
-				'Attempting to input isotope parameters %r for CO47 measurements.'
-				' Must be one of: "Brand", "Gonfiantini", "Craig + Assonov",'
-				' "Chang + Li", "Craig + Li", "Barkan", or "Passey".' % iso_params)
+# 		else:
+# 			raise StringError(
+# 				'Attempting to input isotope parameters %r for CO47 measurements.'
+# 				' Must be one of: "Brand", "Gonfiantini", "Craig + Assonov",'
+# 				' "Chang + Li", "Craig + Li", "Barkan", or "Passey".' % iso_params)
 
-	return iso_params
+# 	return iso_params
 
 

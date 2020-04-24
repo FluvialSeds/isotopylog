@@ -2,32 +2,35 @@
 This module contains the TimeData superclass and all corresponding subclasses.
 '''
 
-#for python 2 compatibility
+#import from future for python 2 compatibility
 from __future__ import(
 	division,
 	print_function,
 	)
 
+#set magic attributes
 __docformat__ = 'restructuredtext en'
 __all__ = [
 	'HeatingExperiment',
 	 # 'GeologicHistory'
 	]
 
-#import modules
+#import packages
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+#import types for checking
 from types import LambdaType
 
-#import helper functions
+#import necessary isoclump timedata helper functions
 from .timedata_helper import(
-	_read_csv,
-	_cull_data,
 	_calc_G_from_D,
+	_read_csv,
+	# _cull_data,
 	)
 
+#import necessary isoclump dictionaries
 from .dictionaries import(
 	caleqs,
 	clump_isos,
@@ -35,7 +38,7 @@ from .dictionaries import(
 
 
 # TODO FRIDAY 24 APRIL:
-# * Update from_csv function
+# * Update cull data function
 # * Write forward_model function
 # * Write plot function
 # * Write docstrings
@@ -199,6 +202,16 @@ class HeatingExperiment(object):
 	Generating a HeatingExperiment instance by extracting data from a csv
 	file::
 
+		#setting a string with the file name
+		file = 'string_with_file_name.csv'
+
+		#make HeatingExperiment instance without culling data
+		he = ic.HeatingExperiment.from_csv(file, culled = False)
+
+		#or, cull the data that are too close to equilibrium (see PH12)
+		he = ic.HeatingExperiment.from_csv(file, culled = True)
+
+	Forward modeling some rate data and visualizing model results::
 
 
 	References
@@ -320,7 +333,7 @@ class HeatingExperiment(object):
 	#define @classmethods
 	#method for generating HeatingExperiment instance from csv file 
 	@classmethod
-	def from_csv(cls, file, culled = True, **kwargs):
+	def from_csv(cls, file, culled = True):
 		'''
 		Imports data from a csv file and creates a HeatingExperiment object
 		from those data.
@@ -345,9 +358,11 @@ class HeatingExperiment(object):
 		'''
 
 		#import experimental data
-		clumps, dex, dex_std, iso_params, ref_frame, tex, T = _read_csv(file)
+		dex, T, tex, file_attrs = _read_csv(file)
 
 		#cull data if necessary
+
+		#TODO: Update cull function
 		if culled is True:
 			dex, dex_std, tex = _cull_data(calibration,
 				clumps, 
@@ -357,22 +372,8 @@ class HeatingExperiment(object):
 				T,
 				tex)
 
-		# #make t and T arrays
-		# tex_max = np.ceil(np.max(tex)/1000)*1000 #round up to next 1000 minutes
-		# t = np.linspace(0, tex_max, nt)
-		# # T = T*np.ones(nt)
-
 		#return class instance
-		return cls(
-			dex,
-			T,
-			tex,
-			clumps = clumps,
-			dex_std = dex_std,
-			iso_params = iso_params,
-			ref_frame = ref_frame,
-			**kwargs
-			)
+		return cls(dex, T, tex, **file_attrs)
 
 	def forward_model(kd):
 		'''

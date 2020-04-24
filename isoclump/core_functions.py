@@ -34,11 +34,11 @@ import numpy as np
 # 	)
 
 #import timedata helper functions
-from .timedata_helper import(
-	_assert_clumps,
-	_assert_ref_frame,
-	_assert_iso_params,
-	)
+# from .timedata_helper import(
+# 	_assert_clumps,
+# 	_assert_ref_frame,
+# 	_assert_iso_params,
+# 	)
 
 #import dictionaries with conversion information
 from .dictionaries import(
