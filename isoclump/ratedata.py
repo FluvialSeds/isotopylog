@@ -37,11 +37,14 @@ from .dictionaries import(
 	mod_params
 	)
 
+#TODO (at some point):
+# * Update attribute setters to be more specific
+# * Update summary attribute to look prettier
 class kDistribution(object):
 	__doc__='''
-	Class for inputting and storing clumped isotope rate data. Currently only
-	accepts D47 clumps, but will be expanded in the future as new clumped
-	system data becomes available.
+	Class for inputting, storing, and visualizing clumped isotope rate data. 
+	Currently only accepts D47 clumps, but will be expanded in the future as
+	new clumped system data becomes available.
 
 	Parameters
 	----------
@@ -192,18 +195,18 @@ class kDistribution(object):
 	[7] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
-	#define all the possible attributes for __init__ using _attrs
-	_kwattrs = [
-		'lam', 
-		'npt', 
-		'omega', 
-		'params_std', 
-		'rho_lam', 
-		'rho_lam_inv',
-		'res_inv',
-		'rgh_inv',
-		'rmse',
-		]
+	#define all the possible attributes for __init__ using _kwattrs
+	_kwattrs = {
+		'lam' : None, 
+		'npt' : None, 
+		'omega' : None, 
+		'params_std' : None, 
+		'rho_lam' : None, 
+		'rho_lam_inv' : None,
+		'res_inv' : None,
+		'rgh_inv' : None,
+		'rmse' : None,
+		}
 
 	#Define magic methods
 	#initialize the object
@@ -214,18 +217,17 @@ class kDistribution(object):
 		Returns
 		-------
 		kd : isoclump.kDistribution
-			The kDistribution object.
+			The ``kDistribution`` object.
 		'''
-
-		#first make everything in _attrs = None
-		for k in self._kwattrs:
-			setattr(self, k, None)
-
-		#then set arguments
+		#set arguments
 		self.params = params
 		self.model = model
 
-		#finally set all attributes in kwargs and raise exception if unknown
+		#first set everything in _kwattrs to its default value
+		for k, v in self._kwattrs.items():
+			setattr(self, k, v)
+
+		#then overwrite all attributes in kwargs and raise exception if unknown
 		for k, v in kwargs.items():
 			if k in self._kwattrs:
 				setattr(self, k, v)
@@ -565,7 +567,7 @@ class kDistribution(object):
 		#return result
 		return ax
 
-	#Define @properties getters and setters
+	#Define @property getters and setters
 	@property
 	def lam(self):
 		'''
@@ -575,6 +577,9 @@ class kDistribution(object):
 
 	@lam.setter
 	def lam(self, value):
+		'''
+		Setter for lam
+		'''
 		self._lam = value
 
 	@property
@@ -586,6 +591,9 @@ class kDistribution(object):
 
 	@model.setter
 	def model(self, value):
+		'''
+		Setter for model
+		'''
 		#set value if it closely matches a valid model
 		if value in ['Hea14','H14','hea14','Henkes14','Henkes2014','Henkes']:
 			self._model = 'Hea14'
@@ -622,6 +630,9 @@ class kDistribution(object):
 
 	@npt.setter
 	def npt(self, value):
+		'''
+		Setter for npt
+		'''
 		self._npt = value
 
 	@property
@@ -633,6 +644,9 @@ class kDistribution(object):
 
 	@omega.setter
 	def omega(self, value):
+		'''
+		Setter for omega
+		'''
 		self._omega = value
 
 	@property
@@ -644,6 +658,9 @@ class kDistribution(object):
 	
 	@params.setter
 	def params(self, value):
+		'''
+		Setter for params
+		'''
 		#make into np.array
 		p = np.array(value)
 
@@ -665,6 +682,9 @@ class kDistribution(object):
 
 	@params_std.setter
 	def params_std(self, value):
+		'''
+		Setter for params_std
+		'''
 		self._params_std = value
 
 	@property
@@ -676,6 +696,9 @@ class kDistribution(object):
 	
 	@rho_lam.setter
 	def rho_lam(self, value):
+		'''
+		Setter for rho_lam
+		'''
 		self._rho_lam = value
 
 	@property
@@ -688,6 +711,9 @@ class kDistribution(object):
 
 	@rho_lam_inv.setter
 	def rho_lam_inv(self, value):
+		'''
+		Setter for rho_lam_inv
+		'''
 		self._rho_lam_inv = value
 
 	@property
@@ -699,6 +725,9 @@ class kDistribution(object):
 
 	@res_inv.setter
 	def res_inv(self, value):
+		'''
+		Setter for res_inv
+		'''
 		self._res_inv = value
 	
 	@property
@@ -710,6 +739,9 @@ class kDistribution(object):
 
 	@rgh_inv.setter
 	def rgh_inv(self, value):
+		'''
+		Setter for rgh_inv
+		'''
 		self._rgh_inv = value
 
 	@property
@@ -721,6 +753,9 @@ class kDistribution(object):
 
 	@rmse.setter
 	def rmse(self, value):
+		'''
+		Setter for rmse
+		'''
 		self._rmse = value
 
 	@property

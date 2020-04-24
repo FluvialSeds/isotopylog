@@ -90,7 +90,7 @@ d47_isoparams = {'Gonfiantini':
 				}
 
 
-# 3) Dictionary for holding kDistribution model paramteres for summary printing
+# 3) Dictionary for holding kDistribution model parameters for summary printing
 mod_params = {'Hea14' : ['ln(kc)','ln(kd)','ln(k2)'],
 			  'HH20' : ['mu_lam','sig_lam'],
 			  'PH12' : ['ln(k)','-intercept'],
@@ -99,7 +99,9 @@ mod_params = {'Hea14' : ['ln(kc)','ln(kd)','ln(k2)'],
 
 
 
-
+# 4) Dictionary for holding clumped isotope names for summary printing
+clump_isos = {'CO47' : ['D47','d13C_vpdb','d18O_vpdb'],
+			 }
 
 
 

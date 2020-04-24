@@ -417,8 +417,8 @@ def derivatize(num, denom):
     Returns
     -------
 
-    derivative : rparray
-        An ``np.ndarray`` instance of the derivative. Length `n`.
+    derivative : np.array
+        An `np.array` instance of the derivative. Length `n`.
 
     Raises
     ------
@@ -434,7 +434,7 @@ def derivatize(num, denom):
 
     Notes
     -----
-    
+
     This method uses the ``np.gradient`` method to calculate derivatives. If
     `denom` is a scalar, resulting array will be all ``np.inf``. If both `num`
     and `denom` are scalars, resulting array will be all ``np.nan``. If 
