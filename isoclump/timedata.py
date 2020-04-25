@@ -116,7 +116,7 @@ class HeatingExperiment(object):
 		R18_vpdb, and lam17. Following Daëron et al. (2016) nomenclature,
 		options are: \n
 			``'Barkan'``: for Barkan and Luz (2005) lam17\n
-			``'Brand'`` (equivalent to ``'Chang+Assonov'`): for Brand (2010)\n
+			``'Brand'`` (equivalent to ``'Chang+Assonov'``): for Brand (2010)\n
 			``'Chang+Li'``: for Chang and Li (1990) + Li et al. (1988) \n
 			``'Craig+Assonov'``: for Craig (1957) + Assonov and Brenninkmeijer 
 			(2003)\n
@@ -129,7 +129,7 @@ class HeatingExperiment(object):
 		The reference frame used to calculate clumped isotope data. Options
 		are:\n
 			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.
-			``'CDES90`'': Carbon Dioxide Equilibrium Scale acidified at 90 C.
+			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.
 			``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. (2006)
 			acidified at 25 C.\n
 		Defaults to ``'CDES90'``.
@@ -364,6 +364,7 @@ class HeatingExperiment(object):
 
 		#TODO: Update cull function
 		if culled is True:
+
 			dex, dex_std, tex = _cull_data(calibration,
 				clumps, 
 				dex, 
