@@ -423,7 +423,7 @@ class HeatingExperiment(object):
 
 		References
 		----------
-		
+
 		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**,
 			223--236.
 		'''
@@ -455,6 +455,8 @@ class HeatingExperiment(object):
 		#return class instance
 		return cls(dex, T, tex, **file_attrs)
 
+	#TODO: add forward model and update plot!
+	
 	def forward_model(kd):
 		'''
 		Forward models a given kDistribution instance to produce predicted
