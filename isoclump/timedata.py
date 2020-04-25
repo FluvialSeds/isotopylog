@@ -19,6 +19,7 @@ __all__ = [
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import warnings
 
 #import types for checking
 from types import LambdaType
@@ -26,8 +27,8 @@ from types import LambdaType
 #import necessary isoclump timedata helper functions
 from .timedata_helper import(
 	_calc_G_from_D,
+	_cull_data,
 	_read_csv,
-	# _cull_data,
 	)
 
 #import necessary isoclump dictionaries
@@ -38,7 +39,6 @@ from .dictionaries import(
 
 
 # TODO FRIDAY 24 APRIL:
-# * Update cull data function
 # * Write forward_model function
 # * Write plot function
 # * Write docstrings
@@ -49,7 +49,6 @@ from .dictionaries import(
 
 # DOCUMENTS TODO LIST:
 # * ADD PLOT RESULT IMAGES TO NECESSARY DOCSTRINGS
-# * ADD LOGO TO BANNER
 
 
 class HeatingExperiment(object):
@@ -122,7 +121,7 @@ class HeatingExperiment(object):
 			(2003)\n
 			``'Craig+Li'``: for Craig (1957) + Li et al. (1988)\n
 			``'Gonfiantini'``: for Gonfiantini et al. (1995)\n
-			`'Passey'``: for Passey et al. (2014) lam17\n
+			``'Passey'``: for Passey et al. (2014) lam17\n
 		Defaults to ``'Gonfiantini'``.
 
 	ref_frame : string
@@ -209,7 +208,7 @@ class HeatingExperiment(object):
 		he = ic.HeatingExperiment.from_csv(file, culled = False)
 
 		#or, cull the data that are too close to equilibrium (see PH12)
-		he = ic.HeatingExperiment.from_csv(file, culled = True)
+		he = ic.HeatingExperiment.from_csv(file, culled = True, cull_sig = 1)
 
 	Forward modeling some rate data and visualizing model results::
 
@@ -319,11 +318,13 @@ class HeatingExperiment(object):
 		except TypeError:
 			Tstd = 'None'
 
+		Tstr = '%.2f' % self.T
+
 		attrs = {'calibration' : self.calibration,
 		 		 'clumps' : self.clumps,
 		 		 'iso_params' : self.iso_params,
 		 		 'ref_frame' : self.ref_frame,
-		 		 'T' : str(self.T) + '+/-' + Tstd
+		 		 'T' : Tstr + '+/-' + Tstd
 		 		}
 
 		s = pd.Series(attrs)
@@ -333,7 +334,7 @@ class HeatingExperiment(object):
 	#define @classmethods
 	#method for generating HeatingExperiment instance from csv file 
 	@classmethod
-	def from_csv(cls, file, culled = True):
+	def from_csv(cls, file, calibration = 'Bea17', culled = True, cull_sig = 1):
 		'''
 		Imports data from a csv file and creates a HeatingExperiment object
 		from those data.
@@ -341,37 +342,115 @@ class HeatingExperiment(object):
 		Parameters
 		----------
 
+		file : string or pd.DataFrame
+
+		calibration : string or LambdaType
+			The D-T calibration curve to use, either from the literature or as
+			a user-inputted lambda function. If from the literature for D47
+			clumps, options are: \n
+				``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
+				``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
+				``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
+			If as a lambda function, must have T in Kelvin. Note that
+			literature equations will be adjusted to be consistent with any 
+			reference frame, but lambda functions will be reference-frame-
+			specific. Defaults to ``'Bea17'``.
+
+		culled : boolean
+			Tells the function whether or not to cull data following the
+			approach of Passey and Henkes (2012).
+
+		cull_sig : int or float
+			The number of standard deviations deemed to be the cutoff
+			threshold. For example, if ``cull_sig = 1``, then drops everything
+			within 1 sigma of Deq.
+
 		Returns
 		-------
+		he : isoclump.HeatingExperiment
+			The ``HeatingExperiment`` object.
 
 		Raises
 		------
 
+		KeyError
+			If the inputted calibration is not an acceptable string or a 
+			lambda function.
+
+		KeyError
+			If the inputted csv file does not contain any of the necessary 
+			columns.
+
+		TypeError
+			If the file parameter is not a path string or pandas DataFrame.
+
+		ValueError
+			If the inputted csv file doesn't contain appropriate data for CO47
+			clumps.
+
+		Warnings
+		--------
+
+		UserWarning
+			If trying to cull data but no D uncertainty is inputted. Culling
+			requires D uncertainty to check approach to equilibrium following
+			Passey and Henkes (2012).
+
 		See Also
 		--------
+
+		isoclump.HeatingExperiment
+			The HeatingExperiment class that is created by this function.
 
 		Examples
 		--------
 
+		Generating a HeatingExperiment instance by extracting data from a csv
+		file::
+
+			#setting a string with the file name
+			file = 'string_with_file_name.csv'
+
+			#make HeatingExperiment instance without culling data
+			he = ic.HeatingExperiment.from_csv(file, culled = False)
+
+			#or, cull the data that are too close to equilibrium (see PH12)
+			he = ic.HeatingExperiment.from_csv(
+				file, 
+				culled = True, 
+				cull_sig = 1 #can make higher for a more liberal cutoff
+				)
+
 		References
 		----------
+		
+		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**,
+			223--236.
 		'''
 
 		#import experimental data
 		dex, T, tex, file_attrs = _read_csv(file)
+		file_attrs['calibration'] = calibration #add to extracted dict
 
 		#cull data if necessary
-
-		#TODO: Update cull function
 		if culled is True:
 
-			dex, dex_std, tex = _cull_data(calibration,
-				clumps, 
+			#check if uncertainty exists; raise warning if not
+			if not (file_attrs['dex_std'][:,0]).all() > 0:
+				warnings.warn(
+					'Trying to cull data with no clumped isotope uncertainty.'
+					' Uncertainty is needed to assess approach to equilibrium.'
+					' Data may not be culled appropriately.', UserWarning
+					)
+
+			#cull the data
+			dex, T, tex, file_attrs = _cull_data(
 				dex, 
-				dex_std,
-				ref_frame,
-				T,
-				tex)
+				T, 
+				tex, 
+				file_attrs, 
+				cull_sig = cull_sig
+				)
 
 		#return class instance
 		return cls(dex, T, tex, **file_attrs)

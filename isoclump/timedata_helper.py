@@ -12,6 +12,7 @@ from __future__ import(
 __docformat__ = 'restructuredtext en'
 __all__ = ['_calc_D_from_G',
 		   '_calc_G_from_D',
+		   '_cull_data',
 		   '_read_csv',
 			# '_assert_calib',
 			# '_assert_clumps',
@@ -181,6 +182,106 @@ def _calc_G_from_D(
 
 	return G, G_std
 
+# def _cull_data(calibration, clumps, dex, dex_std, ref_frame, T, tex):
+def _cull_data(dex, T, tex, file_attrs, cull_sig = 1):
+	'''
+	Cull imported data if it is too close to the equilibrium D value. This
+	function uses D uncertainty as a threshold for approach to equilibrium
+	D, following Passey and Henkes (2012).
+
+	Parameters
+	----------
+
+	dex : np.array
+		Array containing the isotope data.
+
+	T : np.array
+		Array containing the experimental temperature.
+
+	tex : np.array
+		Array containing the experimental time.
+
+	file_attrs : dict
+		Dictionary containing all the extracted attributes to be passed as
+		keyword agruments.
+
+	cull_sig : int or float
+		The number of standard deviations deemed to be the cutoff threshold.
+		For example, if ``cull_sig = 1``, then drops everything within 1 sigma
+		of Deq.
+
+	Returns
+	-------
+
+	dex : np.array
+		Array containing the updated isotope data.
+
+	T : np.array
+		Array containing the updated experimental temperature.
+
+	tex : np.array
+		Array containing the updated experimental time.
+
+	file_attrs : dict
+		Dictionary containing all the updated extracted attributes to be 
+		passed as keyword agruments.
+
+	Raises
+	------
+
+	KeyError
+		If the inputted calibration is not an acceptable string or a lambda
+		function.
+
+	Notes
+	-----
+	Per the advice of Passey and Henkes (2012), this function drops all data
+	points after the first point that is deemed to be within the threshold
+	cutoff region, even if later points leave this region.
+
+	References
+	----------
+
+	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+	'''
+
+	#check which clumped isotope system
+	if file_attrs['clumps'] == 'CO47':
+
+		#extract the clumped isotope values and std devs
+		D = dex[:,0]
+		Dstd = file_attrs['dex_std'][:,0]
+
+		cal = file_attrs['calibration']
+		rf = file_attrs['ref_frame']
+
+		#calcualte equilibrium D47 (including if calibration is lambda func)
+		try:
+			Deq = caleqs[cal][rf](T)
+
+		except KeyError:
+			if isinstance(cal, LambdaType):
+				Deq = cal(T)
+
+			else:
+				raise KeyError('unexpected calibration %s' % cal)
+
+		#determine first index where abs(D - Deq) < cull_sig*D_std
+		ltdeq = abs(D - Deq) < cull_sig*Dstd
+		i = np.where(ltdeq)[0]
+
+		#try to remove everything above index i, if it exists
+		if len(i) > 0:
+			i0 = i[0]
+
+			#only keep everything before i0
+			dex = dex[:i0,:]
+			T = T[:i0]
+			tex = tex[:i0]
+			file_attrs['dex_std'] = file_attrs['dex_std'][:i0,:]
+
+	return dex, T, tex, file_attrs
+
 #data importing functions
 def _read_csv(file):
 	'''
@@ -309,39 +410,14 @@ def _read_csv(file):
 		file_attrs['dex_std'] = pd.DataFrame(iso_std_dict).values
 
 	else:
-		raise ValueError('unexpected data in file; must contain CO47 clumps.')
+		raise ValueError(
+			'unexpected file data; must contain column named "D47" signifying'
+			' CO47 clumps.')
 
 	return dex, T, tex, file_attrs
 
+
 #FUNCTIONS BELOW HERE NEED TO BE REASSESSED:
-
-def _cull_data(calibration, clumps, dex, dex_std, ref_frame, T, tex):
-	'''
-	Add docstring
-	'''
-
-	#extract clumped values
-	D = dex[:,0]
-	D_std = dex_std[:,0]
-
-	#check which clumped isotoep system
-	if clumps == 'CO47':
-
-		#calcualte equilibrium D value
-		Deq = caleqs[calibration][ref_frame](T)
-
-		#see which data are not within 1 sigma of Deq
-		ind = np.abs(D - Deq) > D_std
-
-		#TODO: exclude all data after the first instance where this 
-		# fails (explicitly stated in PH12 Appendix A.2. to remove bias)
-
-		#retain only values at those indices
-		dex = dex[ind]
-		dex_std = dex_std[ind]
-		tex = tex[ind]
-
-	return dex, dex_std, tex
 
 #forward modeling functions
 def _forward_PH12(kdistribution):

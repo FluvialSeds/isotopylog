@@ -111,7 +111,7 @@ class kDistribution(object):
 
 	TypeError
 		If inputted parameters of an unacceptable type.
-		
+
 	ValueError
 		If an unexpected keyword argument is trying to be inputted.
 
@@ -264,10 +264,10 @@ class kDistribution(object):
 		model : string
 			The type of model associated with a given kDistribution. Options
 			are: \n
-				`'Hea14'` \n
-				`'HH20'` \n
-				`'PH12'` \n
-				`'SE15'` \n
+				``'Hea14'`` \n
+				``'HH20'`` \n
+				``'PH12'`` \n
+				``'SE15'`` \n
 			See the relevant documentation on each model fit function for
 			details and descriptions of a given model: \n
 				fit_PH12 \n
