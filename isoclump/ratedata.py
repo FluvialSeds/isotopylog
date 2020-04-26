@@ -39,7 +39,6 @@ from .dictionaries import(
 
 #TODO (at some point):
 # * Update attribute setters to be more specific
-# * Update summary attribute to look prettier
 class kDistribution(object):
 	__doc__='''
 	Class for inputting, storing, and visualizing clumped isotope rate data. 
@@ -761,22 +760,27 @@ class kDistribution(object):
 		#extract parameters
 		try:
 			params = mod_params[self.model]
+			pstr = ', '.join(p for p in params)
 
 		except KeyError: #model not in list
 			params = None
 
+		rmse = '%.3f' % self.rmse
+		pvalstr = ', '.join(['%.2f' %p for p in self.params])
+		pstdstr = ', '.join(['%.2f' %p for p in self.params_std])
+		
 		#make summary table
-		restab = {'model' : self.model,
-				  'rmse' : self.rmse,
+		attrs = {'model' : self.model,
+				  'rmse' : rmse,
 				  'npt' : self.npt,
-				  'params' : params,
-				  'mean' : self.params,
-				  'std. dev.' : self.params_std
-				  }
+				  'params' : pstr,
+				  'mean' : pvalstr,
+				  'std. dev.' : pstdstr
+				 }
 
-		resdf = pd.DataFrame(restab)
+		s = pd.Series(attrs)
 
-		return resdf
+		return s
 
 
 class EDistribution(object):

@@ -470,6 +470,11 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 		Array of paramter guess to initialize the fitting algorithm, in the
 		order [mu_lam, sig_lam]. Defaults to `[-20, 5]`.
 
+	pcov : np.array
+		Array of outputted parameter covariance. To be passed as hidden
+		attribute to kDistribution and used for calculating forward-modeling
+		uncertainty.
+
 	Returns
 	-------
 

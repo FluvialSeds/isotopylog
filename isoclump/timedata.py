@@ -28,6 +28,7 @@ from types import LambdaType
 from .timedata_helper import(
 	_calc_G_from_D,
 	_cull_data,
+	_forward_PH12,
 	_read_csv,
 	)
 
@@ -237,8 +238,8 @@ class HeatingExperiment(object):
 	_kwattrs = {
 		'calibration' : 'Bea17', 
 		'clumps' : 'CO47', 
-		'd' : None, 
-		'd_std' : None,
+		'D' : None, 
+		'D_std' : None,
 		'dex_std' : None,
 		'iso_params' : 'Gonfiantini',
 		'ref_frame' : 'CDES90',
@@ -288,13 +289,13 @@ class HeatingExperiment(object):
 			)
 
 		#if d exists, convert D to fraction remaining, G, and store
-		if self.d is not None:
+		if self.D is not None:
 			self.G, self.G_std = _calc_G_from_D(
-				self.d,
+				self.D,
 				self.T,
 				calibration = self.calibration,
 				clumps = self.clumps,
-				d_std = self.d_std,
+				D_std = self.D_std,
 				ref_frame = self.ref_frame,
 				)
 
@@ -424,8 +425,7 @@ class HeatingExperiment(object):
 		References
 		----------
 
-		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**,
-			223--236.
+		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
 		'''
 
 		#import experimental data
@@ -456,34 +456,88 @@ class HeatingExperiment(object):
 		return cls(dex, T, tex, **file_attrs)
 
 	#TODO: add forward model and update plot!
-	
-	def forward_model(kd):
+
+	def forward_model(self, kd, nt = 300):
 		'''
 		Forward models a given kDistribution instance to produce predicted
 		evolution.
+
+		Parameters
+		----------
+		kd : isoclump.kDistribution
+			The ``ic.kDistribution`` instance containing the rate model used
+			to fit the data.
+
+		nt : int
+			The number of time points to use in the forward-modeled data
+			estimates. Defaults to ``300``.
+
+		Returns
+		-------
+		he : isoclump.HeatingExperiment
+			The updated ``ic.HeatingExperiment`` instance, now containing
+			forward-modeled clumped isotope and reaction progressestimates.
+
+		Raises
+		------
+
+		Warnings
+		--------
+
+		See Also
+		--------
+
+		Examples
+		--------
+		
+		References
+		----------
+
+		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**,
+			223--236.\n
+		[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
+		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+		[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**,
+			XX--XX.
 		'''
 
+		#round tmax up
+		texmax = self.tex[-1]
+		sca = 10**np.floor(np.log10(texmax))
+		tmax = np.ceil(texmax/sca)*sca
+		tmin = 0 #start at zero
+
+		#make t array and store
+		t = np.linspace(tmin, tmax, nt)
+		self.t = t
+
 		#check which model and run it forward
-		if kdistribution.model == 'PH12':
+		if kd.model == 'Hea14':
 
-			d, d_std = _forward_PH12(kdistribution)
+			mod_attrs = _forward_Hea14(self, kd, t)
 
-		elif kdistribution.model == 'Hea14':
+		# QUESTION: SHOULD THIS INCLUDE BOTH INVERSE AND LOGNORMAL PREDICTIONS?
+		# (PROBABLY) IF SO, HOW TO STORE BOTH? AS 2 COLUMNS IN d, G, etc.??
+		elif kd.model == 'HH20':
 
-			d, d_std = _forward_Hea14(kdistribution)
+			mod_attrs, _Dinv, _Ginv = _forward_HH20(self, kd, t)
+			
+			#store inverse data as hitten attributes; will be None if inverse
+			# data does not exist
+			self._Dinv = _Dinv
+			self._Ginv = _Ginv
 
-		elif kdistribution.model == 'SE15':
+		elif kd.model == 'PH12':
 
-			d, d_std = _forward_SE15(kdistribution)
+			mod_attrs = _forward_PH12(self, kd, t)
 
-		elif kdistribution.model == 'HH20':
+		elif kd.model == 'SE15':
 
-			d, d_std = _forward_HH20(kdistribution)
+			mod_attrs = _forward_SE15(self, kd, t)
 
-		#store attributes
-		self.d = d
-		self.d_std = d_std
-		self.model = kdistribution.model
+		#store attributes (D, D_std, G, G_std)
+		for k, v in mod_attrs.items():
+			setattr(self, k, v)
 
 	def plot(self, ax = None, yaxis = 'D', logy = False, **kwargs):
 		'''
@@ -635,33 +689,33 @@ class HeatingExperiment(object):
 				'Unexpected clumps of type %s. Must be string.' % mdt)
 	
 	@property
-	def d(self):
+	def D(self):
 		'''
-		Array containing the forward-modeled isotope data.
+		Array containing the forward-modeled clumped isotope data.
 		'''
-		return self._d
+		return self._D
 	
-	@d.setter
-	def d(self, value):
+	@D.setter
+	def D(self, value):
 		'''
-		Setter for d
+		Setter for D
 		'''
-		self._d = value
+		self._D = value
 
 	@property
-	def d_std(self):
+	def D_std(self):
 		'''
-		Array containing the forward-modeled isotope data uncertainty, as
-		+/- 1 sigma.
+		Array containing the forward-modeled clumped isotope data uncertainty, 
+		as +/- 1 sigma.
 		'''
-		return self._d_std
+		return self._D_std
 	
-	@d_std.setter
-	def d_std(self, value):
+	@D_std.setter
+	def D_std(self, value):
 		'''
-		Setter for d_std
+		Setter for D_std
 		'''
-		self._d_std = value
+		self._D_std = value
 
 	@property
 	def dex(self):
