@@ -53,7 +53,7 @@ class kDistribution(object):
 			``'Hea14'``: [ln(kc), ln(kd), ln(k2)] \n
 			``'HH20'``: [ln(k_mu), ln(k_sig)] \n
 			``'PH12'``: [ln(k), intercept] \n
-			``'SE15'``: [ln(k1), ln(k_dif_pair), [pair]_0/[pair]_eq] \n
+			``'SE15'``: [ln(k1), ln(k_dif_single), [pair]_0/[pair]_eq] \n
 		See discussion in each reference for parameter definitions and
 		further details. All `k` values should be in units of inverse time,
 		although the exact time unit can change depending on inputs.

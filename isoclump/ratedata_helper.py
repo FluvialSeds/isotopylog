@@ -870,10 +870,10 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	return params, params_cov, rmse, npt
 
 #function to fit data using SE15 model
-def fit_SE15(he, p0 = [-7., -7., 1.0001], z = 6):
+def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 	'''
 	Fits D evolution data using the paired diffusion model of Stolper and
-	Eiler (2015). The function solves for both k1 and k_dif_pair as well
+	Eiler (2015). The function solves for both k1 and k_dif_single as well
 	as the initial pair concentration, p0/peq, by solving a modified version
 	of SE15 Eq. 9-10. Note that p0/peq can be estimated from SE15 Eq. 17.
 
@@ -885,8 +885,8 @@ def fit_SE15(he, p0 = [-7., -7., 1.0001], z = 6):
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
-		order [ln(k1), ln(k_dif_pair), p0/peq]. Defaults to 
-		`[-7, -7, 1.0001]`.
+		order [ln(k1), ln(k_dif_single), p0/peq]. Defaults to 
+		`[-7, -9, 1.0001]`.
 
 	z : int
 		The mineral lattice coordination number to use for calculating the
@@ -898,7 +898,7 @@ def fit_SE15(he, p0 = [-7., -7., 1.0001], z = 6):
 
 	params : np.ndarray
 		Array of resulting parameter values, in the order
-		`[ln(k1), ln(k_dif_pair), p0/peq]`.
+		`[ln(k1), ln(k_dif_single), p0/peq]`.
 
 	params_cov : np.ndarray
 		Covariance matrix associated with the resulting parameter values, of
@@ -1001,13 +1001,13 @@ def fit_SE15(he, p0 = [-7., -7., 1.0001], z = 6):
 	Dppeq = Rpeq/R47_stoch
 
 	#combine constants into list
-	cs = [D0, Deq, Dppeq]
+	cs = [D0, Deq, Dppeq, he]
 
 	#fit model to lambda function to allow inputting constants
-	lamfunc = lambda t, lnk1f, lnkdp, p0peq: _fSE15(
+	lamfunc = lambda t, lnk1f, lnkds, p0peq: _fSE15(
 		t, 
 		lnk1f, 
-		lnkdp, 
+		lnkds, 
 		p0peq, 
 		*cs
 		)

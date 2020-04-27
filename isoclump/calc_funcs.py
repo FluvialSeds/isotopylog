@@ -404,7 +404,7 @@ def _fPH12(t, lnk, intercept):
 	return intercept*np.exp(-t*np.exp(lnk))
 
 #function to fit SE15 model using backward Euler
-def _fSE15(t, lnk1f, lnkdp, p0peq, D0, Deq, Dppeq):
+def _fSE15(t, lnk1f, lnkds, p0peq, D0, Deq, Dppeq, he):
 	'''
 	Function for solving the Stolper and Eiler (2015) paired diffusion model
 	using a backward Euler finite difference approach.
@@ -419,8 +419,8 @@ def _fSE15(t, lnk1f, lnkdp, p0peq, D0, Deq, Dppeq):
 		Natural log of the forward k value for the [44] + [47] <-> [pair] 
 		equation (SE15 Eq. 8a). To be estimated using ``curve_fit``.
 
-	lnkdp : float
-		Natural log of the forward k value for the [pair] <-> [45]s + [46]s
+	lnkds : float
+		Natural log of the backward k value for the [pair] <-> [45]s + [46]s
 		equation (SE15 Eq. 8b). To be estimated using ``curve_fit``.
 
 	p0peq : float
@@ -436,6 +436,10 @@ def _fSE15(t, lnk1f, lnkdp, p0peq, D0, Deq, Dppeq):
 	Dppeq : float
 		Equilibrium pair composition, written in 'prime' notation. Calculated 
 		using measured d18O and d13C values (SE15 Eq. 13 a/b).
+
+	he : isoclump.HeatingExperiment
+		The HeatingExperiment instance containing data to fit; to be used to
+		convert kdp to kds for ``curve_fit``.
 
 	Returns
 	-------
@@ -457,9 +461,22 @@ def _fSE15(t, lnk1f, lnkdp, p0peq, D0, Deq, Dppeq):
 	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
 	'''
 
-	#get unknowns into right format
+	#first, need to get lnkds into kdp format (consistent with Stolper)
+	# kdp = kds*(R45_s_eq * R46_s_eq)/Rpeq
+
+	#calculate R45_stoch, R46_stoch, R47_stoch
+	d13C = np.mean(he.dex[:,1]) #use average of all experimental points
+	d18O = np.mean(he.dex[:,2]) #use average of all experimental points
+
+	R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, he.iso_params)
+	Rpeq = Dppeq*R47_stoch
+
+	#exponentiate and convert to kdf
+	kds = np.exp(lnkds)
+	kdp = kds*((R45_stoch - Rpeq) * (R46_stoch - Rpeq))/Rpeq
+
+	#get other unknowns into right format
 	k1f = np.exp(lnk1f)
-	kdp = np.exp(lnkdp)
 	Dpp0 = p0peq*Dppeq
 
 	#get constants into the right format

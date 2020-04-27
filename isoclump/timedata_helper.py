@@ -380,9 +380,9 @@ def _forward_model(he, kd, t, **kwargs):
 		Dppeq = Rpeq/R47_stoch
 
 		#combine constants into list
-		cs = [D0, Deq, Dppeq]
+		cs = [D0, Deq, Dppeq, he]
 
-		lamfunc = lambda t, lnk1, lnkdp, p0peq: _fSE15(t, lnk1, lnkdp, p0peq, *cs) 
+		lamfunc = lambda t, lnk1, lnkds, p0peq: _fSE15(t, lnk1, lnkds, p0peq, *cs) 
 
 		#calculate D (note: this model returns D, not G!)
 		D = lamfunc(t, *p)
