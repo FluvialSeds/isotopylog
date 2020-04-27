@@ -26,7 +26,7 @@ __all__ = ['_calc_A',
 		   '_fPH12',
 		   '_fSE15',
 		   '_Gaussian',
-		   '_Jacobian_HH20',
+		   '_Jacobian',
 		  ]
 
 #import packages
@@ -459,21 +459,20 @@ def _fSE15(t, lnk1f, lnkdp, p0peq, D0, Deq, Dppeq):
 
 	#get unknowns into right format
 	k1f = np.exp(lnk1f)
-	k2f = np.exp(lnk2f)
+	kdp = np.exp(lnkdp)
 	Dpp0 = p0peq*Dppeq
 
 	#get constants into the right format
 	Dp470 = D0/1000 + 1
 	Dp47eq = Deq/1000 + 1
-	Dppeq = Rpeq/R47_stoch
 
 	#make A matrix and B array
 
 	#values for each entry
 	a = k1f
 	b = k1f*Dp47eq/Dppeq
-	c = k2f
-	d = k2f*Dppeq
+	c = kdp
+	d = kdp*Dppeq
 
 	#combine into arrays
 	A = np.array([[-a, b],
@@ -532,73 +531,52 @@ def _Gaussian(x, mu, sigma):
 
 	return y
 
-#function for calculating HH20 model Jacobian; used for propagating error
-def _Jacobian_HH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
+#function for estimating Jacobian matrices for error propagation
+def _Jacobian(f, t, p, eps = 1e-6):
 	'''
-	Function to calculate dG/dln(k_mu) and dG/dln(k_sig) and combine into
-	Jacobian matrix to propagate uncertainty when forward-modeling HH20
-	results.
+	Estimates the Jacobian matrix of derivatives by perturbing each paramter
+	in p by some small amount eps.
 
 	Parameters
 	----------
+	f : function
+		Function to calculate the Jacobian on; e.g., the model function for each
+		model type.
 
-	t : array-like
-		Array of time, in seconds; of length `n_t`.
+	t : np.array
+		Array of time points. Length ``nt``.
 
-	mu_lam : scalar
-		Mean of lam, the lognormal rate distribution.
-		
-	sig_lam : scalar
-		Standard deviation of lam, the lognormal rate distribution.
+	p : array-like
+		An array containing all the parameters that are inputted to f. 
+		Length ``np``.
 
-	lam_max : scalar
-		Maximum lambda value for distribution range; should be at least 4 sigma
-		above the mean. 
-
-	lam_min : scalar
-		Minimum lambda value for distribution range; should be at least 4 sigma
-		below the mean.
-		
-	nlam : int
-		Number of nodes in lam array.
+	eps : float
+		The amount to perturb each parameter by. Defaults to ``1e-10``.
 
 	Returns
 	-------
-
 	J : np.array
-		Resulting Jacobian matrix, of shape [``nt`` x 2]
+		A 2d array containing the Jacobian matrix. Shape [``nt`` x ``np``].
 	'''
 
-	#setup arrays
+	#extract constants and pre-allocate array
+	npar = len(p)
 	nt = len(t)
-	lam = np.linspace(lam_min, lam_max, nlam)
-	dlam = lam[1] - lam[0]
-	rho = _Gaussian(lam, mu_lam, sig_lam)
+	J = np.zeros([nt, npar], dtype = np.float)
 
-	#derivative multiplier arrays
-	m1 = (lam - mu_lam) / (sig_lam**2)
-	m2 = (lam - mu_lam) / (sig_lam**3) - 1/sig_lam
+	#loop through each parameter and estimate derivative when perturbed
+	for i in range(npar):
 
-	#make matrices
-	t_mat = np.outer(t, np.ones(nlam))
-	lam_mat = np.outer(np.ones(nt), lam)
-	rho_mat = np.outer(np.ones(nt), rho)
+		#parameter values plus perturbation
+		pp = p.copy()
+		pp[i] += eps
 
-	#derivative multiplier matrices
-	m1_mat = np.outer(np.ones(nt), m1)
-	m2_mat = np.outer(np.ones(nt), m2)
+		#parameter values minus perturbation
+		pm = p.copy()
+		pm[i] -= eps
 
-	#solve
-	x = rho_mat * np.exp(- np.exp(lam_mat) * t_mat) * dlam
-	
-	xm1 = x*m1_mat
-	Gpp0 = np.inner(xm1, np.ones(nlam))
-
-	xm2 = x*m2_mat
-	Gpp1 = np.inner(xm2, np.ones(nlam))
-
-	#combine into jacobian matrix
-	J = np.column_stack((Gpp0, Gpp1))
+		#store in J matrix
+		J[:,i] = (f(t, *pp) - f(t, *pm)) / (2*eps)
 
 	return J
 
@@ -613,11 +591,75 @@ def _Jacobian_HH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 
 
 
+#function for calculating HH20 model Jacobian; used for propagating error
+# def _Jacobian_HH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
+# 	'''
+# 	Function to calculate dG/dln(k_mu) and dG/dln(k_sig) and combine into
+# 	Jacobian matrix to propagate uncertainty when forward-modeling HH20
+# 	results.
 
+# 	Parameters
+# 	----------
 
+# 	t : array-like
+# 		Array of time, in seconds; of length `n_t`.
 
+# 	mu_lam : scalar
+# 		Mean of lam, the lognormal rate distribution.
+		
+# 	sig_lam : scalar
+# 		Standard deviation of lam, the lognormal rate distribution.
 
+# 	lam_max : scalar
+# 		Maximum lambda value for distribution range; should be at least 4 sigma
+# 		above the mean. 
 
+# 	lam_min : scalar
+# 		Minimum lambda value for distribution range; should be at least 4 sigma
+# 		below the mean.
+		
+# 	nlam : int
+# 		Number of nodes in lam array.
+
+# 	Returns
+# 	-------
+
+# 	J : np.array
+# 		Resulting Jacobian matrix, of shape [``nt`` x 2]
+# 	'''
+
+# 	#setup arrays
+# 	nt = len(t)
+# 	lam = np.linspace(lam_min, lam_max, nlam)
+# 	dlam = lam[1] - lam[0]
+# 	rho = _Gaussian(lam, mu_lam, sig_lam)
+
+# 	#derivative multiplier arrays
+# 	m1 = (lam - mu_lam) / (sig_lam**2)
+# 	m2 = (lam - mu_lam) / (sig_lam**3) - 1/sig_lam
+
+# 	#make matrices
+# 	t_mat = np.outer(t, np.ones(nlam))
+# 	lam_mat = np.outer(np.ones(nt), lam)
+# 	rho_mat = np.outer(np.ones(nt), rho)
+
+# 	#derivative multiplier matrices
+# 	m1_mat = np.outer(np.ones(nt), m1)
+# 	m2_mat = np.outer(np.ones(nt), m2)
+
+# 	#solve
+# 	x = rho_mat * np.exp(- np.exp(lam_mat) * t_mat) * dlam
+	
+# 	xm1 = x*m1_mat
+# 	Gpp0 = np.inner(xm1, np.ones(nlam))
+
+# 	xm2 = x*m2_mat
+# 	Gpp1 = np.inner(xm2, np.ones(nlam))
+
+# 	#combine into jacobian matrix
+# 	J = np.column_stack((Gpp0, Gpp1))
+
+# 	return J
 
 # #exponential function for curve fitting
 # def _fexp_const(x, c0, c1):

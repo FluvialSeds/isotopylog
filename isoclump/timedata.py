@@ -24,14 +24,21 @@ import warnings
 #import types for checking
 from types import LambdaType
 
+#import necessary functions for calculations
+from .calc_funcs import(
+	_calc_A,
+	)
+
 #import necessary isoclump timedata helper functions
 from .timedata_helper import(
+	_calc_D_from_G,
 	_calc_G_from_D,
 	_cull_data,
-	_forward_Hea14,
-	_forward_HH20,
-	_forward_PH12,
-	_forard_SE15,
+	# _forward_Hea14,
+	# _forward_HH20,
+	# _forward_PH12,
+	# _forward_SE15,
+	_forward_model,
 	_read_csv,
 	)
 
@@ -280,11 +287,11 @@ class HeatingExperiment(object):
 
 		#convert Dex to fraction remaining, Gex, and store
 		self.Gex, self.Gex_std = _calc_G_from_D(
-			self.dex,
+			self.dex[:,0],
 			self.T,
 			calibration = self.calibration,
 			clumps = self.clumps,
-			d_std = self.dex_std,
+			D_std = self.dex_std[:,0],
 			ref_frame = self.ref_frame,
 			)
 
@@ -457,7 +464,7 @@ class HeatingExperiment(object):
 
 	#TODO: add forward model and update plot!
 
-	def forward_model(self, kd, nt = 300):
+	def forward_model(self, kd, nt = 300, **kwargs):
 		'''
 		Forward models a given kDistribution instance to produce predicted
 		evolution.
@@ -511,31 +518,31 @@ class HeatingExperiment(object):
 		t = np.linspace(tmin, tmax, nt)
 		self.t = t
 
-		#check which model and run it forward
-		if kd.model == 'Hea14':
-
-			mod_attrs = _forward_Hea14(self, kd, t)
-
-		elif kd.model == 'HH20':
-
-			mod_attrs, _Dinv, _Ginv = _forward_HH20(self, kd, t)
-			
-			#store inverse data as hitten attributes; will be None if inverse
-			# data does not exist
-			self._Dinv = _Dinv
-			self._Ginv = _Ginv
-
-		elif kd.model == 'PH12':
-
-			mod_attrs = _forward_PH12(self, kd, t)
-
-		elif kd.model == 'SE15':
-
-			mod_attrs = _forward_SE15(self, kd, t)
+		#run the forward model
+		mod_attrs = _forward_model(self, kd, t, **kwargs)
 
 		#store attributes (D, D_std, G, G_std)
 		for k, v in mod_attrs.items():
 			setattr(self, k, v)
+
+		#additionally, store regularized inverse forward model if it exists
+		if kd.model == 'HH20' and kd.rho_lam_inv is not None:
+
+			#calculate G
+			A = _calc_A(t, kd.lam)
+			self._Ginv = np.inner(A, kd.rho_lam_inv)
+
+			#convert to D
+			self._Dinv, _ = _calc_D_from_G(
+				self.dex[0,0], 
+				self._Ginv, 
+				self.T, 
+				calibration = self.calibration,
+				clumps = self.clumps,
+				G_std = None,
+				ref_frame = self.ref_frame
+				)
+
 
 	def plot(self, ax = None, yaxis = 'D', logy = False, **kwargs):
 		'''
