@@ -34,10 +34,6 @@ from .timedata_helper import(
 	_calc_D_from_G,
 	_calc_G_from_D,
 	_cull_data,
-	# _forward_Hea14,
-	# _forward_HH20,
-	# _forward_PH12,
-	# _forward_SE15,
 	_forward_model,
 	_read_csv,
 	)
@@ -50,10 +46,6 @@ from .dictionaries import(
 
 
 # TODO MONDAY 27 APRIL:
-# * UPDATE _fHea14 TO FIT DIRECTLY RATHER THAN FIRST FITTING PH12
-# * UPDATE FIT FUNCTIONS TO BE MORE DIRECT RATHER THAN LOG
-# * UPDATE FIT FUNCTIONS AND KD TO STORE PCOV AS HIDDEN ATTRIBUTE
-# * FINISH FORWARD MODEL FUNCTIONS
 
 
 # RUNNINT TODO LIST:
@@ -462,8 +454,6 @@ class HeatingExperiment(object):
 		#return class instance
 		return cls(dex, T, tex, **file_attrs)
 
-	#TODO: add forward model and update plot!
-
 	def forward_model(self, kd, nt = 300, **kwargs):
 		'''
 		Forward models a given kDistribution instance to produce predicted
@@ -471,6 +461,7 @@ class HeatingExperiment(object):
 
 		Parameters
 		----------
+
 		kd : isoclump.kDistribution
 			The ``ic.kDistribution`` instance containing the rate model used
 			to fit the data.
@@ -481,21 +472,36 @@ class HeatingExperiment(object):
 
 		Returns
 		-------
+
 		he : isoclump.HeatingExperiment
 			The updated ``ic.HeatingExperiment`` instance, now containing
 			forward-modeled clumped isotope and reaction progressestimates.
 
-		Raises
-		------
-
-		Warnings
-		--------
+		Notes
+		-----
+		Uncertainty is calculated using the Jacobian of the model fit function
+		containing the derivative of this function with respect to each modeled
+		parameter. Jacobians are calculated by perturbing each parameter and
+		calculating the finite difference derivative. If uncertainty bands
+		appear too noisy, pass a lower value of eps, e.g., ``eps = 1e-5``.
 
 		See Also
 		--------
 
+		isoclump.kDistribution
+			The class containing all rate data that are to be forward-modeled.
+
 		Examples
 		--------
+		
+		Assuming some kDistribution instance ``kd`` exists and contains the
+		rate data for the model of interest::
+
+			he.forward_model(kd)
+
+		To change the number of forward-modeled time points to 1000::
+
+			he.forward_model(kd, nt = 1000)
 		
 		References
 		----------
