@@ -660,8 +660,76 @@ def _read_csv(file):
 
 #FUNCTIONS BELOW HERE NEED TO BE REASSESSED/UPDATED:
 
+#function for forward modeling SE15 model
 def _forward_SE15(kd, t):
+	'''
+	Estimates D and G evolution using the kinetic parameters contained
+	within a given ``kDistribution`` instance containing 'SE15' model data.
 
+	Parameters
+	----------
+
+	he : isoclump.HeatingExperiment
+		The ``ic.HeatingExperiment`` instance containing the data of interest.
+
+	kd : isoclump.kDistribution
+		The ``ic.kDistribution`` instance containing the rate parameters of
+		interest.
+
+	t : np.array
+		Array of time steps to predict D and G evolution over, in the same
+		units as those used to calculate rate parameters.
+
+	Returns
+	-------
+
+	mod_attrs : dict
+		Dictionary containing all the extracted attributes to be passed as
+		keyword agruments.
+
+	References
+	----------
+
+	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
+	'''
+
+	#first, calculate G evolution
+	p = kd.params #save as shorthand for convenience
+	pcov = kd.params_cov
+
+	#calculate other arguments needed to run model
+	args = [Dppeq, Dp470, Dp47eq]
+
+	G = _fSE15(t, *p, *args)
+
+	#then, calculate G evolution uncertainty:
+
+	#define partial derivatives and build jacobian matrix
+	Gpp0 = -t*np.exp(p[0])*G
+	Gpp1 = G*np.exp(p[1]-p[2])*(np.exp(-t*np.exp(p[2])) - 1)
+	Gpp2 = G*(-t*np.exp(p[2]) + np.exp(t*np.exp(p[2])) - 1)*\
+			np.exp(p[1] - p[2] - t*np.exp(p[2]))
+	J = np.column_stack((Gpp0, Gpp1, Gpp2))
+
+	#calcualte G covariance matrix and extract G_std
+	Gcov = np.dot(J, np.dot(pcov, J.T))
+	G_std = np.sqrt(np.diag(Gcov))
+
+	#finally, convert G and G_std to D and D_std
+	D, D_std = _calc_D_from_G(
+		he.dex[0,0], 
+		G, 
+		he.T, 
+		calibration = he.calibration,
+		clumps = he.clumps,
+		G_std = G_std,
+		ref_frame = he.ref_frame
+		)
+
+	#store as dictionary
+	mod_attrs = {'D':D, 'D_std':D_std, 'G':G, 'G_std':G_std}
+
+	# D, D_std, G, G_std
 	return mod_attrs
 
 

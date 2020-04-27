@@ -870,10 +870,10 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	return params, params_cov, rmse, npt
 
 #function to fit data using SE15 model
-def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
+def fit_SE15(he, p0 = [-7., -7., 1.0001], z = 6):
 	'''
 	Fits D evolution data using the paired diffusion model of Stolper and
-	Eiler (2015). The function solves for both k1 and k_dif_single as well
+	Eiler (2015). The function solves for both k1 and k_dif_pair as well
 	as the initial pair concentration, p0/peq, by solving a modified version
 	of SE15 Eq. 9-10. Note that p0/peq can be estimated from SE15 Eq. 17.
 
@@ -885,8 +885,8 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
-		order [ln(k1), ln(k_dif_single), p0/peq]. Defaults to 
-		`[-7, -9, 1.0001]`.
+		order [ln(k1), ln(k_dif_pair), p0/peq]. Defaults to 
+		`[-7, -7, 1.0001]`.
 
 	z : int
 		The mineral lattice coordination number to use for calculating the
@@ -898,10 +898,12 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	params : np.ndarray
 		Array of resulting parameter values, in the order
-		`[ln(k1), ln(k_dif_single), p0/peq]`.
+		`[ln(k1), ln(k_dif_pair), p0/peq]`.
 
-	params_std : np.ndarray
-		Uncertainty associated with resulting parameter values; in +- 1 sigma.
+	params_cov : np.ndarray
+		Covariance matrix associated with the resulting parameter values, of
+		shape [3 x 3]. The +/- 1 sigma uncertainty for each parameter can be 
+		calculated as ``np.sqrt(np.diag(params_cov))``
 
 	rmse : float
 		Root Mean Square Error (in D47 permil units) of the model fit.
@@ -934,6 +936,20 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	See Also
 	--------
+
+	isoclump.fit_Hea14
+		Method for fitting heating experiment data using the transient defect/
+		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
+		an updated version of the present method.
+
+	isoclump.fit_HH20
+		Method for fitting heating experiment data using the distributed
+		activation energy model of Hemingway and Henkes (2020).
+
+	isoclump.fit_PH12
+		Method for fitting heating experiment data using the pseudo first-
+		order method of Passey and Henkes (2012). Called to determine
+		linear region.
 
 	kDistribution.invert_experiment
 		Method for generating a `kDistribution` instance from experimental
@@ -968,14 +984,10 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 	y_std = he.dex_std[:,0] #in standard D47 notation
 	npt = len(he.tex)
 
-	#convert to Dp notation for solving
-	yp = y/1000 + 1
-	yp_std = y_std/1000
-
-	#calculate constants: Dp470, Dp47eq
-	Dp470 = yp[0]
-	D47eq = caleqs[he.calibration][he.ref_frame](he.T) #extract from dict.
-	Dp47eq = D47eq/1000 + 1 #convert to Dp notation
+	#calculate additional constants for model fit
+	#calculate constants: D0, Deq
+	D0 = y[0]
+	Deq = he.caleq(he.T)
 
 	#calculate constants: Dppeq
 	#calculate R45_stoch, R46_stoch, R47_stoch
@@ -984,73 +996,125 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, he.iso_params)
 
-	#calculate Rpeq
+	#calculate Rpeq and convert to Dppeq
 	Rpeq = _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z)
-
-	#combine
 	Dppeq = Rpeq/R47_stoch
 
 	#combine constants into list
-	cs = [Dppeq, Dp470, Dp47eq]
+	cs = [D0, Deq, Dppeq]
 
 	#fit model to lambda function to allow inputting constants
-	lamfunc = lambda x, k1f, k2f, Dpp0: _fSE15(x, k1f, k2f, Dpp0, *cs)
-
-	#get inputted k0 into the right format
-	#k1f
-	p00 = np.exp(p0[0])
-
-	#k2f
-	p01 = np.exp(p0[1])*(R45_stoch - Rpeq)*(R46_stoch - Rpeq)/Rpeq
-
-	#Dpp0
-	p02 = p0[2]*Dppeq
-
-	SE15p0 = [p00, p01, p02]
-
-	#solve
-	p, pcov = curve_fit(lamfunc, x, yp, SE15p0,
-		sigma = yp_std, 
-		absolute_sigma = True,
-		bounds = ([0.,0.,1.],[np.inf, np.inf, np.inf]), #k > 0; p0/peq >= 1
+	lamfunc = lambda t, lnk1f, lnkdp, p0peq: _fSE15(
+		t, 
+		lnk1f, 
+		lnkdp, 
+		p0peq, 
+		*cs
 		)
 
-	#calculate rmse
-	yphat = lamfunc(x, *p)
-	yhat = (yphat - 1)*1000 #get back into D47 notation
-	rmse = _calc_rmse(y, yhat)
+	#solve
+	params, params_cov = curve_fit(lamfunc, x, y, p0,
+		sigma = y_std, 
+		absolute_sigma = True,
+		bounds = ([-np.inf,-np.inf,1.],[np.inf,np.inf,np.inf]), #k unbounded
+		)
 
-	#Get results into SE15 notation:
-	#	k1 = k1f
-	#	k_dif_single = k2f*R45_s_eq*R46_s_eq/Rp_eq
-	#	p0/peq = Dpp0/Dppeq
+	#calculate Dex_hat
+	D47hat = lamfunc(x, *params)
 
-	#extract values
-	k1 = p[0]
-	k_dif_single = p[1]*Rpeq/((R45_stoch - Rpeq)*(R46_stoch - Rpeq))
-	p0peq = p[2]/Dppeq
+	#calcualte RMSE
+	rmse = _calc_rmse(he.dex[:,0], D47hat)
 
-	#combine parameters into array
-	params = np.array([np.log(k1), np.log(k_dif_single), p0peq])
-
-	#extract uncertainty
-	pstd = np.sqrt(np.diag(pcov))
-	k1_std = pstd[0]
-	k_dif_single_std = pstd[1]*(R45_stoch - Rpeq)*(R46_stoch - Rpeq)/Rpeq
-	p0peq_std = pstd[2]/Dppeq
-
-	params_std = np.array([
-		k1_std/k1, 
-		k_dif_single_std/k_dif_single, 
-		p0peq_std]) #combine into array
-
-	return params, params_std, rmse, npt
+	return params, params_cov, rmse, npt
 
 
 
+#OLD CODE BELOW HERE:
 
 
+	# #extract values to fit
+	# x = he.tex
+	# y = he.dex[:,0] #in standard D47 notation
+	# y_std = he.dex_std[:,0] #in standard D47 notation
+	# npt = len(he.tex)
 
+	# #convert to Dp notation for solving
+	# yp = y/1000 + 1
+	# yp_std = y_std/1000
+
+	# #calculate constants: Dp470, Dp47eq
+	# Dp470 = yp[0]
+	# D47eq = caleqs[he.calibration][he.ref_frame](he.T) #extract from dict.
+	# Dp47eq = D47eq/1000 + 1 #convert to Dp notation
+
+	# #calculate constants: Dppeq
+	# #calculate R45_stoch, R46_stoch, R47_stoch
+	# d13C = np.mean(he.dex[:,1]) #use average of all experimental points
+	# d18O = np.mean(he.dex[:,2]) #use average of all experimental points
+
+	# R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, he.iso_params)
+
+	# #calculate Rpeq
+	# Rpeq = _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z)
+
+	# #combine
+	# Dppeq = Rpeq/R47_stoch
+
+	# #combine constants into list
+	# cs = [Dppeq, Dp470, Dp47eq]
+
+	# #fit model to lambda function to allow inputting constants
+	# lamfunc = lambda x, k1f, k2f, Dpp0: _fSE15(x, k1f, k2f, Dpp0, *cs)
+
+	# #get inputted k0 into the right format
+	# #k1f
+	# p00 = np.exp(p0[0])
+
+	# #k2f
+	# p01 = np.exp(p0[1])*(R45_stoch - Rpeq)*(R46_stoch - Rpeq)/Rpeq
+
+	# #Dpp0
+	# p02 = p0[2]*Dppeq
+
+	# SE15p0 = [p00, p01, p02]
+
+	# #solve
+	# p, pcov = curve_fit(lamfunc, x, yp, SE15p0,
+	# 	sigma = yp_std, 
+	# 	absolute_sigma = True,
+	# 	bounds = ([0.,0.,1.],[np.inf, np.inf, np.inf]), #k > 0; p0/peq >= 1
+	# 	)
+
+	# #calculate rmse
+	# yphat = lamfunc(x, *p)
+	# yhat = (yphat - 1)*1000 #get back into D47 notation
+	# rmse = _calc_rmse(y, yhat)
+
+	# #Get results into SE15 notation:
+	# #	k1 = k1f
+	# #	k_dif_single = k2f*R45_s_eq*R46_s_eq/Rp_eq
+	# #	p0/peq = Dpp0/Dppeq
+
+	# #extract values
+	# k1 = p[0]
+	# k_dif_single = p[1]*Rpeq/((R45_stoch - Rpeq)*(R46_stoch - Rpeq))
+	# p0peq = p[2]/Dppeq
+
+	# #combine parameters into array
+	# params = np.array([np.log(k1), np.log(k_dif_single), p0peq])
+
+	# #extract uncertainty
+	# pstd = np.sqrt(np.diag(pcov))
+	# k1_std = pstd[0]
+	# k_dif_single_std = pstd[1]*(R45_stoch - Rpeq)*(R46_stoch - Rpeq)/Rpeq
+	# p0peq_std = pstd[2]/Dppeq
+
+	# params_std = np.array([
+	# 	k1_std/k1, 
+	# 	k_dif_single_std/k_dif_single, 
+	# 	p0peq_std]) #combine into array
+
+	# return params, params_cov, rmse, npt
 
 
 # #function to fit data using Hea14 model

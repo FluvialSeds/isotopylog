@@ -404,7 +404,7 @@ def _fPH12(t, lnk, intercept):
 	return intercept*np.exp(-t*np.exp(lnk))
 
 #function to fit SE15 model using backward Euler
-def _fSE15(t, k1f, k2f, Dpp0, Dppeq, Dp470, Dp47eq):
+def _fSE15(t, lnk1f, lnkdp, p0peq, D0, Deq, Dppeq):
 	'''
 	Function for solving the Stolper and Eiler (2015) paired diffusion model
 	using a backward Euler finite difference approach.
@@ -415,48 +415,39 @@ def _fSE15(t, k1f, k2f, Dpp0, Dppeq, Dp470, Dp47eq):
 	t : array-like
 		Array of time points, in minutes.
 
-	k1f : float
-		Forward k value for the [44] + [47] <-> [pair] equation (SE15 Eq. 8a).
-		To be estimated using `curve_fit`.
+	lnk1f : float
+		Natural log of the forward k value for the [44] + [47] <-> [pair] 
+		equation (SE15 Eq. 8a). To be estimated using ``curve_fit``.
 
-	k2f : float
-		Forward k value for the [pair] <-> [45]s + [46]s equation (SE15 Eq. 8b).
-		To be estimated using `curve_fit`.
+	lnkdp : float
+		Natural log of the forward k value for the [pair] <-> [45]s + [46]s
+		equation (SE15 Eq. 8b). To be estimated using ``curve_fit``.
 
-	Dpp0 : float
-		Initial pair composition, written in 'prime' notation:
+	p0peq : float
+		Ratio of initial pair composition relative to equilibrium pair
+		composition. To be estimated using ``curve_fit``.
 
-			Dpp = Rp/R47_stoch
+	D0 : float
+		Initial D47 value of the experiment.
 
-		To be estimated using `curve_fit`.
+	Deq : float
+		Equilibrium D47 value for a the experimental temperature.
 
 	Dppeq : float
-		Equilibrium pair composition, written in 'prime' notation (as above).
-		Calculated using measured d18O and d13C values (SE15 Eq. 13 a/b).
-
-	Dp470 : float
-		Initial D47 value of the experiment, written in 'prime' notation:
-
-			Dp47 = R47/R47_stoch = D47/1000 + 1
-
-		Measured using mass spectrometry and inputted into function.
-
-	Dp47eq : float
-		Equilibrium D47 value for a given temperature, written in 'prime'
-		notation (as above). Calculated using one of the T-D47 calibration
-		curves.
+		Equilibrium pair composition, written in 'prime' notation. Calculated 
+		using measured d18O and d13C values (SE15 Eq. 13 a/b).
 
 	Returns
 	-------
 
-	Dp47 : np.ndarray
-		Array of calculated Dp47 values at each time point. To be used for
-		'curve_fit' solving. 
+	D : np.ndarray
+		Array of calculated D values at each time point. To be used for
+		``curve_fit`` solving. 
 
 	Notes
 	-----
 
-	Because of the requirements for 'curve_fit', this funciton is only for
+	Because of the requirements for ``curve_fit``, this funciton is only for
 	solving the inverse problem for heating experiment data. Geological
 	history forward-model solution is in a separate function.
 
@@ -465,6 +456,16 @@ def _fSE15(t, k1f, k2f, Dpp0, Dppeq, Dp470, Dp47eq):
 
 	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
 	'''
+
+	#get unknowns into right format
+	k1f = np.exp(lnk1f)
+	k2f = np.exp(lnk2f)
+	Dpp0 = p0peq*Dppeq
+
+	#get constants into the right format
+	Dp470 = D0/1000 + 1
+	Dp47eq = Deq/1000 + 1
+	Dppeq = Rpeq/R47_stoch
 
 	#make A matrix and B array
 
@@ -497,7 +498,10 @@ def _fSE15(t, k1f, k2f, Dpp0, Dppeq, Dp470, Dp47eq):
 	#extract Dp47 for curve-fit purposes
 	Dp47 = x[:,0]
 
-	return Dp47
+	#convert back to D
+	D = 1000*(Dp47 - 1)
+
+	return D
 
 #function for a Gaussian distribution
 def _Gaussian(x, mu, sigma):

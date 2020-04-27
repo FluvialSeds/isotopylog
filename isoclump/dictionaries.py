@@ -94,7 +94,7 @@ d47_isoparams = {'Gonfiantini':
 mod_params = {'Hea14' : ['ln(kc)','ln(kd)','ln(k2)'],
 			  'HH20' : ['ln(k_mu)','ln(k_sig)'],
 			  'PH12' : ['ln(k)','intercept'],
-			  'SE15' : ['ln(k1)','ln(k_dif_single)','[pair]_0/[pair]_eq']
+			  'SE15' : ['ln(k1)','ln(k_dif_pair)','[pair]_0/[pair]_eq']
 			  }
 
 

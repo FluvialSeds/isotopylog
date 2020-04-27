@@ -31,6 +31,7 @@ from .timedata_helper import(
 	_forward_Hea14,
 	_forward_HH20,
 	_forward_PH12,
+	_forard_SE15,
 	_read_csv,
 	)
 
@@ -97,16 +98,13 @@ class HeatingExperiment(object):
 		isotope systems as they become more widely used and data become
 		available. Defaults to ``'CO47'``.
 
-	d : None or array-like
-		Array of forward-modeled isotope values, written for each time point 
-		as [D, d1, d2] where D is the clumped isotope measurement (e.g., D47) 
-		and d1 and d2 are the corresponding major isotope values, listed from 
-		lowest to highest amu (e.g., d13C, d18O). Shape ``nt`` x 3. Defaults  to 
-		``None``.
+	D : None or array-like
+		Array of forward-modeled clumped isotope values (e.g., D47). Length
+		``nt``; defaults to ``None``.
 
-	d_std : None or array-like
-		Propagated standard deviation of forward-modeled d values.
-		Shape [``nt`` x 3]. Defaults to ``None``.
+	D_std : None or array-like
+		Propagated standard deviation of forward-modeled D values. Length 
+		``nt``; defaults to ``None``.
 
 	dex_std : None or array-like
 		Analytical standard deviation of experimentally measured d values.
