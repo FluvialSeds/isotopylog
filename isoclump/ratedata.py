@@ -37,8 +37,6 @@ from .dictionaries import(
 	mod_params
 	)
 
-#TODO (at some point):
-# * Update attribute setters to be more specific
 class kDistribution(object):
 	__doc__='''
 	Class for inputting, storing, and visualizing clumped isotope rate data. 
@@ -53,8 +51,8 @@ class kDistribution(object):
 		The values and length of this array depend on the type of model being
 		implemented: \n
 			``'Hea14'``: [ln(kc), ln(kd), ln(k2)] \n
-			``'HH20'``: [mu_lam, sig_lam] \n
-			``'PH12'``: [ln(k), -intercept] \n
+			``'HH20'``: [ln(k_mu), ln(k_sig)] \n
+			``'PH12'``: [ln(k), intercept] \n
 			``'SE15'``: [ln(k1), ln(k_dif_single), [pair]_0/[pair]_eq] \n
 		See discussion in each reference for parameter definitions and
 		further details. All `k` values should be in units of inverse time,
@@ -79,9 +77,10 @@ class kDistribution(object):
 		applies when ``model = 'HH20'`` and ``fit_reg = True``. Defaults to
 		``None``.
 
-	params_std : None or array-like
-		Uncertainty associated with each parameter value, as +/- 1 sigma.
-		Defaults to ``None``.
+	params_cov : None or array-like
+		Covariance matrix of the parameters, of shape [``nparams``x``nparams``].
+		The +/- 1 sigma uncertainty for each parameter is calculated as
+		``np.sqrt(np.diag(params_cov))``. Defaults to ``None``.
 
 	rho_lam : None or array-like
 		The modeled lognormal probability density function of ln(k) values.
@@ -193,7 +192,7 @@ class kDistribution(object):
 		'lam' : None, 
 		'npt' : None, 
 		'omega' : None, 
-		'params_std' : None, 
+		'params_cov' : None, 
 		'rho_lam' : None, 
 		'rho_lam_inv' : None,
 		'res_inv' : None,
@@ -360,19 +359,19 @@ class kDistribution(object):
 		if model == 'PH12':
 
 			#fit the model
-			params, params_std, rmse, npt = fit_PH12(he, **kwargs)
+			params, params_cov, rmse, npt = fit_PH12(he, **kwargs)
 
 		#Henkes et al. 2014
 		elif model == 'Hea14':
 
 			#fit the model
-			params, params_std, rmse, npt = fit_Hea14(he, **kwargs)
+			params, params_cov, rmse, npt = fit_Hea14(he, **kwargs)
 
 		#Stolper and Eiler 2015
 		elif model == 'SE15':
 
 			#fit the model
-			params, params_std, rmse, npt = fit_SE15(he, **kwargs)
+			params, params_cov, rmse, npt = fit_SE15(he, **kwargs)
 
 		#Hemingway and Henkes 2020
 		elif model == 'HH20':
@@ -396,7 +395,7 @@ class kDistribution(object):
 				kwa = {k : kwargs[k] for k in dict(kwargs) if k in ars}
 
 				#run Gaussian fit
-				params, params_std, rmse, npt, lam, rho_lam = fit_HH20(
+				params, params_cov, rmse, npt, lam, rho_lam = fit_HH20(
 					he, 
 					**kwa
 					)
@@ -404,7 +403,7 @@ class kDistribution(object):
 			else:
 
 				#run Gaussian fit
-				params, params_std, rmse, npt, lam, rho_lam = fit_HH20(
+				params, params_cov, rmse, npt, lam, rho_lam = fit_HH20(
 					he, 
 					**kwargs
 					)
@@ -437,7 +436,7 @@ class kDistribution(object):
 			model = model,
 			npt = npt,
 			omega = omega,
-			params_std = params_std,
+			params_cov = params_cov,
 			rho_lam = rho_lam,
 			rho_lam_inv = rho_lam_inv,
 			res_inv = res_inv,
@@ -667,18 +666,18 @@ class kDistribution(object):
 				' containing int or float values.' % p.dtype.name)
 
 	@property
-	def params_std(self):
+	def params_cov(self):
 		'''
 		Uncertainty associated with each parameter value, as +/- 1 sigma.
 		'''
-		return self._params_std
+		return self._params_cov
 
-	@params_std.setter
-	def params_std(self, value):
+	@params_cov.setter
+	def params_cov(self, value):
 		'''
-		Setter for params_std
+		Setter for params_cov
 		'''
-		self._params_std = value
+		self._params_cov = value
 
 	@property
 	def rho_lam(self):
@@ -766,8 +765,10 @@ class kDistribution(object):
 			params = None
 
 		rmse = '%.3f' % self.rmse
+		pstd = np.sqrt(np.diag(self.params_cov))
+
 		pvalstr = ', '.join(['%.2f' %p for p in self.params])
-		pstdstr = ', '.join(['%.2f' %p for p in self.params_std])
+		pstdstr = ', '.join(['%.2f' %p for p in pstd])
 		
 		#make summary table
 		attrs = {'model' : self.model,

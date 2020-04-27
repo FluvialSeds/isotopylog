@@ -19,13 +19,14 @@ __all__ = ['_calc_A',
 		   '_calc_R_stoch',
 		   '_calc_rmse',
 		   '_calc_Rpeq',
-		   '_fexp',
-		   '_fexp_const',
+		   # '_fexp_const',
 		   '_fHea14',
-		   '_flin',
+		   '_fHH20',
+		   # '_flin',
+		   '_fPH12',
 		   '_fSE15',
 		   '_Gaussian',
-		   '_lognormal_decay',
+		   '_Jacobian_HH20',
 		  ]
 
 #import packages
@@ -277,58 +278,8 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 
 	return Rpeq
 
-#exponential function for curve fitting
-def _fexp(x, c0, c1):
-	'''
-	Defines an exponential decay.
-
-	Parameters
-	----------
-
-	x : array-like
-		The x values.
-
-	c0 : float
-		The exponential value; e.g., the rate constant.
-
-	c1 : float
-		The pre-exponential factor.
-
-	Returns
-	-------
-
-	yhat : array-like
-		Resulting array of y values.
-	'''
-	return np.exp(x*c0)*c1
-
-#exponential function for curve fitting
-def _fexp_const(x, c0, c1):
-	'''
-	Defines an exponential decay with a constant. used for Hea14 model fit.
-
-	Parameters
-	----------
-
-	x : array-like
-		The x values.
-
-	c0 : float
-		The exponential value; e.g., the rate constant.
-
-	c1 : float
-		The pre-exponential factor.
-
-	Returns
-	-------
-
-	yhat : array-like
-		Resulting array of y values.
-	'''
-	return (np.exp(x*c0) - 1)*c1
-
 #function to fit complete Hea14 model
-def _fHea14(t, kc, kd, k2):
+def _fHea14(t, lnkc, lnkd, lnk2):
 	'''
 	Estimates G using the "transient defect/equilibrium" model of Henkes et
 	al. (2014) (Eq. 5).
@@ -339,14 +290,14 @@ def _fHea14(t, kc, kd, k2):
 	t : array-like
 		The array of time points.
 
-	kc : float
-		The first-order rate constant.
+	lnkc : float
+		The latural log of the first-order rate constant.
 
-	kd : float
-		The transient defect rate constant.
+	lnkd : float
+		The natural log of the transient defect rate constant.
 
-	k2 : float
-		The transient defect disappearance rate constant.
+	lnk2 : float
+		The natural log of the transient defect disappearance rate constant.
 
 	Returns
 	-------
@@ -360,35 +311,97 @@ def _fHea14(t, kc, kd, k2):
 	[1] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
 	'''
 
+	#get into un-logged format
+	kc = np.exp(lnkc)
+	kd = np.exp(lnkd)
+	k2 = np.exp(lnk2)
+
+	#calculate lnGhat
 	lnGhat = -kc*t + (kd/k2)*(np.exp(-k2*t) - 1)
 
 	return np.exp(lnGhat)
 
-#linear function for curve fitting
-def _flin(x, c0, c1):
+#function to fit data to lognormal decay k distribution for HH20  model
+def _fHH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 	'''
-	Defines a straight line.
+	Function to calculate G as a function of time assuming a lognormal 
+	distribution of decay rates described by mu and sigma.
 
 	Parameters
 	----------
 
-	x : array-like
-		The x values.
+	t : array-like
+		Array of time, in seconds; of length `n_t`.
 
-	c0 : float
-		The slope.
+	mu_lam : scalar
+		Mean of lam, the lognormal rate distribution.
+		
+	sig_lam : scalar
+		Standard deviation of lam, the lognormal rate distribution.
 
-	c1 : float
-		The intercept.
+	lam_max : scalar
+		Maximum lambda value for distribution range; should be at least 4 sigma
+		above the mean. 
+
+	lam_min : scalar
+		Minimum lambda value for distribution range; should be at least 4 sigma
+		below the mean.
+		
+	nlam : int
+		Number of nodes in lam array.
 
 	Returns
 	-------
 
-	yhat : array-like
-		Resulting array of y values.
+	G : array-like
+		Array of resulting G values at each time point.
 	'''
 
-	return c0*x + c1
+	#setup arrays
+	nt = len(t)
+	lam = np.linspace(lam_min, lam_max, nlam)
+	dlam = lam[1] - lam[0]
+	rho = _Gaussian(lam, mu_lam, sig_lam)
+
+	#make matrices
+	t_mat = np.outer(t, np.ones(nlam))
+	lam_mat = np.outer(np.ones(nt), lam)
+	rho_mat = np.outer(np.ones(nt), rho)
+
+	#solve
+	x = rho_mat * np.exp(- np.exp(lam_mat) * t_mat) * dlam
+	G = np.inner(x, np.ones(nlam))
+
+	return G
+
+#function to fit complete PH12 model
+def _fPH12(t, lnk, intercept):
+	'''
+	Defines the pseudo-first order model of Passey and Henkes (2012).
+
+	Parameters
+	----------
+
+	t : array-like
+		The t values.
+
+	lnk : float
+		The natural log of the rate constant.
+
+	intercept : float
+		The pre-exponential factor; i.e., the intercept in t vs. G space.
+
+	Returns
+	-------
+
+	Ghat : array-like
+		Resulting estimated G values.
+
+	References
+	----------
+	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+	'''
+	return intercept*np.exp(-t*np.exp(lnk))
 
 #function to fit SE15 model using backward Euler
 def _fSE15(t, k1f, k2f, Dpp0, Dppeq, Dp470, Dp47eq):
@@ -515,11 +528,12 @@ def _Gaussian(x, mu, sigma):
 
 	return y
 
-#function to predict decay given an inputted lognormal k distribution
-def _lognormal_decay(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
+#function for calculating HH20 model Jacobian; used for propagating error
+def _Jacobian_HH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 	'''
-	Function to calculate G as a function of time assuming a lognormal 
-	distribution of decay rates described by mu and sigma.
+	Function to calculate dG/dln(k_mu) and dG/dln(k_sig) and combine into
+	Jacobian matrix to propagate uncertainty when forward-modeling HH20
+	results.
 
 	Parameters
 	----------
@@ -546,9 +560,9 @@ def _lognormal_decay(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 
 	Returns
 	-------
-	
-	G : array-like
-		Array of resulting G values at each time point.
+
+	J : np.array
+		Resulting Jacobian matrix, of shape [``nt`` x 2]
 	'''
 
 	#setup arrays
@@ -557,14 +571,98 @@ def _lognormal_decay(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 	dlam = lam[1] - lam[0]
 	rho = _Gaussian(lam, mu_lam, sig_lam)
 
+	#derivative multiplier arrays
+	m1 = (lam - mu_lam) / (sig_lam**2)
+	m2 = (lam - mu_lam) / (sig_lam**3) - 1/sig_lam
+
 	#make matrices
 	t_mat = np.outer(t, np.ones(nlam))
 	lam_mat = np.outer(np.ones(nt), lam)
 	rho_mat = np.outer(np.ones(nt), rho)
 
+	#derivative multiplier matrices
+	m1_mat = np.outer(np.ones(nt), m1)
+	m2_mat = np.outer(np.ones(nt), m2)
+
 	#solve
 	x = rho_mat * np.exp(- np.exp(lam_mat) * t_mat) * dlam
-	G = np.inner(x, np.ones(nlam))
+	
+	xm1 = x*m1_mat
+	Gpp0 = np.inner(xm1, np.ones(nlam))
 
-	return G
+	xm2 = x*m2_mat
+	Gpp1 = np.inner(xm2, np.ones(nlam))
+
+	#combine into jacobian matrix
+	J = np.column_stack((Gpp0, Gpp1))
+
+	return J
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# #exponential function for curve fitting
+# def _fexp_const(x, c0, c1):
+# 	'''
+# 	Defines an exponential decay with a constant. used for Hea14 model fit.
+
+# 	Parameters
+# 	----------
+
+# 	x : array-like
+# 		The x values.
+
+# 	c0 : float
+# 		The exponential value; e.g., the rate constant.
+
+# 	c1 : float
+# 		The pre-exponential factor.
+
+# 	Returns
+# 	-------
+
+# 	yhat : array-like
+# 		Resulting array of y values.
+# 	'''
+# 	return (np.exp(x*c0) - 1)*c1
+
+# #linear function for curve fitting
+# def _flin(x, c0, c1):
+# 	'''
+# 	Defines a straight line.
+
+# 	Parameters
+# 	----------
+
+# 	x : array-like
+# 		The x values.
+
+# 	c0 : float
+# 		The slope.
+
+# 	c1 : float
+# 		The intercept.
+
+# 	Returns
+# 	-------
+
+# 	yhat : array-like
+# 		Resulting array of y values.
+# 	'''
+
+# 	return c0*x + c1
 

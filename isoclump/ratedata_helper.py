@@ -48,13 +48,13 @@ from .calc_funcs import(
 	_calc_R_stoch,
 	_calc_rmse,
 	_calc_Rpeq,
-	_fexp,
-	_fexp_const,
+	# _fexp_const,
 	_fHea14,
-	_flin,
+	# _flin,
+	_fPH12,
 	_fSE15,
 	_Gaussian,
-	_lognormal_decay,
+	_fHH20,
 	)
 
 #import necessary isoclump core functions
@@ -298,12 +298,10 @@ def calc_L_curve(
 		return om_best
 
 #function to fit data using Hea14 model
-def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
+def fit_Hea14(he, p0 = [-7., -7., -7.]):
 	'''
 	Fits D evolution data using the transient defect/equilibrium model of
-	Henkes et al. (2014). The function first solves the first-order linear
-	approximation of Passey and Henkes (2012) then solves for the remaining
-	kinetic parameters using Eq. 5 of Henkes et al. (2014).
+	Henkes et al. (2014) (Equation 5).
 
 	Parameters
 	----------
@@ -315,11 +313,6 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 		Array of paramter guess to initialize the fitting algorithm, in the
 		order [ln(kc), ln(kd), ln(k2)]. Defaults to `[-7, -7, -7]`.
 
-	thresh : float
-		Curvature threshold to use for extracting the linear region. *All*
-		points after the first point that drops below this threshold are
-		considered to be in the linear region. Defaults to `1e-6`.
-
 	Returns
 	-------
 
@@ -327,22 +320,17 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 		Array of resulting parameter values, in the order
 		[ln(kc), ln(kd), ln(k2)].
 
-	params_std : np.ndarray
-		Uncertainty associated with resulting parameter values; in +- 1 sigma.
+	params_cov : np.ndarray
+		Covariance matrix associated with the resulting parameter values, of
+		shape [3 x 3]. The +/- 1 sigma uncertainty for each parameter can be 
+		calculated as ``np.sqrt(np.diag(params_cov))``
 
 	rmse : float
 		Root Mean Square Error (in D47 permil units) of the model fit.
 		Includes model fit to all data points.
 
 	npt : int
-		Number of data points deemed to be in the linear region.
-
-	Raises
-	------
-
-	ValueError
-		If the curvature in t vs. ln(G) space never drops below the inputted
-		`thresh` value.
+		Number of data points included in the model solution.
 	
 	Notes
 	-----
@@ -353,10 +341,18 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 	See Also
 	--------
 
+	isoclump.fit_HH20
+		Method for fitting heating experiment data using the distributed
+		activation energy model of Hemingway and Henkes (2020).
+
 	isoclump.fit_PH12
 		Method for fitting heating experiment data using the pseudo first-
 		order method of Passey and Henkes (2012). Called to determine
 		linear region.
+
+	isoclump.fit_SE15
+		Method for fitting heatinge experiment data using the paird diffusion
+		model of Stolper and Eiler (2015).
 
 	kDistribution.invert_experiment
 		Method for generating a `kDistribution` instance from experimental
@@ -372,59 +368,29 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 		import isoclump as ic
 
 		#assume he is a HeatingExperiment instance
-		results = ic.fit_Hea14(he, thresh = 1e-6)
+		results = ic.fit_Hea14(he, p0 = [-7., -7., -7.])
 
 	References
 	----------
 
-	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
-	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
+	[1] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
 	'''
 
-	#convert to log space
+	#extract values
 	x = he.tex
-	y = np.log(he.Gex)
-	y_std = he.Gex_std/he.Gex
+	y = he.Gex
+	y_std = he.Gex_std
+	npt = len(x)
 
-	#get p0 into the right format
-	p0 = np.array(p0)
-	PH12p0 = [p0[0], np.exp(p0[2])/np.exp(p0[1])]
-
-	#run PH12 model to get first-order results
-	pfo, pfo_std, rmsefo, nptfo = fit_PH12(he, thresh = thresh, p0 = PH12p0)
-
-	#plug back into full equation and propagate error
-	A = y + np.exp(pfo[0])*x
-	A_std = np.sqrt(y_std**2 + (x*pfo_std[0]*np.exp(pfo[0]))**2)
-
-	#calculate statistics with full equation and exponential fit
-	Hea14p0 = [-np.exp(p0[2]), pfo[1]] #[-k2, kd/k2] in Hea14 notation
-	p, pcov = curve_fit(_fexp_const, x, A, Hea14p0,
-		sigma = A_std,
+	#solve the model
+	params, params_cov = curve_fit(_fHea14, x, y, p0,
+		sigma = y_std,
 		absolute_sigma = True,
-		bounds = ([-np.inf, 0],[0, np.inf]), #-k < 0; f.o. intercept > 0
+		bounds = (-np.inf, np.inf), #all lnk are unbounded
 		)
 
-	#extract variables to export
-
-	#k values
-	kc = np.exp(pfo[0])
-	kd = -p[0]*p[1]
-	k2 = -p[0]
-
-	par = np.array([kc, kd, k2]) #[lnkc, lnkd, lnk2]; Hea14 notation
-	params = np.log(par)
-
-	#k uncertainty
-	kc_std = pfo_std[0]*kc
-	kd_std = np.sqrt(k2**2*pcov[1,1] + p[1]**2*pcov[0,0] + 2*kd*pcov[1,0])
-	k2_std = pcov[0,0]**0.5
-
-	perr = np.array([kc_std, kd_std, k2_std]) #[kc, kd, k2]; Hea14 notation
-	params_std = perr/par
-
-	#calculate Gex_hat
-	Ghat = _fHea14(x, kc, kd, k2)
+	#calculate Ghat
+	Ghat = _fHea14(x, *params)
 
 	#convert to D47
 	D47hat, _ = _calc_D_from_G(
@@ -440,7 +406,7 @@ def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
 	#calcualte RMSE
 	rmse = _calc_rmse(he.dex[:,0], D47hat)
 
-	return params, params_std, rmse, nptfo
+	return params, params_cov, rmse, npt
 
 #function to fit data using HH20 lognormal model
 def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
@@ -454,21 +420,21 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	----------
 
 	he : isoclump.HeatingExperiment
-		`ic.HeatingExperiment` instance containing the D data to be modeled.
+		``ic.HeatingExperiment`` instance containing the D data to be modeled.
 
 	lam_max : float
-		The maximum lnk value to consider. Defaults to `10`.
+		The maximum lnk value to consider. Defaults to ``10``.
 
 	lam_min : float
-		The minimum lnk value to consider. Defaults to `-50`.
+		The minimum lnk value to consider. Defaults to ``-50``.
 
 	nlam : int
 		The number of lam values in the array such that
-		dlam = (lam_max - lam_min)/nlam. Defaults to `300`.
+		dlam = (lam_max - lam_min)/nlam. Defaults to ``300``.
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
-		order [mu_lam, sig_lam]. Defaults to `[-20, 5]`.
+		order [ln(k_mu), ln(k_sig)]. Defaults to ``[-20, 5]``.
 
 	pcov : np.array
 		Array of outputted parameter covariance. To be passed as hidden
@@ -479,17 +445,19 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	-------
 
 	params : np.ndarray
-		Array of resulting parameter values, in the order [mu_lam, sig_lam].
+		Array of resulting parameter values, in the order [ln(k_mu), ln(k_sig)].
 
-	params_std : np.ndarray
-		Uncertainty associated with resulting parameter values; in +- 1 sigma.
+	params_cov : np.ndarray
+		Covariance matrix associated with the resulting parameter values, of
+		shape [3 x 3]. The +/- 1 sigma uncertainty for each parameter can be 
+		calculated as ``np.sqrt(np.diag(params_cov))``
 
 	rmse : float
 		Root Mean Square Error (in D47 permil units) of the model fit.
 		Includes model fit to all data points.
 
 	npt : int
-		Number of data points deemed to be in the linear region.
+		Number of data points included in the model solution.
 
 	lam : np.ndarray
 		The array of lam values used for calcualtions, of length `nlam` and
@@ -502,15 +470,29 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	-----
 
 	Results are bounded such that mu_lam is between lam_min and lam_max; sig_lam
-	<= (lam_max - lam_min)/2. All calculations are done in lnG space and thus
+	<= (lam_max - lam_min)/2. All calculations are done in G space and thus
 	only depend on relative changes in D47.
 
 	See Also
 	--------
 
+	isoclump.fit_Hea14
+		Method for fitting heating experiment data using the transient defect/
+		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
+		an updated version of the present method.
+
 	isoclump.fit_HH20inv
 		Method for fitting heating experiment data using the L-curve approach
 		of Hemingway and Henkes (2020).
+
+	isoclump.fit_PH12
+		Method for fitting heating experiment data using the pseudo first-
+		order method of Passey and Henkes (2012). Called to determine
+		linear region.
+
+	isoclump.fit_SE15
+		Method for fitting heatinge experiment data using the paird diffusion
+		model of Stolper and Eiler (2015).
 
 	kDistribution.invert_experiment
 		Method for generating a `kDistribution` instance from experimental
@@ -538,13 +520,14 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	x = he.tex
 	y = he.Gex
 	y_std = he.Gex_std
+	npt = len(x)
 
 	#make lam array
 	# dlam = (lam_max - lam_min)/nlam
 	lam = np.linspace(lam_min, lam_max, nlam)
 
 	#fit model to lambda function to allow inputting constants
-	lamfunc = lambda x, mu_lam, sig_lam: _lognormal_decay(
+	lamfunc = lambda x, mu_lam, sig_lam: _fHH20(
 		x, 
 		mu_lam, 
 		sig_lam, 
@@ -555,22 +538,17 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 
 	#solve
 	sig_max = (lam_max - lam_min)/2
-	p, pcov = curve_fit(lamfunc, x, y, p0,
+	params, params_cov = curve_fit(lamfunc, x, y, p0,
 		sigma = y_std, 
 		absolute_sigma = True,
 		bounds = ([lam_min, 0.],[lam_max, sig_max]), #mu, sig must be in range
 		)
 
-	#extract variables to export
-	params = p
-	params_std = np.sqrt(np.diag(pcov))
-	npt = len(x)
-
 	#calculate rho_lam array
-	rho_lam = _Gaussian(lam, *p)
+	rho_lam = _Gaussian(lam, *params)
 
 	#calculate Gex_hat
-	Ghat = lamfunc(x, *p)
+	Ghat = lamfunc(x, *params)
 
 	#convert to D47
 	D47hat, _ = _calc_D_from_G(
@@ -586,7 +564,7 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	#calcualte RMSE
 	rmse = _calc_rmse(he.dex[:,0], D47hat)
 
-	return params, params_std, rmse, npt, lam, rho_lam
+	return params, params_cov, rmse, npt, lam, rho_lam
 
 #function to fit data using the HH20 inverse model
 def fit_HH20inv(
@@ -763,22 +741,24 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
-		order [ln(k), -ln(intercept)]. Defaults to `[-7, 0.5]`.
+		order [ln(k), intercept]. Defaults to ``[-7, 0.5]``.
 
 	thresh : float
 		Curvature threshold to use for extracting the linear region. *All*
 		points after the first point that drops below this threshold are
-		considered to be in the linear region. Defaults to `1e-6`.
+		considered to be in the linear region. Defaults to ``1e-6``.
 
 	Returns
 	-------
 
 	params : np.ndarray
 		Array of resulting parameter values, in the order
-		[ln(k), -ln(intercept)].
+		[ln(k), intercept].
 
-	params_std : np.ndarray
-		Uncertainty associated with resulting parameter values; in +- 1 sigma.
+	params_cov : np.ndarray
+		Covariance matrix associated with the resulting parameter values, of
+		shape [2 x 2]. The +/- 1 sigma uncertainty for each parameter can be 
+		calculated as ``np.sqrt(np.diag(params_cov))``
 
 	rmse : float
 		Root Mean Square Error (in D47 permil units) of the model fit. Only 
@@ -797,10 +777,9 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	Notes
 	-----
 
-	Results are bounded such that k is non-negative and intercept is negative;
-	intercept value in `params` is the negative of the intercept in lnG vs. t
-	space. All calculations are done in lnG space and thus only depend on 
-	relative changes in D47.
+	Results are bounded such that k and intercept are non-negative; intercept 
+	value in ``params`` is the intercept in G vs. t space. All calculations 
+	are done in G space and thus only depend on relative changes in D47.
 
 	See Also
 	--------
@@ -810,14 +789,22 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
 		an updated version of the present method.
 
-	kDistribution.invert_experiment
-		Method for generating a `kDistribution` instance from experimental
+	isoclump.fit_HH20
+		Method for fitting heating experiment data using the distributed
+		activation energy model of Hemingway and Henkes (2020).
+
+	isoclump.fit_SE15
+		Method for fitting heatinge experiment data using the paird diffusion
+		model of Stolper and Eiler (2015).
+
+	isoclump.kDistribution.invert_experiment
+		Method for generating a ``kDistribution`` instance from experimental
 		data.
 
 	Examples
 	--------
 
-	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
+	Basic implementation, assuming a ``ic.HeatingExperiment`` instance ``he``
 	exists::
 		
 		#import modules
@@ -832,13 +819,13 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
 	'''
 
-	#convert to log space
+	#extract values to fit
 	x = he.tex
-	y = np.log(he.Gex)
-	y_std = he.Gex_std/he.Gex
+	y = he.Gex
+	y_std = he.Gex_std
 
-	#calculate curvature
-	dydx = derivatize(y, x)
+	#calculate curvature in ln(y) space
+	dydx = derivatize(np.log(y), x)
 	dy2d2x = derivatize(dydx, x)
 	k = np.abs(dy2d2x / ((1 + dydx**2)**1.5))
 
@@ -854,30 +841,17 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	xl = x[i0:]
 	yl = y[i0:]
 	yl_std = y_std[i0:]
-
-	#get initial guess into the right format
-	# right format = [-k, -intercept]
-	PH12p0 = np.array([-np.exp(p0[0]), -p0[1]])
-
-	#calculate statistics with linear fit to linear region
-	p, pcov = curve_fit(_flin, xl, yl, PH12p0,
-		sigma = yl_std,
-		absolute_sigma = True,
-		bounds = ([-np.inf, -np.inf],[0,0]), #-k and -intercept < 0
-		)
-	
-	#extract variables to export
-	#get rate and intercept to be positive, and transform rate to lnk
-	params = np.array([np.log(-p[0]), -p[1]])
-
-	#get uncertainty
-	params_std = np.diag(pcov)**0.5
-	params_std[0] = params_std[0]/np.exp(params[0]) #convert to lnk space
-
 	npt = len(xl)
 
+	#calculate statistics with linear fit to linear region
+	params, params_cov = curve_fit(_fPH12, xl, yl, p0,
+		sigma = yl_std,
+		absolute_sigma = True,
+		bounds = ([-np.inf,0],[np.inf,1]), #lnk unbounded; 0 < int. < 1
+		)
+
 	#calculate Ghat
-	Ghat = _fexp(xl, p[0], np.exp(p[1]))
+	Ghat = _fPH12(xl, *params)
 
 	#convert to D47
 	D47hat, _ = _calc_D_from_G(
@@ -893,7 +867,7 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	#calcualte RMSE
 	rmse = _calc_rmse(he.dex[i0:,0], D47hat)
 
-	return params, params_std, rmse, npt
+	return params, params_cov, rmse, npt
 
 #function to fit data using SE15 model
 def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
@@ -1071,4 +1045,307 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 		p0peq_std]) #combine into array
 
 	return params, params_std, rmse, npt
+
+
+
+
+
+
+
+
+# #function to fit data using Hea14 model
+# def fit_Hea14(he, p0 = [-7., -7., -7.], thresh = 1e-6):
+# 	'''
+# 	Fits D evolution data using the transient defect/equilibrium model of
+# 	Henkes et al. (2014). The function first solves the first-order linear
+# 	approximation of Passey and Henkes (2012) then solves for the remaining
+# 	kinetic parameters using Eq. 5 of Henkes et al. (2014).
+
+# 	Parameters
+# 	----------
+
+# 	he : isoclump.HeatingExperiment
+# 		`ic.HeatingExperiment` instance containing the D data to be modeled.
+
+# 	p0 : array-like
+# 		Array of paramter guess to initialize the fitting algorithm, in the
+# 		order [ln(kc), ln(kd), ln(k2)]. Defaults to `[-7, -7, -7]`.
+
+# 	thresh : float
+# 		Curvature threshold to use for extracting the linear region. *All*
+# 		points after the first point that drops below this threshold are
+# 		considered to be in the linear region. Defaults to `1e-6`.
+
+# 	Returns
+# 	-------
+
+# 	params : np.ndarray
+# 		Array of resulting parameter values, in the order
+# 		[ln(kc), ln(kd), ln(k2)].
+
+# 	params_std : np.ndarray
+# 		Uncertainty associated with resulting parameter values; in +- 1 sigma.
+
+# 	rmse : float
+# 		Root Mean Square Error (in D47 permil units) of the model fit.
+# 		Includes model fit to all data points.
+
+# 	npt : int
+# 		Number of data points deemed to be in the linear region.
+
+# 	Raises
+# 	------
+
+# 	ValueError
+# 		If the curvature in t vs. ln(G) space never drops below the inputted
+# 		`thresh` value.
+	
+# 	Notes
+# 	-----
+
+# 	Results are bounded to be non-negative. All calculations are done in lnG
+# 	space and thus only depend on relative changes in D47.
+
+# 	See Also
+# 	--------
+
+# 	isoclump.fit_PH12
+# 		Method for fitting heating experiment data using the pseudo first-
+# 		order method of Passey and Henkes (2012). Called to determine
+# 		linear region.
+
+# 	kDistribution.invert_experiment
+# 		Method for generating a `kDistribution` instance from experimental
+# 		data.
+
+# 	Examples
+# 	--------
+
+# 	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
+# 	exists::
+		
+# 		#import modules
+# 		import isoclump as ic
+
+# 		#assume he is a HeatingExperiment instance
+# 		results = ic.fit_Hea14(he, thresh = 1e-6)
+
+# 	References
+# 	----------
+
+# 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
+# 	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
+# 	'''
+
+# 	#convert to log space
+# 	x = he.tex
+# 	y = np.log(he.Gex)
+# 	y_std = he.Gex_std/he.Gex
+
+# 	#get p0 into the right format
+# 	p0 = np.array(p0)
+# 	PH12p0 = [p0[0], np.exp(p0[2])/np.exp(p0[1])]
+
+# 	#run PH12 model to get first-order results
+# 	pfo, pfo_std, rmsefo, nptfo = fit_PH12(he, thresh = thresh, p0 = PH12p0)
+
+# 	#plug back into full equation and propagate error
+# 	A = y + np.exp(pfo[0])*x
+# 	A_std = np.sqrt(y_std**2 + (x*pfo_std[0]*np.exp(pfo[0]))**2)
+
+# 	#calculate statistics with full equation and exponential fit
+# 	Hea14p0 = [-np.exp(p0[2]), pfo[1]] #[-k2, kd/k2] in Hea14 notation
+# 	p, pcov = curve_fit(_fexp_const, x, A, Hea14p0,
+# 		sigma = A_std,
+# 		absolute_sigma = True,
+# 		bounds = ([-np.inf, 0],[0, np.inf]), #-k < 0; f.o. intercept > 0
+# 		)
+
+# 	#extract variables to export
+
+# 	#k values
+# 	kc = np.exp(pfo[0])
+# 	kd = -p[0]*p[1]
+# 	k2 = -p[0]
+
+# 	par = np.array([kc, kd, k2]) #[lnkc, lnkd, lnk2]; Hea14 notation
+# 	params = np.log(par)
+
+# 	#k uncertainty
+# 	kc_std = pfo_std[0]*kc
+# 	kd_std = np.sqrt(k2**2*pcov[1,1] + p[1]**2*pcov[0,0] + 2*kd*pcov[1,0])
+# 	k2_std = pcov[0,0]**0.5
+
+# 	perr = np.array([kc_std, kd_std, k2_std]) #[kc, kd, k2]; Hea14 notation
+# 	params_std = perr/par
+
+# 	#calculate Gex_hat
+# 	Ghat = _fHea14(x, kc, kd, k2)
+
+# 	#convert to D47
+# 	D47hat, _ = _calc_D_from_G(
+# 		he.dex[0,0],
+# 		Ghat,
+# 		he.T,
+# 		calibration = he.calibration,
+# 		clumps = he.clumps,
+# 		G_std = None,
+# 		ref_frame = he.ref_frame
+# 		)
+
+# 	#calcualte RMSE
+# 	rmse = _calc_rmse(he.dex[:,0], D47hat)
+
+# 	return params, params_std, rmse, nptfo
+
+
+# #function to fit data using PH12 model
+# def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
+# 	'''
+# 	Fits D evolution data using the first-order model approximation of Passey
+# 	and Henkes (2012). The function uses curvature in t vs. ln(G) space to
+# 	extract the linear region and only fits this region.
+
+# 	Parameters
+# 	----------
+
+# 	he : isoclump.HeatingExperiment
+# 		`ic.HeatingExperiment` instance containing the D data to be modeled.
+
+# 	p0 : array-like
+# 		Array of paramter guess to initialize the fitting algorithm, in the
+# 		order [ln(k), -ln(intercept)]. Defaults to `[-7, 0.5]`.
+
+# 	thresh : float
+# 		Curvature threshold to use for extracting the linear region. *All*
+# 		points after the first point that drops below this threshold are
+# 		considered to be in the linear region. Defaults to `1e-6`.
+
+# 	Returns
+# 	-------
+
+# 	params : np.ndarray
+# 		Array of resulting parameter values, in the order
+# 		[ln(k), -ln(intercept)].
+
+# 	params_std : np.ndarray
+# 		Uncertainty associated with resulting parameter values; in +- 1 sigma.
+
+# 	rmse : float
+# 		Root Mean Square Error (in D47 permil units) of the model fit. Only 
+# 		includes data points that are deemed to be in the linear region.
+
+# 	npt : int
+# 		Number of data points deemed to be in the linear region.
+
+# 	Raises
+# 	------
+
+# 	ValueError
+# 		If the curvature in t vs. ln(G) space never drops below the inputted
+# 		`thresh` value.
+
+# 	Notes
+# 	-----
+
+# 	Results are bounded such that k is non-negative and intercept is negative;
+# 	intercept value in `params` is the negative of the intercept in lnG vs. t
+# 	space. All calculations are done in lnG space and thus only depend on 
+# 	relative changes in D47.
+
+# 	See Also
+# 	--------
+
+# 	isoclump.fit_Hea14
+# 		Method for fitting heating experiment data using the transient defect/
+# 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
+# 		an updated version of the present method.
+
+# 	kDistribution.invert_experiment
+# 		Method for generating a `kDistribution` instance from experimental
+# 		data.
+
+# 	Examples
+# 	--------
+
+# 	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
+# 	exists::
+		
+# 		#import modules
+# 		import isoclump as ic
+
+# 		#assume he is a HeatingExperiment instance
+# 		results = ic.fit_PH12(he, thresh = 1e-6)
+
+# 	References
+# 	----------
+
+# 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+# 	'''
+
+# 	#convert to log space
+# 	x = he.tex
+# 	y = np.log(he.Gex)
+# 	y_std = he.Gex_std/he.Gex
+
+# 	#calculate curvature
+# 	dydx = derivatize(y, x)
+# 	dy2d2x = derivatize(dydx, x)
+# 	k = np.abs(dy2d2x / ((1 + dydx**2)**1.5))
+
+# 	#retain all points after curvature drops below threshold
+# 	try:
+# 		i0 = np.where(k < thresh)[0][0]
+
+# 	except IndexError:
+# 		raise ValueError(
+# 			't vs. lnG curvature never goes below inputted value of %.1e;'
+# 			' cannot extract linear region. Raise `thresh` value.' % thresh)
+
+# 	xl = x[i0:]
+# 	yl = y[i0:]
+# 	yl_std = y_std[i0:]
+
+# 	#get initial guess into the right format
+# 	# right format = [-k, -intercept]
+# 	PH12p0 = np.array([-np.exp(p0[0]), -p0[1]])
+
+# 	#calculate statistics with linear fit to linear region
+# 	p, pcov = curve_fit(_flin, xl, yl, PH12p0,
+# 		sigma = yl_std,
+# 		absolute_sigma = True,
+# 		bounds = ([-np.inf, -np.inf],[0,0]), #-k and -intercept < 0
+# 		)
+	
+# 	#extract variables to export
+# 	#get rate and intercept to be positive, and transform rate to lnk
+# 	params = np.array([np.log(-p[0]), -p[1]])
+
+# 	#get uncertainty
+# 	params_std = np.diag(pcov)**0.5
+# 	params_std[0] = params_std[0]/np.exp(params[0]) #convert to lnk space
+
+# 	npt = len(xl)
+
+# 	#calculate Ghat
+# 	Ghat = _fexp(xl, p[0], np.exp(p[1]))
+
+# 	#convert to D47
+# 	D47hat, _ = _calc_D_from_G(
+# 		he.dex[0,0],
+# 		Ghat,
+# 		he.T,
+# 		calibration = he.calibration,
+# 		clumps = he.clumps,
+# 		G_std = None,
+# 		ref_frame = he.ref_frame
+# 		)
+
+# 	#calcualte RMSE
+# 	rmse = _calc_rmse(he.dex[i0:,0], D47hat)
+
+# 	return params, params_std, rmse, npt
+
+
+
 

@@ -32,10 +32,12 @@ from types import LambdaType
 
 #import necessary functions for calculations
 from .calc_funcs import(
-	_fexp,
+	_calc_A,
 	_fHea14,
+	_fPH12,
 	_fSE15,
-	_lognormal_decay,
+	_fHH20,
+	_Jacobian_HH20,
 	)
 
 #import necessary isoclump dictionaries
@@ -294,7 +296,235 @@ def _cull_data(dex, T, tex, file_attrs, cull_sig = 1):
 
 	return dex, T, tex, file_attrs
 
-#data importing functions
+#function for forward modeling Hea14 model
+def _forward_Hea14(he, kd, t):
+	'''
+	Estimates D and G evolution using the kinetic parameters contained
+	within a given ``kDistribution`` instance containing 'Hea14' model data.
+
+	Parameters
+	----------
+
+	he : isoclump.HeatingExperiment
+		The ``ic.HeatingExperiment`` instance containing the data of interest.
+
+	kd : isoclump.kDistribution
+		The ``ic.kDistribution`` instance containing the rate parameters of
+		interest.
+
+	t : np.array
+		Array of time steps to predict D and G evolution over, in the same
+		units as those used to calculate rate parameters.
+
+	Returns
+	-------
+
+	mod_attrs : dict
+		Dictionary containing all the extracted attributes to be passed as
+		keyword agruments.
+
+	References
+	----------
+
+	[1] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
+	'''
+
+	#first, calculate G evolution
+	p = kd.params #save as shorthand for convenience
+	pcov = kd.params_cov
+
+	G = _fHea14(t, *p)
+
+	#then, calculate G evolution uncertainty:
+
+	#define partial derivatives and build jacobian matrix
+	Gpp0 = -t*np.exp(p[0])*G
+	Gpp1 = G*np.exp(p[1]-p[2])*(np.exp(-t*np.exp(p[2])) - 1)
+	Gpp2 = G*(-t*np.exp(p[2]) + np.exp(t*np.exp(p[2])) - 1)*\
+			np.exp(p[1] - p[2] - t*np.exp(p[2]))
+	J = np.column_stack((Gpp0, Gpp1, Gpp2))
+
+	#calcualte G covariance matrix and extract G_std
+	Gcov = np.dot(J, np.dot(pcov, J.T))
+	G_std = np.sqrt(np.diag(Gcov))
+
+	#finally, convert G and G_std to D and D_std
+	D, D_std = _calc_D_from_G(
+		he.dex[0,0], 
+		G, 
+		he.T, 
+		calibration = he.calibration,
+		clumps = he.clumps,
+		G_std = G_std,
+		ref_frame = he.ref_frame
+		)
+
+	#store as dictionary
+	mod_attrs = {'D':D, 'D_std':D_std, 'G':G, 'G_std':G_std}
+
+	# D, D_std, G, G_std
+	return mod_attrs
+
+def _forward_HH20(he, kd, t):
+	'''
+	Estimates D and G evolution using the kinetic parameters contained
+	within a given ``kDistribution`` instance containing 'HH20' model data.
+	If ``kd.fit_reg = True``, then this function also calculates estimated
+	G and D evolution using the regularized inverse solution (no uncertainty).
+
+	Parameters
+	----------
+
+	he : isoclump.HeatingExperiment
+		The ``ic.HeatingExperiment`` instance containing the data of interest.
+
+	kd : isoclump.kDistribution
+		The ``ic.kDistribution`` instance containing the rate parameters of
+		interest.
+
+	t : np.array
+		Array of time steps to predict D and G evolution over, in the same
+		units as those used to calculate rate parameters.
+
+	Returns
+	-------
+
+	mod_attrs : dict
+		Dictionary containing all the extracted attributes to be passed as
+		keyword agruments.
+
+	_D_inv : np.array
+		Array of regularized inverse solution estimated D evolution.
+
+	_G_inv : 
+		Array of regularized inverse solution estimated G evolution.
+
+	References
+	----------
+
+	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	'''
+
+	#first, calculate G evolution
+	p = kd.params #save as shorthand for convenience
+	pcov = kd.params_cov
+	l = [np.max(kd.lam), np.min(kd.lam), len(kd.lam)] #additional inputs
+
+	G = _fHH20(t, *p, *l)
+
+	#then, calculate G evolution uncertainty:
+	J = _Jacobian_HH20(t, *p, *l)
+
+	#calcualte G covariance matrix and extract G_std
+	Gcov = np.dot(J, np.dot(pcov, J.T))
+	G_std = np.sqrt(np.diag(Gcov))
+
+	#finally, convert G and G_std to D and D_std
+	D, D_std = _calc_D_from_G(
+		he.dex[0,0], 
+		G, 
+		he.T, 
+		calibration = he.calibration,
+		clumps = he.clumps,
+		G_std = G_std,
+		ref_frame = he.ref_frame
+		)
+
+	#store as dictionary
+	mod_attrs = {'D':D, 'D_std':D_std, 'G':G, 'G_std':G_std}
+
+	#check if regularized inverse model was fit; if so, estimate G and D
+	if kd.rho_lam_inv is not None:
+
+		#calculate G
+		A = _calc_A(t, kd.lam)
+		_Ginv = np.inner(A, kd.rho_lam_inv)
+
+		#convert to D
+		_Dinv, _ = _calc_D_from_G(
+			he.dex[0,0], 
+			_Ginv, 
+			he.T, 
+			calibration = he.calibration,
+			clumps = he.clumps,
+			G_std = None,
+			ref_frame = he.ref_frame
+			)
+
+	else:
+		_Dinv = _Ginv = None
+
+	# mod_attrs = D, D_std, G, G_std
+	return mod_attrs, _Dinv, _Ginv
+
+#forward modeling functions
+def _forward_PH12(he, kd, t):
+	'''
+	Estimates D and G evolution using the kinetic parameters contained
+	within a given ``kDistribution`` instance containing 'PH12' model data.
+
+	Parameters
+	----------
+
+	he : isoclump.HeatingExperiment
+		The ``ic.HeatingExperiment`` instance containing the data of interest.
+
+	kd : isoclump.kDistribution
+		The ``ic.kDistribution`` instance containing the rate parameters of
+		interest.
+
+	t : np.array
+		Array of time steps to predict D and G evolution over, in the same
+		units as those used to calculate rate parameters.
+
+	Returns
+	-------
+
+	mod_attrs : dict
+		Dictionary containing all the extracted attributes to be passed as
+		keyword agruments.
+
+	References
+	----------
+
+	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+	'''
+
+	#first, calculate G evolution
+	p = kd.params #save as shorthand for convenience
+	pcov = kd.params_cov
+
+	G = _fPH12(t, *p)
+
+	#then, calculate G evolution uncertainty:
+
+	#define partial derivatives and build jacobian matrix
+	Gpp0 = -t*np.exp(p[0])*G
+	Gpp1 = G/p[1]
+	J = np.column_stack((Gpp0, Gpp1))
+
+	#calcualte G covariance matrix and extract G_std
+	Gcov = np.dot(J, np.dot(pcov, J.T))
+	G_std = np.sqrt(np.diag(Gcov))
+
+	#finally, convert G and G_std to D and D_std
+	D, D_std = _calc_D_from_G(
+		he.dex[0,0], 
+		G, 
+		he.T, 
+		calibration = he.calibration,
+		clumps = he.clumps,
+		G_std = G_std,
+		ref_frame = he.ref_frame
+		)
+
+	#store as dictionary
+	mod_attrs = {'D':D, 'D_std':D_std, 'G':G, 'G_std':G_std}
+
+	# D, D_std, G, G_std
+	return mod_attrs
+
+#function for forward modeling PH12 model
 def _read_csv(file):
 	'''
 	Reads a csv file or pandas DataFrame and extracts the necessary information
@@ -428,130 +658,11 @@ def _read_csv(file):
 
 	return dex, T, tex, file_attrs
 
-
 #FUNCTIONS BELOW HERE NEED TO BE REASSESSED/UPDATED:
-
-#forward modeling functions
-def _forward_PH12(he, kd, t):
-	'''
-	Estimates D and G evolution using the kinetic parameters contained
-	within a given ``kDistribution`` instance containing 'PH12' model data.
-
-	Parameters
-	----------
-
-	he : isoclump.HeatingExperiment
-		The ``ic.HeatingExperiment`` instance containing the data of interest.
-
-	kd : isoclump.kDistribution
-		The ``ic.kDistribution`` instance containing the rate parameters of
-		interest.
-
-	t : np.array
-		Array of time steps to predict D and G evolution over, in the same
-		units as those used to calculate rate parameters.
-
-	Returns
-	-------
-
-	mod_attrs : dict
-		Dictionary containing all the extracted attributes to be passed as
-		keyword agruments.
-
-	References
-	----------
-
-	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
-	'''
-
-	#first, calculate G evolution
-	k = -np.exp(kd.params[0])
-	expint = np.exp(-kd.params[1])
-
-	G = _fexp(t, k, expint)
-
-	#then, calculate G evolution uncertainty
-	k_std = kd.params_std[0]*np.abs(k)
-	expint_std = kd.params_std[1]*np.abs(expint)
-
-	G_std = G*np.sqrt((expint_std/expint)**2 + (k_std*t)**2)
-
-	#finally, convert G and G_std to D and D_std
-	D, D_std = _calc_D_from_G(
-		he.dex[0,0], 
-		G, 
-		he.T, 
-		calibration = he.calibration,
-		clumps = he.clumps,
-		G_std = G_std,
-		ref_frame = he.ref_frame
-		)
-
-	#store as dictionary
-	mod_attrs = {'D':D, 'D_std':D_std, 'G':G, 'G_std':G_std}
-
-	# D, D_std, G, G_std
-	return mod_attrs
-
-def _forward_Hea14(kd, t):
-	'''
-	Estimates D and G evolution using the kinetic parameters contained
-	within a given ``kDistribution`` instance containing 'Hea14' model data.
-
-	Parameters
-	----------
-
-	kd : isoclump.kDistribution
-		The ``ic.kDistribution`` instance containing the rate parameters of
-		interest.
-
-	t : np.array
-		Array of time steps to predict D and G evolution over, in the same
-		units as those used to calculate rate parameters.
-
-	Returns
-	-------
-
-	mod_attrs : dict
-		Dictionary containing all the extracted attributes to be passed as
-		keyword agruments.
-
-	References
-	----------
-
-	[1] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
-	'''
-
-
-
-	G = _fHea14(t, *np.exp(kd.params))
-
-	#TODO: STORE FULL COVARIANCE MATRIX AND PROPERLY CALCULATE YHAT, TAKING
-	# COVARIANCE INTO ACCOUNT! (CURRENT METHOD OVERESTIMATES UNCERTAINTY)
-
-	# D, D_std, G, G_std
-	return mod_attrs
 
 def _forward_SE15(kd, t):
 
 	return mod_attrs
-
-def _forward_HH20(kd, t):
-	'''
-	Add docstring.
-	'''
-
-	#calculate lognormal G evolution
-
-	#calculate lognormal G evolution uncertainty
-
-	#then, calculate inverse fit G evolution, if it exists (no uncertainty)
-
-	#finally, convert G and G_std do 
-
-	# D, D_std, G, G_std
-	return mod_attrs, _Dinv, _Ginv
-
 
 
 
@@ -831,3 +942,10 @@ def _forward_HH20(kd, t):
 # 	return iso_params
 
 
+
+
+
+	# G_std = G*np.sqrt(pcov[0,0]*(t*np.exp(p[0]))**2 + \
+	# 				  pcov[1,1]*(1/p[1])**2 - \
+	# 				  pcov[0,1]*(t*np.exp(p[0])/p[1])
+	# 				 )

@@ -28,6 +28,8 @@ from types import LambdaType
 from .timedata_helper import(
 	_calc_G_from_D,
 	_cull_data,
+	_forward_Hea14,
+	_forward_HH20,
 	_forward_PH12,
 	_read_csv,
 	)
@@ -39,18 +41,18 @@ from .dictionaries import(
 	)
 
 
-# TODO FRIDAY 24 APRIL:
-# * Write forward_model function
+# TODO MONDAY 27 APRIL:
+# * UPDATE _fHea14 TO FIT DIRECTLY RATHER THAN FIRST FITTING PH12
+# * UPDATE FIT FUNCTIONS TO BE MORE DIRECT RATHER THAN LOG
+# * UPDATE FIT FUNCTIONS AND KD TO STORE PCOV AS HIDDEN ATTRIBUTE
+# * FINISH FORWARD MODEL FUNCTIONS
+
+
+# RUNNINT TODO LIST:
 # * Write plot function
 # * Write docstrings
-
-
-# RUNNING TODO LIST:
-# * 
-
-# DOCUMENTS TODO LIST:
-# * ADD PLOT RESULT IMAGES TO NECESSARY DOCSTRINGS
-
+# * add plot results images to necessary docstrings
+# * Update kd attribute setters to be more specific
 
 class HeatingExperiment(object):
 	__doc__='''
@@ -516,8 +518,6 @@ class HeatingExperiment(object):
 
 			mod_attrs = _forward_Hea14(self, kd, t)
 
-		# QUESTION: SHOULD THIS INCLUDE BOTH INVERSE AND LOGNORMAL PREDICTIONS?
-		# (PROBABLY) IF SO, HOW TO STORE BOTH? AS 2 COLUMNS IN d, G, etc.??
 		elif kd.model == 'HH20':
 
 			mod_attrs, _Dinv, _Ginv = _forward_HH20(self, kd, t)

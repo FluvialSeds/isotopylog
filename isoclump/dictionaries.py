@@ -92,8 +92,8 @@ d47_isoparams = {'Gonfiantini':
 
 # 3) Dictionary for holding kDistribution model parameters for summary printing
 mod_params = {'Hea14' : ['ln(kc)','ln(kd)','ln(k2)'],
-			  'HH20' : ['mu_lam','sig_lam'],
-			  'PH12' : ['ln(k)','-intercept'],
+			  'HH20' : ['ln(k_mu)','ln(k_sig)'],
+			  'PH12' : ['ln(k)','intercept'],
 			  'SE15' : ['ln(k1)','ln(k_dif_single)','[pair]_0/[pair]_eq']
 			  }
 
