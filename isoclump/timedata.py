@@ -44,11 +44,12 @@ from .dictionaries import(
 	clump_isos,
 	)
 
-
-# TODO TUESDAY 28 APRIL:
-# * FINISH PLOTTING METHOD AND WRITE DOCSTRING
+# TODO WEDNESDAY 29 APRIL:
+# * Add methods to HeatingExperiment to change iso_params and ref_frame
+# * Write EDistribution docstring, __init__, __repr__, and @properties
 
 # RUNNINT TODO LIST:
+# * Delete _Ginv and _Dinv attributes if overprinting he with a non-HH20 model
 # * Write plot function
 # * Write docstrings
 # * add plot results images to necessary docstrings
@@ -234,7 +235,7 @@ class HeatingExperiment(object):
 		#finally, plot log(G)
 		ax[1,1] = he.plot(ax = ax[1,1], yaxis = 'G', logy = True)
 
-	Also, when making plots, one can pass various dictionaries containing 
+	When making plots, one can pass various dictionaries containing 
 	stylistic keyword arguments::
 
 		fig, ax = plt.subplots(1,1)
@@ -594,9 +595,11 @@ class HeatingExperiment(object):
 		ax = None, 
 		yaxis = 'D', 
 		logy = False, 
+		plot_reg = False,
 		ed = {}, 
 		ld = {}, 
-		fbd = {}
+		fbd = {},
+		regd = {}
 		):
 		'''
 		Plots experimental and forward-modeled results in various user-defined
@@ -616,6 +619,11 @@ class HeatingExperiment(object):
 			Tells the funciton whether or not to log transform the y axis.
 			Defaults to ``False``.
 
+		plot_reg : boolean
+			Tells the function whether or not to plot regularized inversion
+			forward-model results as well. Only applies if ``model = 'HH20'``
+			and ``fit_reg = True``.
+
 		ed : dictionary
 			Dictionary of keyward arguments to pass for plotting the 
 			experimental data. Must contain keywords compatible with 
@@ -631,10 +639,23 @@ class HeatingExperiment(object):
 			modeled uncertaint range. Must contain keywords compatible with 
 			``matplotlib.pyplot.errorbar``. Defaults to empty dictionary.
 
+		regd : dictionary
+			Dictionary of keyword arguments to pass for plotting the regularized
+			forward-model data. Must contain keywords compatible with 
+			``matplotlib.pyplot.plot``. Defaults to empty dictionary.
+
 		Returns
 		-------
 		ax : plt.axis
 			Updated axis instance containing the plot.
+
+		Warnings
+		--------
+		UserWarning
+			If the user is passing ``plot_reg = True`` but the heating
+			experiment does not contain regularized inverse model forward
+			results; that is, if it was fit with something other than 
+			``'HH20'`` model with ``fit_reg = True``.
 
 		See Also
 		--------
@@ -649,9 +670,7 @@ class HeatingExperiment(object):
 		Plotting experimental and forward-modeled results::
 
 			#make an axis
-			fig, ax = plt.subplots(2,2,
-				sharex = True,
-				sharey = 'row')
+			fig, ax = plt.subplots(2,2,sharex = True)
 
 			#first, plot D
 			ax[0,0] = he.plot(ax = ax[0,0], yaxis = 'D', logy = False)
@@ -665,7 +684,7 @@ class HeatingExperiment(object):
 			#finally, plot log(G)
 			ax[1,1] = he.plot(ax = ax[1,1], yaxis = 'G', logy = True)
 
-		Also, when making plots, one can pass various dictionaries containing 
+		When making plots, one can pass various dictionaries containing 
 		stylistic keyword arguments::
 
 			fig, ax = plt.subplots(1,1)
@@ -702,6 +721,23 @@ class HeatingExperiment(object):
 				ym = self.D
 				ym_std = self.D_std
 
+				#get regularized inverse results if they exist
+				if plot_reg is True and hasattr(self, '_Ginv'):
+					ymreg = self._Dinv
+
+				elif plot_reg is True and not hasattr(self, '_Ginv'):
+					#warn that it doesn't exist
+					warnings.warn(
+						'Attempting to plot regularized inverse model results'
+						' but they do not exist. Either re-forward-model with'
+						' a "HH20" model or pass plot_reg = False', UserWarning
+						)
+
+					ymreg = None
+
+				else:
+					ymreg = None
+
 				mod = True #store boolean for later
 
 			#store y label
@@ -720,6 +756,23 @@ class HeatingExperiment(object):
 			if self.G is not None:
 				ym = self.G
 				ym_std = self.G_std
+
+				#get regularized inverse results if they exist
+				if plot_reg is True and hasattr(self, '_Ginv'):
+					ymreg = self._Ginv
+
+				elif plot_reg is True and not hasattr(self, '_Ginv'):
+					#warn that it doesn't exist
+					warnings.warn(
+						'Attempting to plot regularized inverse model results'
+						' but they do not exist. Either re-forward-model with'
+						' a "HH20" model or pass plot_reg = False', UserWarning
+						)
+
+					ymreg = None
+
+				else:
+					ymreg = None
 
 				mod = True #store boolean for later
 
@@ -740,6 +793,9 @@ class HeatingExperiment(object):
 			if mod is True:
 				ym_std = ym_std/ym
 				ym = np.log(ym)
+
+				if ymreg is not None:
+					ymreg = np.log(ymreg)
 				
 
 			#modify ylab
@@ -762,6 +818,12 @@ class HeatingExperiment(object):
 			ax.fill_between(self.t, ym-ym_std, ym+ym_std,
 				label = 'forward model error', 
 				**fbd)
+
+			#plot regularized data if it exists
+			if ymreg is not None:
+				ax.plot(self.t, ymreg,
+					label = 'regularized inverse model results',
+					**regd)
 
 		#add axis labels and legend
 		ax.set_xlabel('time')
