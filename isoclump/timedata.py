@@ -45,8 +45,8 @@ from .dictionaries import(
 	)
 
 
-# TODO MONDAY 27 APRIL:
-
+# TODO TUESDAY 28 APRIL:
+# * FINISH PLOTTING METHOD AND WRITE DOCSTRING
 
 # RUNNINT TODO LIST:
 # * Write plot function
@@ -210,8 +210,46 @@ class HeatingExperiment(object):
 		#or, cull the data that are too close to equilibrium (see PH12)
 		he = ic.HeatingExperiment.from_csv(file, culled = True, cull_sig = 1)
 
-	Forward modeling some rate data and visualizing model results::
+	Forward modeling some rate data::
 
+		#assuming a kDistribution instance kd exists
+		he.forward_model(kd)
+
+	Plotting experimental and forward-modeled results::
+
+		#make an axis
+		fig, ax = plt.subplots(2,2,
+			sharex = True,
+			sharey = 'row')
+
+		#first, plot D
+		ax[0,0] = he.plot(ax = ax[0,0], yaxis = 'D', logy = False)
+
+		#second, plot G
+		ax[0,1] = he.plot(ax = ax[0,1], yaxis = 'G', logy = False)
+
+		#third, plot log(D)
+		ax[1,0] = he.plot(ax = ax[1,0], yaxis = 'D', logy = True)
+
+		#finally, plot log(G)
+		ax[1,1] = he.plot(ax = ax[1,1], yaxis = 'G', logy = True)
+
+	Also, when making plots, one can pass various dictionaries containing 
+	stylistic keyword arguments::
+
+		fig, ax = plt.subplots(1,1)
+
+		#experimental data plt.errorbar dict
+		ed = {fmt = 'o', ecolor = 'k'}
+
+		#forward-modeled mean plt.plot dict
+		ld = {linewidth = 2, c = 'k'}
+
+		#forward-modeled uncertainty plt.fill_between dict
+		fbd = {alpha = 0.5, color = [0.5, 0.5, 0.5]}
+
+		#plot the data
+		ax = he.plot(ax = ax, ed = ed, ld = ld, fbd = fbd)
 
 	References
 	----------
@@ -454,6 +492,7 @@ class HeatingExperiment(object):
 		#return class instance
 		return cls(dex, T, tex, **file_attrs)
 
+	#method for forward modeling rate data to predict D or G evolution
 	def forward_model(self, kd, nt = 300, **kwargs):
 		'''
 		Forward models a given kDistribution instance to produce predicted
@@ -549,62 +588,185 @@ class HeatingExperiment(object):
 				ref_frame = self.ref_frame
 				)
 
-
-	def plot(self, ax = None, yaxis = 'D', logy = False, **kwargs):
+	#method for plotting results
+	def plot(
+		self, 
+		ax = None, 
+		yaxis = 'D', 
+		logy = False, 
+		ed = {}, 
+		ld = {}, 
+		fbd = {}
+		):
 		'''
-		Plots results
+		Plots experimental and forward-modeled results in various user-defined
+		ways.
+
+		Parameters
+		----------
+		ax : plt.axis or None
+			Matplotlib axis instance to plot data on. If ``None``, creates an
+			axis. Defaults to ``None``.
+
+		yaxis : string
+			The variable to plot on the y axis, either ``'D'`` or ``'G'``.
+			Defaults to ``'D'``.
+
+		logy : boolean
+			Tells the funciton whether or not to log transform the y axis.
+			Defaults to ``False``.
+
+		ed : dictionary
+			Dictionary of keyward arguments to pass for plotting the 
+			experimental data. Must contain keywords compatible with 
+			``matplotlib.pyplot.errorbar``. Defaults to empty dictionary.
+
+		ld : dictionary
+			Dictionary of keyward arguments to pass for plotting the mean of 
+			the forward-modeled data. Must contain keywords compatible with 
+			``matplotlib.pyplot.plot``. Defaults to empty dictionary.
+
+		fbd : dictionary
+			Dictionary of keyward arguments to pass for plotting the forward-
+			modeled uncertaint range. Must contain keywords compatible with 
+			``matplotlib.pyplot.errorbar``. Defaults to empty dictionary.
+
+		Returns
+		-------
+		ax : plt.axis
+			Updated axis instance containing the plot.
+
+		See Also
+		--------
+		isoclump.kDistribution.plot()
+			Plotting function for the ``kDistribution`` class.
+
+		isoclump.EDistribution.plot()
+			Plotting function for the ``EDistribution`` class.
+
+		Examples
+		--------
+		Plotting experimental and forward-modeled results::
+
+			#make an axis
+			fig, ax = plt.subplots(2,2,
+				sharex = True,
+				sharey = 'row')
+
+			#first, plot D
+			ax[0,0] = he.plot(ax = ax[0,0], yaxis = 'D', logy = False)
+
+			#second, plot G
+			ax[0,1] = he.plot(ax = ax[0,1], yaxis = 'G', logy = False)
+
+			#third, plot log(D)
+			ax[1,0] = he.plot(ax = ax[1,0], yaxis = 'D', logy = True)
+
+			#finally, plot log(G)
+			ax[1,1] = he.plot(ax = ax[1,1], yaxis = 'G', logy = True)
+
+		Also, when making plots, one can pass various dictionaries containing 
+		stylistic keyword arguments::
+
+			fig, ax = plt.subplots(1,1)
+
+			#experimental data plt.errorbar dict
+			ed = {fmt = 'o', ecolor = 'k'}
+
+			#forward-modeled mean plt.plot dict
+			ld = {linewidth = 2, c = 'k'}
+
+			#forward-modeled uncertainty plt.fill_between dict
+			fbd = {alpha = 0.5, color = [0.5, 0.5, 0.5]}
+
+			#plot the data
+			ax = he.plot(ax = ax, ed = ed, ld = ld, fbd = fbd)
 		'''
 
 		#make axis if necessary
 		if ax is None:
 			_, ax = plt.subplots(1,1)
 
-		#plot experimental data
-		if self.dex is not None:
-
-			#get the right y data
-			if yaxis == 'D':
-				yex = self.dex[:,0]
-				yex_std = self.dex_std[:,0]
-
-			elif yaxis == 'G':
-				yex = self.Gex
-				yex_std = self.Gex_std
-
-			ax.errorbar(self.tex, yex,
-				yerr = yex_std,
-				fmt = 'o',
-				c = 'k',
-				markeredgecolor = 'w',
-				markersize = 12
-				)
-
-		#plot modeled data
-		if self.d is not None:
-
-			#get the right y data
-			if yaxis == 'D':
-				y = self.d[:,0]
-
-			elif yaxis == 'G':
-				y = self.G
-
-			ax.plot(self.t, y, **kwargs)
-
-		#add dashed line at Deq
-		Deq = caleqs[self.calibration][self.ref_frame](self.T)
-
+		#get the right y axis
 		if yaxis == 'D':
-			ax.plot([0, self.t[-1]], [Deq, Deq],
-				':r',
-				linewidth = 2
-				)
+
+			#extract experimental data if it exists
+			if self.dex is not None:
+				ye = self.dex[:,0]
+				ye_std = self.dex_std[:,0]
+
+				exp = True #store boolean for later
+
+			#extract forward-modeled data if it exists
+			if self.D is not None:
+				ym = self.D
+				ym_std = self.D_std
+
+				mod = True #store boolean for later
+
+			#store y label
+			ylab = 'D47'
 
 		elif yaxis == 'G':
-			ax.plot([0, self.t[-1]], [0,0],
-				':r',
-				linewidth = 2
-				)
+
+			#extract experimental data if it exists
+			if self.G is not None:
+				ye = self.Gex
+				ye_std = self.Gex_std
+
+				exp = True #store boolean for later
+
+			#extract forward-modeled data if it exists
+			if self.G is not None:
+				ym = self.G
+				ym_std = self.G_std
+
+				mod = True #store boolean for later
+
+			#store y label
+			ylab = 'G'
+
+		else:
+			raise ValueError(
+				'unexpected yaxis value %s. Must be "D" or "G"' % yaxis)
+
+		#log transform if necessary
+		if logy is True:
+
+			if exp is True:
+				ye_std = ye_std/ye
+				ye = np.log(ye)
+				
+			if mod is True:
+				ym_std = ym_std/ym
+				ym = np.log(ym)
+				
+
+			#modify ylab
+			ylab = 'ln(' + ylab + ')'
+
+		#plot the existing data
+		if exp is True:
+			#plot the experimental data
+			ax.errorbar(self.tex, ye, ye_std, 
+				label = 'experimental data', 
+				**ed)
+
+		if mod is True:
+			#plot the forward-modeled data
+			ax.plot(self.t, ym, 
+				label = 'forward-modeled results', 
+				**ld)
+
+			#plot the forward-modeled uncertainty
+			ax.fill_between(self.t, ym-ym_std, ym+ym_std,
+				label = 'forward model error', 
+				**fbd)
+
+		#add axis labels and legend
+		ax.set_xlabel('time')
+		ax.set_ylabel(ylab)
+		ax.legend(loc = 'best')
 
 		#return result
 		return ax

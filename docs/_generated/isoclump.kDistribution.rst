@@ -30,7 +30,7 @@ isoclump.kDistribution
       ~kDistribution.npt
       ~kDistribution.omega
       ~kDistribution.params
-      ~kDistribution.params_std
+      ~kDistribution.params_cov
       ~kDistribution.res_inv
       ~kDistribution.rgh_inv
       ~kDistribution.rho_lam

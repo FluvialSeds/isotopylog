@@ -26,6 +26,8 @@ isoclump.HeatingExperiment
 
    .. autosummary::
    
+      ~HeatingExperiment.D
+      ~HeatingExperiment.D_std
       ~HeatingExperiment.G
       ~HeatingExperiment.G_std
       ~HeatingExperiment.Gex
@@ -35,8 +37,6 @@ isoclump.HeatingExperiment
       ~HeatingExperiment.caleq
       ~HeatingExperiment.calibration
       ~HeatingExperiment.clumps
-      ~HeatingExperiment.d
-      ~HeatingExperiment.d_std
       ~HeatingExperiment.dex
       ~HeatingExperiment.dex_std
       ~HeatingExperiment.iso_params
