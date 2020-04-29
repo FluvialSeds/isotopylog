@@ -61,6 +61,7 @@ def _calc_D_from_G(
 
 	G : array-like
 		The array of inputted reaction progress remaining data. Length ``nd``.
+		If ``None``, resulting D and D_std are also ``None``.
 
 	Teq : int or float
 		The equilibrium temperature (in Kelvin) used to calculate reaction
@@ -95,19 +96,24 @@ def _calc_D_from_G(
 	#do some clump-specific math
 	if clumps == 'CO47':
 
-		#calculate equilibrium D value
-		Deq = caleqs[calibration][ref_frame](Teq)
-
-		#calculate D values
-		D = G*(D0 - Deq) + Deq
-
-		#calcualte D_std, assuming no uncertainty in D0 and Deq
-		# if it exists
 		try:
-			D_std = (D0 - Deq)*G_std
+			#calculate equilibrium D value
+			Deq = caleqs[calibration][ref_frame](Teq)
 
+			#calculate D values
+			D = G*(D0 - Deq) + Deq
+
+			#calcualte D_std, assuming no uncertainty in D0 and Deq
+			# if it exists
+			try:
+				D_std = (D0 - Deq)*G_std
+
+			except TypeError:
+				D_std = np.zeros(len(D))
+
+		#gracefully fail if inputted values are None
 		except TypeError:
-			D_std = np.zeros(len(D))
+			D = D_std = None
 
 	return D, D_std
 
@@ -128,9 +134,10 @@ def _calc_G_from_D(
 	Parameters
 	----------
 
-	D : array-like
+	D : None or array-like
 		The array of inputted clumped isotope data. Reaction progress will be 
 		calculated relative to the first row of d (i.e., D0). Length ``nd``.
+		If ``None``, resulting G and G_std are also ``None``.
 
 	Teq : int or float
 		The equilibrium temperature (in Kelvin) used to calculate reaction
@@ -165,20 +172,25 @@ def _calc_G_from_D(
 	#do some clump-specific math
 	if clumps == 'CO47':
 
-		#calcualte equilibrium D value
-		Deq = caleqs[calibration][ref_frame](Teq)
-		
-		#get uncertainty if it exists
-		if D_std is None:
-			D_std = np.zeros(len(D))
+		try:
+			#calcualte equilibrium D value
+			Deq = caleqs[calibration][ref_frame](Teq)
+			
+			#get uncertainty if it exists
+			if D_std is None:
+				D_std = np.zeros(len(D))
 
-		#extract initial data and calculate G
-		D0 = D[0]
-		sigD0 = D_std[0]
-		G = 1 - (D0-D)/(D0-Deq)
+			#extract initial data and calculate G
+			D0 = D[0]
+			sigD0 = D_std[0]
+			G = 1 - (D0-D)/(D0-Deq)
 
-		#calculate G_std, assuming Deq is known perfectly
-		G_std = ((sigD0*(D-Deq)/((D0-Deq)**2))**2 + (D_std/(D0-Deq))**2)**0.5
+			#calculate G_std, assuming Deq is known perfectly
+			G_std = ((sigD0*(D-Deq)/((D0-Deq)**2))**2 + (D_std/(D0-Deq))**2)**0.5
+
+		#gracefully fail if inputted values are None
+		except TypeError:
+			G = G_std = None
 
 	return G, G_std
 

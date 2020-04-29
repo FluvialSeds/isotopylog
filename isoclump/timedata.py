@@ -50,6 +50,7 @@ from .dictionaries import(
 
 # RUNNINT TODO LIST:
 # * Delete _Ginv and _Dinv attributes if overprinting he with a non-HH20 model
+# * Add plotting dict for L_curve
 # * Write plot function
 # * Write docstrings
 # * add plot results images to necessary docstrings
@@ -326,16 +327,15 @@ class HeatingExperiment(object):
 			ref_frame = self.ref_frame,
 			)
 
-		#if d exists, convert D to fraction remaining, G, and store
-		if self.D is not None:
-			self.G, self.G_std = _calc_G_from_D(
-				self.D,
-				self.T,
-				calibration = self.calibration,
-				clumps = self.clumps,
-				D_std = self.D_std,
-				ref_frame = self.ref_frame,
-				)
+		#convert D to fraction remaining, G, and store
+		self.G, self.G_std = _calc_G_from_D(
+			self.D,
+			self.T,
+			calibration = self.calibration,
+			clumps = self.clumps,
+			D_std = self.D_std,
+			ref_frame = self.ref_frame,
+			)
 
 	#customize __repr__ method for printing summary
 	def __repr__(self):
@@ -716,6 +716,9 @@ class HeatingExperiment(object):
 
 				exp = True #store boolean for later
 
+			else:
+				exp = False
+
 			#extract forward-modeled data if it exists
 			if self.D is not None:
 				ym = self.D
@@ -740,17 +743,23 @@ class HeatingExperiment(object):
 
 				mod = True #store boolean for later
 
+			else:
+				mod = False
+
 			#store y label
 			ylab = 'D47'
 
 		elif yaxis == 'G':
 
 			#extract experimental data if it exists
-			if self.G is not None:
+			if self.Gex is not None:
 				ye = self.Gex
 				ye_std = self.Gex_std
 
 				exp = True #store boolean for later
+
+			else:
+				exp = False
 
 			#extract forward-modeled data if it exists
 			if self.G is not None:
@@ -775,6 +784,9 @@ class HeatingExperiment(object):
 					ymreg = None
 
 				mod = True #store boolean for later
+
+			else:
+				mod = False
 
 			#store y label
 			ylab = 'G'
