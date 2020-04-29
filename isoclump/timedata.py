@@ -49,10 +49,6 @@ from .dictionaries import(
 # * Write EDistribution docstring, __init__, __repr__, and @properties
 
 # RUNNINT TODO LIST:
-# * Delete _Ginv and _Dinv attributes if overprinting he with a non-HH20 model
-# * Add plotting dict for L_curve
-# * Write plot function
-# * Write docstrings
 # * add plot results images to necessary docstrings
 # * Update kd attribute setters to be more specific
 
@@ -275,6 +271,7 @@ class HeatingExperiment(object):
 
 	#define all the possible attributes for __init__ using _kwattrs
 	_kwattrs = {
+		'_Ginv' : None,
 		'calibration' : 'Bea17', 
 		'clumps' : 'CO47', 
 		'D' : None, 
@@ -589,6 +586,11 @@ class HeatingExperiment(object):
 				ref_frame = self.ref_frame
 				)
 
+		else:
+			#explicitly put these back to none since we could be overwriting
+			# previous data
+			self._Dinv = self._Ginv = None
+
 	#method for plotting results
 	def plot(
 		self, 
@@ -725,10 +727,10 @@ class HeatingExperiment(object):
 				ym_std = self.D_std
 
 				#get regularized inverse results if they exist
-				if plot_reg is True and hasattr(self, '_Ginv'):
+				if plot_reg is True and self._Dinv is not None:
 					ymreg = self._Dinv
 
-				elif plot_reg is True and not hasattr(self, '_Ginv'):
+				elif plot_reg is True and self._Dinv is None:
 					#warn that it doesn't exist
 					warnings.warn(
 						'Attempting to plot regularized inverse model results'
@@ -767,10 +769,10 @@ class HeatingExperiment(object):
 				ym_std = self.G_std
 
 				#get regularized inverse results if they exist
-				if plot_reg is True and hasattr(self, '_Ginv'):
+				if plot_reg is True and self._Ginv is not None:
 					ymreg = self._Ginv
 
-				elif plot_reg is True and not hasattr(self, '_Ginv'):
+				elif plot_reg is True and not self._Ginv is None:
 					#warn that it doesn't exist
 					warnings.warn(
 						'Attempting to plot regularized inverse model results'

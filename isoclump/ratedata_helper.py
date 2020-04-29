@@ -81,7 +81,9 @@ def calc_L_curve(
 	nom = 150,
 	omega_max = 1e2, 
 	omega_min = 1e-2,
-	plot = False
+	plot = False,
+	ld = {},
+	pd = {},
 	):
 	'''
 	Function to choose the "best" omega value for regularization following
@@ -93,10 +95,10 @@ def calc_L_curve(
 	----------
 
 	he : isoclump.HeatingExperiment
-		`ic.HeatingExperiment` instance containing the D data to be modeled.
+		``ic.HeatingExperiment`` instance containing the D data to be modeled.
 
-	ax : `None` or plt.axis
-		Matplotlib axis to plot on, only relevant if `plot = True`.
+	ax : Non` or plt.axis
+		Matplotlib axis to plot on, only relevant if ``plot = True``.
 
 	kink : int
 		Tells the funciton which L-curve "kink" to use; this is a required
@@ -126,7 +128,18 @@ def calc_L_curve(
 			
 	plot : Boolean
 		Boolean telling the funciton whether or not to plot L-curve results.
-	
+
+	ld : dictionary
+		Dictionary of keyward arguments to pass for plotting the L-curve line.
+		Must contain keywords compatible with ``matplotlib.pyplot.plot``. 
+		Defaults to empty dictionary. Only called if ``plot = True``.
+
+	pd : dictionary
+		Dictionary of keyward arguments to pass for plotting the best-fit omega
+		point. Must contain keywords compatible with 
+		``matplotlib.pyplot.scatter``. Defaults to empty dictionary. Only 
+		called if ``plot = True``.
+
 	Returns
 	-------
 
@@ -249,18 +262,15 @@ def calc_L_curve(
 		ax.plot(
 			res_vec,
 			rgh_vec,
-			linewidth = 2,
-			color = 'k',
-			label = 'L-curve')
+			# label = 'L-curve',
+			**ld)
 
 		ax.scatter(
 			res_vec[i],
 			rgh_vec[i],
 			s = 250,
-			facecolor = 'k',
-			edgecolor = 'w',
-			linewidth = 1.5,
-			label = r'best-fit $\omega$')
+			# label = r'best-fit $\omega$',
+			**pd)
 
 		#set axis labels and text
 
@@ -283,11 +293,11 @@ def calc_L_curve(
 			r'$log_{10}$ (roughness)  = %0.3f' %(rgh_vec[i]))
 		
 		ax.text(
-			0.3,
+			0.95,
 			0.95,
 			label1 + '\n' + label2 + '\n' + label3,
 			verticalalignment = 'top',
-			horizontalalignment = 'left',
+			horizontalalignment = 'right',
 			transform = ax.transAxes)
 
 		return om_best, ax
