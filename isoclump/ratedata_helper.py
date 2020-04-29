@@ -61,9 +61,9 @@ from .core_functions import(
 	)
 
 #import necessary isoclump dictionaries
-from .dictionaries import(
-	caleqs,
-	)
+# from .dictionaries import(
+# 	caleqs,
+# 	)
 
 #import necessary isoclump timedata helper functions
 from .timedata_helper import(

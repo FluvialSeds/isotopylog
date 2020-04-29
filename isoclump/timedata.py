@@ -45,6 +45,9 @@ from .dictionaries import(
 	)
 
 # TODO WEDNESDAY 29 APRIL:
+# * UPDATE GEX, GEX_STD, G, G_STD GETTERS TO SIMPLY CALCULATE BASED ON D47
+#	RATHER THAN SETTING DIRECTLY???
+
 # * Add methods to HeatingExperiment to change iso_params and ref_frame
 # * Write EDistribution docstring, __init__, __repr__, and @properties
 
@@ -125,8 +128,8 @@ class HeatingExperiment(object):
 	ref_frame : string
 		The reference frame used to calculate clumped isotope data. Options
 		are:\n
-			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.
-			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.
+			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.\n
+			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
 			``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. (2006)
 			acidified at 25 C.\n
 		Defaults to ``'CDES90'``.
@@ -166,6 +169,8 @@ class HeatingExperiment(object):
 
 	If ``clumps = 'CO47'``, then inputted d18O data must be in permille
 	relative to VPDB, not VSMOW.
+
+	NOTE ABOUT CALIBRATION AND INPUTTED REF FRAME!
 
 	See Also
 	--------
@@ -249,6 +254,17 @@ class HeatingExperiment(object):
 		#plot the data
 		ax = he.plot(ax = ax, ed = ed, ld = ld, fbd = fbd)
 
+	Converting from CDES90 to CDES25 increases all data by ``aff``::
+
+		he.change_ref_frame('CDES25', aff = 0.092)
+
+	Converting old data from Ghosh to CDES90::
+
+		he.change_ref_frame('CDES90',
+			Ghosh_to_CDES_slope = 1.0381,
+			Ghosh_to_CDES_int = 0.0266,
+			aff = 0.092)
+
 	References
 	----------
 
@@ -271,7 +287,6 @@ class HeatingExperiment(object):
 
 	#define all the possible attributes for __init__ using _kwattrs
 	_kwattrs = {
-		'_Ginv' : None,
 		'calibration' : 'Bea17', 
 		'clumps' : 'CO47', 
 		'D' : None, 
@@ -314,25 +329,25 @@ class HeatingExperiment(object):
 				raise ValueError(
 					'__init__() got an unexpected keyword argument %s' % k)
 
-		#convert Dex to fraction remaining, Gex, and store
-		self.Gex, self.Gex_std = _calc_G_from_D(
-			self.dex[:,0],
-			self.T,
-			calibration = self.calibration,
-			clumps = self.clumps,
-			D_std = self.dex_std[:,0],
-			ref_frame = self.ref_frame,
-			)
+		# #convert Dex to fraction remaining, Gex, and store
+		# self.Gex, self.Gex_std = _calc_G_from_D(
+		# 	self.dex[:,0],
+		# 	self.T,
+		# 	calibration = self.calibration,
+		# 	clumps = self.clumps,
+		# 	D_std = self.dex_std[:,0],
+		# 	ref_frame = self.ref_frame,
+		# 	)
 
-		#convert D to fraction remaining, G, and store
-		self.G, self.G_std = _calc_G_from_D(
-			self.D,
-			self.T,
-			calibration = self.calibration,
-			clumps = self.clumps,
-			D_std = self.D_std,
-			ref_frame = self.ref_frame,
-			)
+		# #convert D to fraction remaining, G, and store
+		# self.G, self.G_std = _calc_G_from_D(
+		# 	self.D,
+		# 	self.T,
+		# 	calibration = self.calibration,
+		# 	clumps = self.clumps,
+		# 	D_std = self.D_std,
+		# 	ref_frame = self.ref_frame,
+		# 	)
 
 	#customize __repr__ method for printing summary
 	def __repr__(self):
@@ -847,8 +862,131 @@ class HeatingExperiment(object):
 		#return result
 		return ax
 
-	
-	#TODO: ADD METHODS FOR CHANGING ISO_PARAMS AND REF_FRAME
+	#method for changing reference frame
+	def change_ref_frame(
+		self, 
+		new_ref_frame, 
+		Ghosh_to_CDES_slope = 1.0381,
+		Ghosh_to_CDES_int = 0.0266,
+		aff = 0.092):
+		'''
+		Changes the HeatingExperiment reference frame and updates all clumped
+		isotope data accordingly.
+
+		Parameters
+		----------
+
+		new_ref_frame : string
+			The new reference frame to convert all data into. Options are:\n
+				``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 
+				25 C.\n
+				``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 
+				90 C.\n
+				``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. 
+				(2006) acidified at 25 C.\n
+		
+		Ghosh_to_CDES_slope : float
+			The slope to convert from Ghosh reference frame to CDES reference
+			frame. Defaults to ``1.038``, the CalTech value taken from Table 4
+			of Dennis et al. (2011).
+
+		Ghosh_to_CDES_int : float
+			The intercept to convert from Ghosh reference frame to CDES 
+			reference frame. Defaults to ``0.0266``, the value taken from 
+			Table 4 of Dennis et al. (2011). 
+
+		aff : float
+			The acid fractionation factor to use when converting 25 C and 90 C
+			acidification. That is, 90 C acidified samples will be lower than
+			25 C acidified samples by an amount equal to aff. Defaults to
+			``0.092``, the value used for the CDES scale by Henkes et al. (2014).
+
+		Returns
+		-------
+
+		he : isoclump.HeatingExperiment
+			The updated ``ic.HeatingExperiment`` instance, now containing data
+			in the new reference frame.
+
+		Notes
+		-----
+
+		These conversion factors are taken from the literature and might not
+		apply to data generated in other labs or using alternative methods.
+		Users should therefore only change reference frames when confident in
+		the transfer function values, and should use lab-specific values where
+		appropriate.
+
+		Examples
+		--------
+
+		Converting from CDES90 to CDES25 increases all data by ``aff``::
+
+			he.change_ref_frame('CDES25', aff = 0.092)
+
+		Converting old data from Ghosh to CDES90::
+
+			he.change_ref_frame('CDES90',
+				Ghosh_to_CDES_slope = 1.0381,
+				Ghosh_to_CDES_int = 0.0266,
+				aff = 0.092)
+
+		References
+		----------
+
+		[1] Ghosh et al. (2006) *Geochim. Cosmochim. Ac.*, **70**, 1439--1456.\n
+		[2] Dennis et al. (2011) *Geochim. Cosmochim. Ac.*, **75**, 7117--7131.\n
+		'''
+
+		#first, update ref_frame attribute
+		orf = self.ref_frame
+		self.ref_frame = new_ref_frame
+		nrf = self.ref_frame #use this since the setter conditions the string
+
+		#second, update all experimental and forward-modeled D data
+
+		#get the right transfer function slopes and intercepts
+		#if orf and nrf only differ by temp, m and be are 1 and 0
+		if ('Ghosh' in orf and 'Ghosh' in nrf) or \
+			('CDES' in orf and 'CDES' in nrf):
+			m = 1.
+			b = 0.
+
+		#if orf is ghosh and nrf is cdes, m and b as inputted
+		elif 'Ghosh' in orf and 'CDES' in nrf:
+			m = Ghosh_to_CDES_slope
+			b = Ghosh_to_CDES_int
+
+		#if orf is cdes and nrf is ghosh, invert inputted m and b
+		elif 'CDES' in orf and 'Ghosh' in nrf:
+			m = 1/Ghosh_to_CDES_slope
+			b = - Ghosh_to_CDES_int/Ghosh_to_CDES_slope
+
+		#get the right acid fractionation factor
+		#if orf and nrf temp are the same, a is zero
+		if ('25' in orf and '25' in nrf) or ('90' in orf and '90' in nrf):
+			a = 0.
+
+		#if orf is colder than nrf, subtract aff
+		elif '25' in orf and '90' in nrf:
+			a = -aff
+
+		# if orf is warmer than nrf, add aff
+		elif '90' in orf and '25' in nrf:
+			a = aff
+
+		#update the data and store
+		if self.dex is not None:
+			self.dex[:,0] = m*self.dex[:,0] + b + a
+
+		if self.dex_std is not None:
+			self.dex_std[:,0] = m*self.dex_std[:,0]
+
+		if self.D is not None:
+			self.D = m*self.D + b + a
+
+		if self.D_std is not None:
+			self.D_std = m*self.D_std
 
 	#define @property getters and setters
 	@property
@@ -1010,14 +1148,25 @@ class HeatingExperiment(object):
 		'''
 		Array containing the forward-modeled raction progress data.
 		'''
-		return self._G
+		G, _ = _calc_G_from_D(
+			self.D,
+			self.T,
+			calibration = self.calibration,
+			clumps = self.clumps,
+			D_std = None,
+			ref_frame = self.ref_frame,
+			)
+
+
+		return G
+		# return self._G
 	
-	@G.setter
-	def G(self, value):
-		'''
-		Setter for G
-		'''
-		self._G = value
+	# @G.setter
+	# def G(self, value):
+	# 	'''
+	# 	Setter for G
+	# 	'''
+	# 	self._G = value
 
 	@property
 	def G_std(self):
@@ -1025,28 +1174,49 @@ class HeatingExperiment(object):
 		Array containing the forward-modeled reaction progress uncertainty, as
 		+/- 1 sigma.
 		'''
-		return self._G_std
+		_, G_std = _calc_G_from_D(
+			self.D,
+			self.T,
+			calibration = self.calibration,
+			clumps = self.clumps,
+			D_std = self.D_std,
+			ref_frame = self.ref_frame,
+			)
+
+		return G_std
+		# return self._G_std
 	
-	@G_std.setter
-	def G_std(self, value):
-		'''
-		Setter for G_std
-		'''
-		self._G_std = value
+	# @G_std.setter
+	# def G_std(self, value):
+	# 	'''
+	# 	Setter for G_std
+	# 	'''
+	# 	self._G_std = value
 
 	@property
 	def Gex(self):
 		'''
 		Array containing the measured experimental reaction progress data.
 		'''
-		return self._Gex
-	
-	@Gex.setter
-	def Gex(self, value):
-		'''
-		Setter for Gex
-		'''
-		self._Gex = value
+
+		Gex, _ = _calc_G_from_D(
+			self.dex[:,0],
+			self.T,
+			calibration = self.calibration,
+			clumps = self.clumps,
+			D_std = None,
+			ref_frame = self.ref_frame,
+			)
+
+		# return self._Gex
+		return Gex
+
+	# @Gex.setter
+	# def Gex(self, value):
+	# 	'''
+	# 	Setter for Gex
+	# 	'''
+	# 	self._Gex = value
 
 	@property
 	def Gex_std(self):
@@ -1054,14 +1224,25 @@ class HeatingExperiment(object):
 		Array containing the measured experimental reaction progress
 		uncertainty, as +/- 1 sigma.
 		'''
-		return self._Gex_std
+
+		_, Gex_std = _calc_G_from_D(
+			self.dex[:,0],
+			self.T,
+			calibration = self.calibration,
+			clumps = self.clumps,
+			D_std = self.dex_std[:,0],
+			ref_frame = self.ref_frame,
+			)
+
+		# return self._Gex_std
+		return Gex_std
 	
-	@Gex_std.setter
-	def Gex_std(self, value):
-		'''
-		Setter for Gex_std
-		'''
-		self._Gex_std = value
+	# @Gex_std.setter
+	# def Gex_std(self, value):
+	# 	'''
+	# 	Setter for Gex_std
+	# 	'''
+	# 	self._Gex_std = value
 
 	@property
 	def iso_params(self):
@@ -1131,14 +1312,17 @@ class HeatingExperiment(object):
 		elif value in ['CDES90','Cdes90','cdes90']:
 			self._ref_frame = 'CDES90'
 
-		elif value in ['Ghosh25','ghosh25','ghosh','Ghosh']:
+		elif value in ['Ghosh25','ghosh25']:
 			self._ref_frame = 'Ghosh25'
+
+		elif value in ['Ghosh90','ghosh90']:
+			self._ref_frame = 'Ghosh90'
 
 		#raise exception if it's not an acceptable string
 		elif isinstance(value, str):
 			raise ValueError(
 				'%s is an invalid ref_frame. Must be one of: "CDES25",'
-				' "CDES90", or "Ghosh25".' % value)
+				' "CDES90", "Ghosh25", or "Ghosh90".' % value)
 
 		#raise different exception if it's not a string
 		else:

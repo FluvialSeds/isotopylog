@@ -426,7 +426,8 @@ def _forward_model(he, kd, t, **kwargs):
 			)
 
 	#store as dictionary
-	mod_attrs = {'D':D, 'D_std':D_std, 'G':G, 'G_std':G_std}
+	# mod_attrs = {'D':D, 'D_std':D_std, 'G':G, 'G_std':G_std}
+	mod_attrs = {'D':D, 'D_std':D_std}
 
 	# D, D_std, G, G_std
 	return mod_attrs

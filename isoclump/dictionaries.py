@@ -22,23 +22,37 @@ b2 = 2.5885e4
 b0 = 0.1745
 
 #Temp conversion constants
-cdesT = 0.092 #25C - 90C
-ghoshT = 0.081 #25C - 90C
+cdes_aff = 0.092 #25C - 90C
+ghosh_aff = 0.081 #25C - 90C
 
 #ref frame conversion constants
 m = 1.0381 #Ghosh to CDES 25C
 b = 0.0266 #Ghosh to CDES 25C
 
+#make lambda equations for native (i.e., literature reported) equations
 
-caleqs = {'PH12':{'Ghosh':lambda T : (p4/(T**4)+p3/(T**3)+p2/(T**2)+p1/T+p0-b)/m,
-				  'CDES25':lambda T : p4/(T**4)+p3/(T**3)+p2/(T**2)+p1/T+p0,
-				  'CDES90':lambda T : p4/(T**4)+p3/(T**3)+p2/(T**2)+p1/T+p0-cdesT},
-		  'SE15':{'Ghosh':lambda T : s4/(T**4) + s2/(T**2) + s0,
-				  'CDES25':lambda T : (s4/(T**4) + s2/(T**2) + s0)*m + b,
-				  'CDES90':lambda T : (s4/(T**4) + s2/(T**2) + s0)*m + b - cdesT},
-		  'Bea17':{'Ghosh':lambda T : (b4/(T**4) + b2/(T**2) + b0 + cdesT - b)/m,
-				  'CDES25':lambda T : b4/(T**4) + b2/(T**2) + b0 + cdesT,
-				  'CDES90':lambda T : b4/(T**4) + b2/(T**2) + b0},
+#PH12: CDES25 native
+PH12 = lambda T : p4/(T**4) + p3/(T**3) + p2/(T**2) + p1/T + p0
+
+#SE15: Ghosh25 native
+SE15 = lambda T : s4/(T**4) + s2/(T**2) + s0
+
+#Bea17: CDES90 native
+Bea17 = lambda T : b4/(T**4) + b2/(T**2) + b0
+
+#store in dictionary
+caleqs = {'PH12':{'Ghosh25':lambda T : (PH12(T) - b)/m,
+				  'Ghosh90': lambda T : (PH12(T) - b)/m - ghosh_aff,
+				  'CDES25': lambda T : PH12(T),
+				  'CDES90':lambda T : PH12(T) - cdes_aff},
+		  'SE15':{'Ghosh25': lambda T : SE15(T),
+		  		  'Ghosh90': lambda T : SE15(T) - ghosh_aff,
+				  'CDES25':lambda T : SE15(T)*m + b,
+				  'CDES90':lambda T : SE15(T)*m + b - cdes_aff},
+		  'Bea17':{'Ghosh25':lambda T : (Bea17(T) - b)/m + ghosh_aff,
+		  		  'Ghosh90' :lambda T : (Bea17(T) - b)/m,
+				  'CDES25':lambda T : Bea17(T) + cdes_aff,
+				  'CDES90': lambda T : Bea17(T)},
 		 }
 
 
