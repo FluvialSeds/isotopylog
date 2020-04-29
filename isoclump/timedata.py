@@ -45,8 +45,6 @@ from .dictionaries import(
 	)
 
 # TODO WEDNESDAY 29 APRIL:
-# * UPDATE GEX, GEX_STD, G, G_STD GETTERS TO SIMPLY CALCULATE BASED ON D47
-#	RATHER THAN SETTING DIRECTLY???
 
 # * Add methods to HeatingExperiment to change iso_params and ref_frame
 # * Write EDistribution docstring, __init__, __repr__, and @properties
@@ -170,7 +168,23 @@ class HeatingExperiment(object):
 	If ``clumps = 'CO47'``, then inputted d18O data must be in permille
 	relative to VPDB, not VSMOW.
 
-	NOTE ABOUT CALIBRATION AND INPUTTED REF FRAME!
+	This class does allow users to change the reference frame in which D values
+	are reported, however, this functionality should be used with caution.
+	Transer functions between "Ghosh" and "CDES" reference frame will likely
+	vary between sample sets, and will certainly vary between labs. For this
+	reason, it is recommended that users upload data in the CDES reference
+	frame and perform all calculations within this frame.
+
+	For calculating D-T calibrations in reference frames other than those used
+	in the original publications (i.e., ``CDES25`` for ``PH12``, ``Ghosh25`` 
+	for ``SE15``, and ``CDES90`` for ``Bea17``), the following transfer function
+	parameters are used:\n
+		Ghosh_to_CDES_slope = 1.0381\n
+		Ghosh_to_CDES_intercept = 0.0266\n
+		CDES_AFF = 0.092\n
+		GHosh_AFF = 0.081\n
+	If other transfer function parameters are required, then users should
+	input D-T calibrations as custom lambda functions.
 
 	See Also
 	--------
@@ -328,26 +342,6 @@ class HeatingExperiment(object):
 			else:
 				raise ValueError(
 					'__init__() got an unexpected keyword argument %s' % k)
-
-		# #convert Dex to fraction remaining, Gex, and store
-		# self.Gex, self.Gex_std = _calc_G_from_D(
-		# 	self.dex[:,0],
-		# 	self.T,
-		# 	calibration = self.calibration,
-		# 	clumps = self.clumps,
-		# 	D_std = self.dex_std[:,0],
-		# 	ref_frame = self.ref_frame,
-		# 	)
-
-		# #convert D to fraction remaining, G, and store
-		# self.G, self.G_std = _calc_G_from_D(
-		# 	self.D,
-		# 	self.T,
-		# 	calibration = self.calibration,
-		# 	clumps = self.clumps,
-		# 	D_std = self.D_std,
-		# 	ref_frame = self.ref_frame,
-		# 	)
 
 	#customize __repr__ method for printing summary
 	def __repr__(self):
@@ -1160,13 +1154,6 @@ class HeatingExperiment(object):
 
 		return G
 		# return self._G
-	
-	# @G.setter
-	# def G(self, value):
-	# 	'''
-	# 	Setter for G
-	# 	'''
-	# 	self._G = value
 
 	@property
 	def G_std(self):
@@ -1185,13 +1172,6 @@ class HeatingExperiment(object):
 
 		return G_std
 		# return self._G_std
-	
-	# @G_std.setter
-	# def G_std(self, value):
-	# 	'''
-	# 	Setter for G_std
-	# 	'''
-	# 	self._G_std = value
 
 	@property
 	def Gex(self):
@@ -1211,13 +1191,6 @@ class HeatingExperiment(object):
 		# return self._Gex
 		return Gex
 
-	# @Gex.setter
-	# def Gex(self, value):
-	# 	'''
-	# 	Setter for Gex
-	# 	'''
-	# 	self._Gex = value
-
 	@property
 	def Gex_std(self):
 		'''
@@ -1236,13 +1209,6 @@ class HeatingExperiment(object):
 
 		# return self._Gex_std
 		return Gex_std
-	
-	# @Gex_std.setter
-	# def Gex_std(self, value):
-	# 	'''
-	# 	Setter for Gex_std
-	# 	'''
-	# 	self._Gex_std = value
 
 	@property
 	def iso_params(self):
