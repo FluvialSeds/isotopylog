@@ -308,7 +308,14 @@ def calc_L_curve(
 		return om_best
 
 #function to fit E distributions using Arrhenius plot
-def fit_Arrhenius(T, lnk, lnk_std = None, p0 = [150, -7], Tref = np.inf):
+def fit_Arrhenius(
+	T, 
+	lnk, 
+	lnk_std = None, 
+	p0 = [150, -7], 
+	Tref = np.inf,
+	zero_int = False
+	):
 	'''
 	Determines the activation energy by fitting an Arrhenius plot. Can accept
 	a reference temperature for calculating a reference k rather than using
@@ -340,6 +347,12 @@ def fit_Arrhenius(T, lnk, lnk_std = None, p0 = [150, -7], Tref = np.inf):
 		uncertainty (i.e., to avoid large extrapolations in 1/T space). Can 
 		pass ``np.inf`` for a "traditional" Arrhenius fit; that is, kref = k0 
 		= x intercept. Defaults to ``np.inf``.
+
+	zero_int : boolean
+		Tells the function whether or not to force the intercept to zero.
+		This is used for calculating sig_E in the 'HH20' model and
+		ln([p0]/[peq]) for the 'SE15' model, both of which are expected to have
+		zero intercept in ln(k) vs. 1/T space.
 
 	Returns
 	-------
@@ -387,25 +400,49 @@ def fit_Arrhenius(T, lnk, lnk_std = None, p0 = [150, -7], Tref = np.inf):
 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
 	'''
 
-	#fit model to lambda function to allow inputting constants
-	lamfunc = lambda T, E, lnkref: _fArrhenius(T, E, lnkref, Tref)
-
 	#if lnk_std is none, make it be an array of ones (i.e., unweighted)
 	if lnk_std is None:
 		lnk_std = np.ones(len(T))
 
+	#for the case of forced zero intercept
+	if zero_int is True:
+		
+		#fit model to lambda function with forced zero intercept
+		lamfunc = lambda T, E : _fArrhenius(T, E, 0, np.inf)
+
+		#update P0
+		p0 = p0[0]
+
+	#for the case with no forced intercept
+	else:
+		#fit model to lambda function to allow inputting constants
+		lamfunc = lambda T, E, lnkref: _fArrhenius(T, E, lnkref, Tref)
+
 	#solve
-	params, params_cov = curve_fit(lamfunc, T, lnk, p0,
+	p, pcov = curve_fit(lamfunc, T, lnk, p0,
 		sigma = lnk_std, 
 		absolute_sigma = True,
-		bounds = ([0, -np.inf],[np.inf, np.inf]), #E > 0; lnkref unbounded
+		bounds = ([-np.inf, -np.inf],[np.inf, np.inf]), #everything unbounded
 		)
 
 	#calcualte lnkhat
-	lnkhat = lamfunc(T, *params)
+	lnkhat = lamfunc(T, *p)
 
 	#calculate rmse
 	rmse = _calc_rmse(lnk, lnkhat)
+
+	#if zero_int was true, put params and params_cov back into 2x2 matrix in
+	# order to keep things consistent
+	if zero_int is True:
+		params = np.zeros(2)
+		params[0] = p
+
+		params_cov = np.zeros([2,2])
+		params_cov[0,0] = pcov
+
+	else:
+		params = p
+		params_cov = pcov
 
 	return params, params_cov, rmse
 

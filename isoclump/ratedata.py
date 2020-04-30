@@ -36,7 +36,9 @@ from .ratedata_helper import(
 
 #import necessary dictionaries
 from .dictionaries import(
-	mod_params
+	ed_params,
+	mod_params,
+	zi,
 	)
 
 class kDistribution(object):
@@ -866,7 +868,7 @@ class EDistribution(object):
 	'''
 
 	_kwattrs = {
-		'P0' : [150, -7],
+		'p0' : [150, -7],
 		'Tref' : np.inf,
 		}
 
@@ -898,7 +900,18 @@ class EDistribution(object):
 				raise ValueError(
 					'__init__() got an unexpected keyword argument %s' % k)
 
-	# def __repr__(self):
+	def __repr__(self):
+		'''
+		Sets how EDistribution is represented when called on the command line.
+
+		Returns
+		-------
+
+		summary : str
+			String representation of the summary attribute data frame.
+		'''
+
+		return str(self.summary)
 
 	#method to append new data to an existing EDistribution
 	def append(self, new_data):
@@ -1008,8 +1021,9 @@ class EDistribution(object):
 				self.Ts, 
 				self.kparams[:,i], 
 				lnk_std = self.kparams_std[:,i], 
-				p0 = self.P0, 
-				Tref = self.Tref
+				p0 = self.p0, 
+				Tref = self.Tref,
+				zero_int = zi[self.model][i] #since some params have zero int
 				)
 
 		return Eparams
@@ -1035,8 +1049,9 @@ class EDistribution(object):
 				self.Ts, 
 				self.kparams[:,i], 
 				lnk_std = self.kparams_std[:,i], 
-				p0 = self.P0, 
-				Tref = self.Tref
+				p0 = self.p0, 
+				Tref = self.Tref,
+				zero_int = zi[self.model][i] #since some params have zero int
 				)
 
 		return epc
@@ -1158,18 +1173,18 @@ class EDistribution(object):
 		return len(self._kds)
 	
 	@property
-	def P0(self):
+	def p0(self):
 		'''
 		The initial guess for fitting Arrhenius plots.
 		'''
-		return self._P0
+		return self._p0
 	
-	@P0.setter
-	def P0(self, value):
+	@p0.setter
+	def p0(self, value):
 		'''
-		Setter for P0.
+		Setter for p0.
 		'''
-		self._P0 = value
+		self._p0 = value
 
 	@property
 	def rmse(self):
@@ -1191,11 +1206,53 @@ class EDistribution(object):
 				self.Ts, 
 				self.kparams[:,i], 
 				lnk_std = self.kparams_std[:,i], 
-				p0 = self.P0, 
-				Tref = self.Tref
+				p0 = self.p0, 
+				Tref = self.Tref,
+				zero_int = zi[self.model][i] #since some params have zero int
 				)
 
 		return rmse
+
+	@property
+	def summary(self):
+		'''
+		Series containing all the summary data.
+		'''
+
+		#extract parameters
+		try:
+			params = ed_params[self.model]
+			pstr = ', '.join(p for p in params)
+
+		except KeyError: #model not in list
+			params = None
+
+		n = len(params)
+
+		#get values into strings
+		Emstr = ', '.join(['%.2f' %p for p in self.Eparams[0,:]])
+		lnkrmstr = ', '.join(['%.2f' %p for p in self.Eparams[1,:]])
+
+		stds = np.sqrt(np.diag(self.Eparams_cov))
+		Esstr = ', '.join(['%.2f' % stds[2*i] for i in range(n)])
+		lnkrsstr = ', '.join(['%.2f' % stds[2*i + 1] for i in range(n)])
+
+		rmsestr = ', '.join(['%.3f' % p for p in self.rmse])
+		
+		#make summary table
+		attrs = {'model' : self.model,
+				 'params' : pstr,
+				 'E mean' : Emstr,
+				 'E std. dev.' : Esstr,
+				 'ln(kref) mean' : lnkrmstr,
+				 'ln(kref) std. dev.' : lnkrsstr,
+				 'rmse' : rmsestr,
+				 'npt' : self.npt
+				 }
+
+		s = pd.Series(attrs)
+
+		return s
 
 	@property
 	def Tref(self):

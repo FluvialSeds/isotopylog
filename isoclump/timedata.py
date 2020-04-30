@@ -45,8 +45,9 @@ from .dictionaries import(
 	)
 
 # TODO Thursday 30 APRIL:
-# * SEND RENT CHECK!
 # * FINISH WRITING EDISTRIBUTION METHODS AND ATTRIBUTES
+# * UPDATE STOLPER MODEL TO RETURN LN(P/PEQ) RATHER THAN (P/PEQ)!
+
 
 # * Add methods to HeatingExperiment to change iso_params and ref_frame
 # * Write EDistribution docstring, __init__, __repr__, and @properties

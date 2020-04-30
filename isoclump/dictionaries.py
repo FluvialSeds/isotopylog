@@ -111,13 +111,25 @@ mod_params = {'Hea14' : ['ln(kc)','ln(kd)','ln(k2)'],
 			  'SE15' : ['ln(k1)','ln(k_dif_single)','[pair]_0/[pair]_eq']
 			  }
 
+# 4) Dictionary for holding EDistribution model parameters for summary printing
+ed_params = {'Hea14' : ['Ec', 'Ed', 'E2'],
+			'HH20' : ['mu_E', 'sig_E'],
+			'PH12' : ['E', 'intercept'],
+			'SE15' : ['E1', 'Edif_single', 'E[pair]_0/[pair]_eq']
+		   }
 
 
 # 4) Dictionary for holding clumped isotope names for summary printing
 clump_isos = {'CO47' : ['D47','d13C_vpdb','d18O_vpdb'],
 			 }
 
-
+# 4) Dictionary for holding booleans telling the EDistribution which parameters
+#	 to force zero intercepts
+zi = {'Hea14' : [False, False, False],
+	  'HH20' : [False, True], 
+	  'PH12' : [False, False], 
+	  'SE15' : [False, False, True]
+	 }
 
 
 
