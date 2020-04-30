@@ -436,7 +436,7 @@ def _fPH12(t, lnk, intercept):
 	return intercept*np.exp(-t*np.exp(lnk))
 
 #function to fit SE15 model using backward Euler
-def _fSE15(t, lnk1f, lnkds, p0peq, D0, Deq, Dppeq, he):
+def _fSE15(t, lnk1f, lnkds, lnp0peq, D0, Deq, Dppeq, he):
 	'''
 	Function for solving the Stolper and Eiler (2015) paired diffusion model
 	using a backward Euler finite difference approach.
@@ -455,9 +455,9 @@ def _fSE15(t, lnk1f, lnkds, p0peq, D0, Deq, Dppeq, he):
 		Natural log of the backward k value for the [pair] <-> [45]s + [46]s
 		equation (SE15 Eq. 8b). To be estimated using ``curve_fit``.
 
-	p0peq : float
-		Ratio of initial pair composition relative to equilibrium pair
-		composition. To be estimated using ``curve_fit``.
+	lnp0peq : float
+		Natural log of the ratio of initial pair composition relative to 
+		equilibrium pair composition. To be estimated using ``curve_fit``.
 
 	D0 : float
 		Initial D47 value of the experiment.
@@ -506,6 +506,7 @@ def _fSE15(t, lnk1f, lnkds, p0peq, D0, Deq, Dppeq, he):
 	#exponentiate and convert to kdf
 	kds = np.exp(lnkds)
 	kdp = kds*((R45_stoch - Rpeq) * (R46_stoch - Rpeq))/Rpeq
+	p0peq = np.exp(lnp0peq)
 
 	#get other unknowns into right format
 	k1f = np.exp(lnk1f)

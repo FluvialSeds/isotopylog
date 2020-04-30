@@ -446,7 +446,6 @@ def fit_Arrhenius(
 
 	return params, params_cov, rmse
 
-
 #function to fit data using Hea14 model
 def fit_Hea14(he, p0 = [-7., -7., -7.]):
 	'''
@@ -1015,7 +1014,7 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	return params, params_cov, rmse, npt
 
 #function to fit data using SE15 model
-def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
+def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6):
 	'''
 	Fits D evolution data using the paired diffusion model of Stolper and
 	Eiler (2015). The function solves for both k1 and k_dif_single as well
@@ -1030,8 +1029,8 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
-		order [ln(k1), ln(k_dif_single), p0/peq]. Defaults to 
-		`[-7, -9, 1.0001]`.
+		order [ln(k1), ln(k_dif_single), ln([pair]0/[pair]eq)]. Defaults to 
+		`[-7, -9, 0.0001]`.
 
 	z : int
 		The mineral lattice coordination number to use for calculating the
@@ -1043,7 +1042,7 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 	params : np.ndarray
 		Array of resulting parameter values, in the order
-		`[ln(k1), ln(k_dif_single), p0/peq]`.
+		`[ln(k1), ln(k_dif_single), ln([pair]0/[pair]eq)]`.
 
 	params_cov : np.ndarray
 		Covariance matrix associated with the resulting parameter values, of
@@ -1111,7 +1110,7 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 
 		#assume some a priori guess at p0; results are sensitive to choice of
 		# p0 as described in SE15
-		p0 = [-7., -9., 1.00014]
+		p0 = [-7., -9., 0.00014]
 
 		#assume he is a HeatingExperiment instance
 		results = ic.fit_SE15(he, p0 = p0)
@@ -1149,11 +1148,11 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 	cs = [D0, Deq, Dppeq, he]
 
 	#fit model to lambda function to allow inputting constants
-	lamfunc = lambda t, lnk1f, lnkds, p0peq: _fSE15(
+	lamfunc = lambda t, lnk1f, lnkds, lnp0peq: _fSE15(
 		t, 
 		lnk1f, 
 		lnkds, 
-		p0peq, 
+		lnp0peq, 
 		*cs
 		)
 
@@ -1161,7 +1160,7 @@ def fit_SE15(he, p0 = [-7., -9., 1.0001], z = 6):
 	params, params_cov = curve_fit(lamfunc, x, y, p0,
 		sigma = y_std, 
 		absolute_sigma = True,
-		bounds = ([-np.inf,-np.inf,1.],[np.inf,np.inf,np.inf]), #k unbounded
+		bounds = ([-np.inf,-np.inf,0.],[np.inf,np.inf,np.inf]), #k unbounded
 		)
 
 	#calculate Dex_hat

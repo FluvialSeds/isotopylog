@@ -188,7 +188,7 @@ def _calc_G_from_D(
 			#extract initial data and calculate G
 			if D0 is None:
 				D0 = D[0]
-				
+
 			sigD0 = D_std[0]
 			G = 1 - (D0-D)/(D0-Deq)
 
@@ -393,7 +393,13 @@ def _forward_model(he, kd, t, **kwargs):
 		#combine constants into list
 		cs = [D0, Deq, Dppeq, he]
 
-		lamfunc = lambda t, lnk1, lnkds, p0peq: _fSE15(t, lnk1, lnkds, p0peq, *cs) 
+		lamfunc = lambda t, lnk1, lnkds, lnp0peq: _fSE15(
+			t, 
+			lnk1, 
+			lnkds, 
+			lnp0peq, 
+			*cs
+			) 
 
 		#calculate D (note: this model returns D, not G!)
 		D = lamfunc(t, *p)

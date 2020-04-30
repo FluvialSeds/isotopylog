@@ -57,7 +57,7 @@ class kDistribution(object):
 			``'Hea14'``: [ln(kc), ln(kd), ln(k2)] \n
 			``'HH20'``: [ln(k_mu), ln(k_sig)] \n
 			``'PH12'``: [ln(k), intercept] \n
-			``'SE15'``: [ln(k1), ln(k_dif_single), [pair]_0/[pair]_eq] \n
+			``'SE15'``: [ln(k1), ln(k_dif_single), ln([pair]_0/[pair]_eq)] \n
 		See discussion in each reference for parameter definitions and
 		further details. All `k` values should be in units of inverse time,
 		although the exact time unit can change depending on inputs.
@@ -464,7 +464,6 @@ class kDistribution(object):
 			model,
 			he.T,
 			lam = lam,
-			# model = model,
 			npt = npt,
 			omega = omega,
 			params_cov = params_cov,
@@ -476,7 +475,7 @@ class kDistribution(object):
 			)
 
 	#define method for plotting HH20 results
-	def plot(self, ax = None, lnargs = {}, invargs = {}):
+	def plot(self, ax = None, lnd = {}, invd = {}):
 		'''
 		Generates a plot of ln(k) distributions for 'HH20'-type models.
 
@@ -486,11 +485,11 @@ class kDistribution(object):
 		ax : None or plt.axis
 			Axis for plotting results; defaults to `None`.
 
-		lnargs : dict
+		lnd : dict
 			Dictionary of stylistic keyword arguments to pass to `plt.plot()`
 			when plotting lognormal results. Defaults to empty dict.
 
-		invargs : dict
+		invd : dict
 			Dictionary of stylistic keyword arguments to pass to `plt.plot()`
 			when plotting inversion results, if they exist. Defaults to empty
 			dict.
@@ -511,8 +510,8 @@ class kDistribution(object):
 		See Also
 		--------
 
-		matplotlib.pyplot.plot
-			Underlying plotting function that is called.
+		isoclump.EDistribution.plot
+			Class method for plotting EDistribution data as Arrhenius plots.
 
 		Examples
 		--------
@@ -540,11 +539,11 @@ class kDistribution(object):
 			fig, ax = plt.subplots(1,1)
 
 			#define plotting style
-			lnargs = {'linewidth':2, 'c':'k'}
-			invargs = {'linewidth':1.5, 'c':'g'}
+			lnd = {'linewidth':2, 'c':'k'}
+			invd = {'linewidth':1.5, 'c':'g'}
 
 			#plot results
-			kd.plot(ax = ax, lnargs = lnargs, invargs = invargs)
+			kd.plot(ax = ax, lnd = lnd, invd = invd)
 		'''
 
 		#check if model is right
@@ -563,7 +562,7 @@ class kDistribution(object):
 			self.lam,
 			self.rho_lam,
 			label = 'lognormal fit',
-			**lnargs
+			**lnd
 			)
 
 		#plot inverse data if it exists
@@ -577,7 +576,7 @@ class kDistribution(object):
 				self.lam,
 				self.rho_lam_inv,
 				label = invlab,
-				**invargs
+				**invd
 				)
 
 		#set axis labels
@@ -872,6 +871,8 @@ class EDistribution(object):
 		'Tref' : np.inf,
 		}
 
+	#define magic methods
+	#initialize the object
 	def __init__(self, kds, **kwargs):
 		'''
 		Initilizes the object.
@@ -900,6 +901,7 @@ class EDistribution(object):
 				raise ValueError(
 					'__init__() got an unexpected keyword argument %s' % k)
 
+	#customize __repr__ method for printing summary
 	def __repr__(self):
 		'''
 		Sets how EDistribution is represented when called on the command line.
@@ -995,11 +997,158 @@ class EDistribution(object):
 		kds = self.kds
 
 		#remove entry by index
-		kds.remove(kds[i])
+		kds.remove(kds[index])
 
 		#store new list
 		self.kds = kds
 
+	#define method for plotting Arrhenius plots
+	def plot(
+		self, 
+		ax = None, 
+		param = 1, 
+		ed = {'fmt' : 'o'}, 
+		ld = {}, 
+		fbd = {'alpha' : 0.5}
+		):
+		'''
+		Generates an Arrhenius plot of a given parameter.
+
+		Parameters
+		----------
+
+		ax : None or plt.axis
+			Axis for plotting results; defaults to `None`.
+
+		param : int
+			The parameter of interest for making Arrhenius plot, specific to
+			each model as follows:
+				``'Hea14'``: [ln(kc), ln(kd), ln(k2)] \n
+				``'HH20'``: [ln(k_mu), ln(k_sig)] \n
+				``'PH12'``: [ln(k), intercept] \n
+				``'SE15'``: [ln(k1), ln(k_dif_single), ln([pair]_0/[pair]_eq)]\n
+			For eample, to make an Arrhenius plot of ln(kc) for 'Hea14' models,
+			pass ``param = 1``.
+
+		ed : dictionary
+			Dictionary of keyward arguments to pass for plotting the 
+			experimental data. Must contain keywords compatible with 
+			``matplotlib.pyplot.errorbar``. Defaults to dictionary with
+			'fmt' = 'o'.
+
+		ld : dictionary
+			Dictionary of keyward arguments to pass for plotting the mean of 
+			the Arrhenius model fit line. Must contain keywords compatible with 
+			``matplotlib.pyplot.plot``. Defaults to empty dictionary.
+
+		fbd : dictionary
+			Dictionary of keyward arguments to pass for plotting the Arrhenius
+			model uncertaint range. Must contain keywords compatible with 
+			``matplotlib.pyplot.errorbar``. Defaults to dictionary with 'alpha'
+			 = 0.5..
+
+		Returns
+		-------
+
+		ax : plt.axis
+			Updated axis containing results.
+
+		Raises
+		------
+		ValueError
+			If passed ``param`` is outside of the range of existing parameters
+			(e.g., >2 for 'HH20' models).
+
+		See Also
+		--------
+
+		isoclump.kDistribution.plot
+			Class method for plotting rate distributions for 'HH20' model types.
+
+		Examples
+		--------
+
+		Basic implementation, assuming `ic.EDistribution` instance `ed` exists
+		and contains data of model type 'HH20'::
+
+			#import modules
+			import isoclump as ic
+			import matplotlib.pyplot as plt
+
+			#make figure
+			fig, ax = plt.subplots(2,1)
+
+			#plot results
+			ed.plot(ax = ax[0], param = 1) #to plot mu_E
+			ed.plot(ax = ax[1], param = 2) #to plot sig_E
+
+		Similar implementation, but now putting in stylistic keyword args::
+
+			#import modules
+			import isoclump as ic
+			import matplotlib.pyplot as plt
+
+			#make figure
+			fig, ax = plt.subplots(2,1)
+
+			#define plotting style
+			ld = {'linewidth':2, 'c':'k'}
+
+			#plot results
+			ed.plot(ax = ax[0], param = 1, ld = ld) #to plot mu_E
+			ed.plot(ax = ax[1], param = 2, ld = ld) #to plot sig_E
+		'''
+
+		#check if param is acceptable
+		n = len(self.Eparams)
+		i = param - 1 #get to python zero indexing
+
+		if i > n:
+			raise ValueError(
+				'Param value %s is greater than the total number of parameters'
+				' for model type %s.' % (param, self.model)
+				)
+
+		#make axis if necessary
+		if ax is None:
+			_, ax = plt.subplots(1,1)
+
+		#plot errorbar data
+		ax.errorbar(
+			1000/self.Ts,
+			self.kparams[:,i],
+			self.kparams_std[:,i],
+			label = 'experimental rate data',
+			**ed
+			)
+
+		# #plot inverse data if it exists
+		# if self.rho_lam_inv is not None:
+
+		# 	#make label
+		# 	invlab = r'inverse model fit ($\omega$ = %.2f)' % self.omega
+
+		# 	#plot data
+		# 	ax.plot(
+		# 		self.lam,
+		# 		self.rho_lam_inv,
+		# 		label = invlab,
+		# 		**invargs
+		# 		)
+
+		#set axis labels
+		ax.set_xlabel(r'1000/T (Kelvin))')
+		ax.set_ylabel(mod_params[self.model][i])
+
+		#add legend
+		ax.legend(loc = 'best')
+
+		#return result
+		return ax
+
+
+
+	#Define @property getters and setters
 	@property
 	def Eparams(self):
 		'''
@@ -1285,19 +1434,10 @@ class EDistribution(object):
 		return Ts
 	
 
-
-
 	# #define classmethod for defining instance directly from literature values
 	# @classmethod
 	# def from_literature(cls, clumps = 'CO47', mineral = 'calcite',
 	# 	paper = 'HH20'):
-	# 	'''
-	# 	ADD DOCSTRING
-	# 	'''
-
-	# #define classmethod for defining instance directly from a set of rates
-	# @classmethod
-	# def from_rates(cls, rate_list):
 	# 	'''
 	# 	ADD DOCSTRING
 	# 	'''
@@ -1308,17 +1448,6 @@ class EDistribution(object):
 	# 	ADD DOCSTRING
 	# 	'''
 
-	# #define method for plotting results
-	# def plot(self, ax = None, xaxis = 'E', yaxis = 'pE'):
-	# 	'''
-	# 	ADD DOCSTRING
-	# 	'''
-
-	# #define function to update E distribution using new results
-	# def update(self, ratedata_list):
-	# 	'''
-	# 	ADD DOCSTRING
-	# 	'''
 
 
 
