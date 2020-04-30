@@ -22,6 +22,7 @@ import inspect
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import warnings
 
 #import helper functions
 from .ratedata_helper import(
@@ -244,6 +245,30 @@ class kDistribution(object):
 			String representation of the summary attribute data frame.
 		'''
 		return str(self.summary)
+
+	#customize the __eq__ method for determining if two kDistributions are equal
+	def __eq__(self, other):
+		'''
+		Sets how kDistributions are evaluated when checking equality
+
+		Returns
+		-------
+
+		b : boolean
+			Boolean telling whether or not two kDistribution objects are equal.
+		'''
+
+		try:
+			b = (self.summary == other.summary).all()
+
+		except AttributeError:
+			warnings.warn(
+				'Attempting to test equality of objects of different type',
+				UserWarning)
+
+			b = False
+
+		return b
 
 	#Define @classmethods
 	#define classmethod for generating kDistribution instance from data
@@ -796,6 +821,9 @@ class kDistribution(object):
 
 	@T.setter
 	def T(self, value):
+		'''
+		Setter for T attribute.
+		'''
 		self._T = value
 	
 
@@ -807,12 +835,21 @@ class EDistribution(object):
 
 	Parameters
 	----------
+
 	kds : list
 		List of ``isoclump.kDistribution`` objects over which to calculate
 		activation energies.
 
 	Raises
 	------
+
+	TypeError
+		If attempting to pass kds that is not an iterable list of
+		``isoclump.kDistribution`` and/or ``isoclump.EDistribution`` objects.
+
+	ValueError
+		If attempting to create an EDistribution object using kDistributions
+		of multiple different model types.
 
 	Notes
 	-----
@@ -845,6 +882,7 @@ class EDistribution(object):
 			The ``EDistribution`` object.
 		'''
 
+		#add kds list to self
 		self.kds = kds
 
 	# def __repr__(self):
@@ -918,16 +956,58 @@ class EDistribution(object):
 		Setter for kds.
 		'''
 
-		#first, make sure value is an iterable list with >= 2 kd objects
+		#first, make sure value is an iterable non-string list
+		if not hasattr(value, '__iter__') or isinstance(value, str):
 
-		#the, check that all kds are of the same model
-		mods = [k.model for k in value]
+			vt = type(value).__name__
+			raise TypeError(
+				'Unexpected kds object of type %s. Must be iterable list of'
+				' kDistributions and/or EDistributions.' % vt)
+
+		#second, make sure everything in the list has a model attribute, i.e.,
+		# is either a kDistribution or EDistribution object
+		try:
+			mods = [k.model for k in value]
+
+		except AttributeError:
+
+			lts = list(set([type(k).__name__ for k in value]))
+			ltstr = ', '.join([t for t in lts])
+
+			raise TypeError(
+				'Unexpected entry type in kds. Currently contains objects of'
+				' types: %s. Must contain only kDistribution and EDistribution'
+				' objects.' % ltstr)
+
+		#third, check that all kds are of the same model
 		if len(set(mods)) != 1:
+
+			mts = list(set(mods))
 			raise ValueError(
 				'Attempting to calculate E distributions on kDistribution'
-				' objects of different model types.')
+				' objects of model types: %s. All objects must be of the same'
+				' model type.' % mts)
 
-		self._kds = value
+		#fourth, if any entires in kds are EDistributions, extract their
+		# underlying kDistribution list and combine everything
+		kdlist = []
+
+		for k in value:
+			try:
+				kdlist.append(k.kds)
+
+			except AttributeError:
+				kdlist.append(k)
+
+		#finally, warn if there are repeat entries
+		n = len(kdlist)
+		eqn = sum([kdlist[i] == k for i in range(n) for k in kdlist])
+		if eqn != n:
+			warnings.warn(
+				'kds list contains repeat entries. Consier removing repeated'
+				' entry as to not bias regression statistics', UserWarning)
+
+		self._kds = kdlist
 		self._model = list(set(mods))[0]
 
 	@property
