@@ -123,6 +123,7 @@ def _calc_G_from_D(
 	Teq, 
 	calibration = 'Bea17', 
 	clumps = 'CO47', 
+	D0 = None,
 	D_std = None,
 	ref_frame = 'CDES90'
 	):
@@ -149,6 +150,10 @@ def _calc_G_from_D(
 
 	clumps : string
 		The clumped isotope system being analyzed. Defaults to ``'CO47'``.
+
+	D0 : None or float	
+		The initial D value of the experiment. If ``None``, assumes the first
+		entry of D is equal to D0.
 
 	D_std : None or array-like
 		Analytical uncertainty for each entry in D. If ``None``, assumes no
@@ -181,7 +186,9 @@ def _calc_G_from_D(
 				D_std = np.zeros(len(D))
 
 			#extract initial data and calculate G
-			D0 = D[0]
+			if D0 is None:
+				D0 = D[0]
+				
 			sigD0 = D_std[0]
 			G = 1 - (D0-D)/(D0-Deq)
 

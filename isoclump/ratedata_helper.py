@@ -15,6 +15,7 @@ from __future__ import(
 #set magic attributes
 __docformat__ = 'restructuredtext en'
 __all__ = ['calc_L_curve',
+		   'fit_Arrhenius',
 		   'fit_Hea14',
 		   'fit_HH20',
 		   'fit_HH20inv',
@@ -48,6 +49,7 @@ from .calc_funcs import(
 	_calc_R_stoch,
 	_calc_rmse,
 	_calc_Rpeq,
+	_fArrhenius,
 	_fHea14,
 	_fPH12,
 	_fSE15,
@@ -305,6 +307,109 @@ def calc_L_curve(
 	else:
 		return om_best
 
+#function to fit E distributions using Arrhenius plot
+def fit_Arrhenius(T, lnk, lnk_std = None, p0 = [150, -7], Tref = np.inf):
+	'''
+	Determines the activation energy by fitting an Arrhenius plot. Can accept
+	a reference temperature for calculating a reference k rather than using
+	k0, the value at the x intercept in 1/T space.
+
+	Parameters
+	----------
+
+	T : array-like
+		Array of temperature values at which rate data exist, in Kelvin. Of
+		length ``nT``.
+
+	lnk : array-like
+		Array of corresponding natural logged rate data, in units of inverse
+		time. Of length ``nT``.
+
+	lnk_std : None or array-like
+		Array of corresponding uncertainty in natural logged rate data. If not
+		``None``, then must be of length ``nT``. Defaults to ``None`` for an
+		unweighted fit.
+	
+	p0 : array-like
+		Array of paramter guess to initialize the fitting algorithm, in the
+		order [E, ln(kref)]. Defaults to ``[150, -7]``.
+
+	Tref : int or Float
+		The reference temperature, in Kelvin. Following Passey and Henkes 
+		(2012), Tref can be inputted in order to minimize intercept parameter 
+		uncertainty (i.e., to avoid large extrapolations in 1/T space). Can 
+		pass ``np.inf`` for a "traditional" Arrhenius fit; that is, kref = k0 
+		= x intercept. Defaults to ``np.inf``.
+
+	Returns
+	-------
+
+	params : np.ndarray
+		Array of resulting parameter values, in the order
+		[E, ln(kref)].
+
+	params_cov : np.ndarray
+		Covariance matrix associated with the resulting parameter values, of
+		shape [2 x 2]. The +/- 1 sigma uncertainty for each parameter can be 
+		calculated as ``np.sqrt(np.diag(params_cov))``
+
+	rmse : float
+		Root Mean Square Error (in lnk units) of the model fit.
+
+	Notes
+	-----
+
+	Changing Tref will have no impact on resulting activation energy value or
+	corresponding uncertainty. Only the uncertainty in the intercept will be
+	affected.
+
+	See Also
+	--------
+
+	isoclump.EDistribution
+		The class for performing all activation energy based calculations.
+
+	Examples
+	--------
+
+	Basic implementation, assuming some rate values have been calculated over
+	some temperature range::
+		
+		#import modules
+		import isoclump as ic
+
+		#assume T and lnk exist
+		results = ic.fit_Arrhenius(T, lnk)
+
+	References
+	----------
+
+	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+	'''
+
+	#fit model to lambda function to allow inputting constants
+	lamfunc = lambda T, E, lnkref: _fArrhenius(T, E, lnkref, Tref)
+
+	#if lnk_std is none, make it be an array of ones (i.e., unweighted)
+	if lnk_std is None:
+		lnk_std = np.ones(len(T))
+
+	#solve
+	params, params_cov = curve_fit(lamfunc, T, lnk, p0,
+		sigma = lnk_std, 
+		absolute_sigma = True,
+		bounds = ([0, -np.inf],[np.inf, np.inf]), #E > 0; lnkref unbounded
+		)
+
+	#calcualte lnkhat
+	lnkhat = lamfunc(T, *params)
+
+	#calculate rmse
+	rmse = _calc_rmse(lnk, lnkhat)
+
+	return params, params_cov, rmse
+
+
 #function to fit data using Hea14 model
 def fit_Hea14(he, p0 = [-7., -7., -7.]):
 	'''
@@ -443,11 +548,6 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
 		order [ln(k_mu), ln(k_sig)]. Defaults to ``[-20, 5]``.
-
-	pcov : np.array
-		Array of outputted parameter covariance. To be passed as hidden
-		attribute to kDistribution and used for calculating forward-modeling
-		uncertainty.
 
 	Returns
 	-------

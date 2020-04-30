@@ -276,6 +276,40 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 
 	return Rpeq
 
+#function to fit Arrhenius plot
+def _fArrhenius(T, E, lnkref, Tref):
+	'''
+	Defines the Arrhenius plot that is linear in lnk vs. 1/T space and is
+	referenced to Tref and lnkref.
+
+	Parameters
+	----------
+
+	T : array-like
+		Array of temperature values, in Kelvin.
+
+	E : float
+		The activation energy value, in kJ/mol.
+
+	lnkref : float
+		The natural log of the rate constant at the reference temperature.
+
+	Tref : float
+		The reference temperature, in Kelvin.
+
+	Returns
+	-------
+
+	lnk : array-like
+		Array of resulting estimated lnk values.
+	'''
+
+	#set constants
+	R = 8.314/1000 #kJ/mol/K
+
+	#calculate lnk
+	return lnkref + (E/R)*(1/Tref - 1/T)
+
 #function to fit complete Hea14 model
 def _fHea14(t, lnkc, lnkd, lnk2):
 	'''

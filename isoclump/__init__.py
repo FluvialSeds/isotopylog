@@ -63,6 +63,7 @@ from .core_functions import(
 
 from .ratedata_helper import(
 	calc_L_curve,
+	fit_Arrhenius,
 	fit_Hea14,
 	fit_HH20,
 	fit_HH20inv,

@@ -609,9 +609,9 @@ class HeatingExperiment(object):
 		yaxis = 'D', 
 		logy = False, 
 		plot_reg = False,
-		ed = {}, 
+		ed = {'fmt':'o'}, 
 		ld = {}, 
-		fbd = {},
+		fbd = {'alpha':0.5},
 		regd = {}
 		):
 		'''
@@ -640,7 +640,8 @@ class HeatingExperiment(object):
 		ed : dictionary
 			Dictionary of keyward arguments to pass for plotting the 
 			experimental data. Must contain keywords compatible with 
-			``matplotlib.pyplot.errorbar``. Defaults to empty dictionary.
+			``matplotlib.pyplot.errorbar``. Defaults to dictionary with
+			'fmt' = 'o'.
 
 		ld : dictionary
 			Dictionary of keyward arguments to pass for plotting the mean of 
@@ -650,7 +651,8 @@ class HeatingExperiment(object):
 		fbd : dictionary
 			Dictionary of keyward arguments to pass for plotting the forward-
 			modeled uncertaint range. Must contain keywords compatible with 
-			``matplotlib.pyplot.errorbar``. Defaults to empty dictionary.
+			``matplotlib.pyplot.errorbar``. Defaults to dictionary with 'alpha'
+			 = 0.5..
 
 		regd : dictionary
 			Dictionary of keyword arguments to pass for plotting the regularized
@@ -1142,6 +1144,7 @@ class HeatingExperiment(object):
 			self.T,
 			calibration = self.calibration,
 			clumps = self.clumps,
+			D0 = self.dex[0,0],
 			D_std = None,
 			ref_frame = self.ref_frame,
 			)
@@ -1161,6 +1164,7 @@ class HeatingExperiment(object):
 			self.T,
 			calibration = self.calibration,
 			clumps = self.clumps,
+			D0 = self.dex[0,0],
 			D_std = self.D_std,
 			ref_frame = self.ref_frame,
 			)

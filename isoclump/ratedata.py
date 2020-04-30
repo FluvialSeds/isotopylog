@@ -26,6 +26,7 @@ import warnings
 
 #import helper functions
 from .ratedata_helper import(
+	fit_Arrhenius,
 	fit_Hea14,
 	fit_HH20,
 	fit_HH20inv,
@@ -825,7 +826,7 @@ class kDistribution(object):
 		Setter for T attribute.
 		'''
 		self._T = value
-	
+
 
 class EDistribution(object):
 	__doc__='''
@@ -865,13 +866,11 @@ class EDistribution(object):
 	'''
 
 	_kwattrs = {
-		# 'npt' : None, 
-		'params_cov' : None, 
-		'rmse' : None,
-		# 'model' : 'HH20',
+		'P0' : [150, -7],
+		'Tref' : np.inf,
 		}
 
-	def __init__(self, kds):
+	def __init__(self, kds, **kwargs):
 		'''
 		Initilizes the object.
 
@@ -882,8 +881,22 @@ class EDistribution(object):
 			The ``EDistribution`` object.
 		'''
 
-		#add kds list to self
+		#first set everything in _kwattrs to its default value
+		for k, v in self._kwattrs.items():
+			setattr(self, k, v)
+
+		#then, set arguments
 		self.kds = kds
+
+		#finally, overwrite all attributes in kwargs and raise exception if
+		# unknown
+		for k, v in kwargs.items():
+			if k in self._kwattrs:
+				setattr(self, k, v)
+
+			else:
+				raise ValueError(
+					'__init__() got an unexpected keyword argument %s' % k)
 
 	# def __repr__(self):
 
@@ -928,7 +941,7 @@ class EDistribution(object):
 
 		#if new_data is EDistribution, extract its kds list and append
 		elif isinstance(new_data, EDistribution):
-			kds.append(new_data.kds)
+			kds.extend(new_data.kds)
 
 		#raise error of other data type
 		else:
@@ -941,6 +954,92 @@ class EDistribution(object):
 
 		#save as new kds attribute
 		self.kds = kds
+
+	#method to drop existing data from the EDistribution instance
+	def drop(self, index):
+		'''
+		Method for dropping entries from the existing list of k values. Useful
+		if an ``EDistribution`` instance contains repeat or spurrious entries
+		that should be dropped.
+
+		Parameters
+		----------
+
+		index : int or slice
+			The index of the ``ed.kds`` list to be dropped. Must be either 
+			an integer or a slice.
+
+		Examples
+		--------
+
+		Removing a given element from an existing EDistribution, ed::
+			
+			#say, drop element zero
+			ed.drop(0)
+		'''
+
+		#extract kds list
+		kds = self.kds
+
+		#remove entry by index
+		kds.remove(kds[i])
+
+		#store new list
+		self.kds = kds
+
+	@property
+	def Eparams(self):
+		'''
+		The T vs. lnk regression slopes and intercepts for each parameter in
+		model kparams.
+		'''
+
+		#extract constants
+		# nkp = number of k params
+		npt, nkp = np.shape(self.kparams)
+
+		#pre-allocate array of the right shape
+		# E and lnkref for each k param
+		Eparams = np.zeros([2, nkp])
+
+		#loop through k params and solve
+		for i in range(nkp):
+			Eparams[:,i], _, _ = fit_Arrhenius(
+				self.Ts, 
+				self.kparams[:,i], 
+				lnk_std = self.kparams_std[:,i], 
+				p0 = self.P0, 
+				Tref = self.Tref
+				)
+
+		return Eparams
+	
+	@property
+	def Eparams_cov(self):
+		'''
+		The covariance matrix for T vs. lnk regression slopes and intercepts
+		for each parameter in model kparams.
+		'''
+
+		#extract constants
+		# nkp = number of k params
+		npt, nkp = np.shape(self.kparams)
+
+		#pre-allocate array of the right shape
+		# E and lnkref covariance for each k param
+		epc = np.zeros([2*nkp, 2*nkp])
+
+		#loop through k params and solve
+		for i in range(nkp):
+			_, epc[2*i:2*i+2, 2*i:2*i+2], _ = fit_Arrhenius(
+				self.Ts, 
+				self.kparams[:,i], 
+				lnk_std = self.kparams_std[:,i], 
+				p0 = self.P0, 
+				Tref = self.Tref
+				)
+
+		return epc
 
 	@property
 	def kds(self):
@@ -1004,11 +1103,43 @@ class EDistribution(object):
 		eqn = sum([kdlist[i] == k for i in range(n) for k in kdlist])
 		if eqn != n:
 			warnings.warn(
-				'kds list contains repeat entries. Consier removing repeated'
+				'kds list contains repeat entries. Consider removing repeated'
 				' entry as to not bias regression statistics', UserWarning)
 
 		self._kds = kdlist
 		self._model = list(set(mods))[0]
+
+	@property
+	def kparams(self):
+		'''
+		A 2d array of the parameters associated with each entry in the kds
+		list; of length ``npt`` and with either 2 or 3, depending on the 
+		model type.
+		'''
+
+		#extract values
+		ks = [kd.params for kd in self.kds]
+
+		#stack into array
+		ks = np.stack(ks)
+
+		return ks
+	
+	@property
+	def kparams_std(self):
+		'''
+		A 2d array of the uncertainty in the parameters associated with each 
+		entry in the kds list; of length ``npt`` and with either 2 or 3, 
+		depending on the model type.
+		'''
+
+		#extract values
+		ks = [np.sqrt(np.diag(kd.params_cov)) for kd in self.kds]
+
+		#stack into array
+		ks = np.stack(ks)
+
+		return ks
 
 	@property
 	def model(self):
@@ -1018,7 +1149,6 @@ class EDistribution(object):
 		'''
 		return self._model
 	
-
 	@property
 	def npt(self):
 		'''
@@ -1027,7 +1157,76 @@ class EDistribution(object):
 		'''
 		return len(self._kds)
 	
+	@property
+	def P0(self):
+		'''
+		The initial guess for fitting Arrhenius plots.
+		'''
+		return self._P0
+	
+	@P0.setter
+	def P0(self, value):
+		'''
+		Setter for P0.
+		'''
+		self._P0 = value
 
+	@property
+	def rmse(self):
+		'''
+		The root mean square error of the model fit for each lnk parameter.
+		Of length ``nkparams``.
+		'''
+
+		#extract constants
+		# nkp = number of k params
+		npt, nkp = np.shape(self.kparams)
+
+		#pre-allocate array of the right shape
+		rmse = np.zeros(nkp)
+
+		#loop through k params and solve
+		for i in range(nkp):
+			_, _, rmse[i] = fit_Arrhenius(
+				self.Ts, 
+				self.kparams[:,i], 
+				lnk_std = self.kparams_std[:,i], 
+				p0 = self.P0, 
+				Tref = self.Tref
+				)
+
+		return rmse
+
+	@property
+	def Tref(self):
+		'''
+		The reference temperature for calculating Arrhenius parameters.
+		'''
+		return self._Tref
+	
+	@Tref.setter
+	def Tref(self, value):
+		'''
+		Setter for Tref.
+		'''
+		self._Tref = value
+
+	@property
+	def Ts(self):
+		'''
+		The temperatures associated with each ``kDistribution`` isntance in
+		the E regression.
+		'''
+
+		#extract a list of T values
+		Ts = [k.T for k in self.kds]
+
+		#convert to array and round
+		Ts = np.array(Ts)
+		Ts = np.around(Ts, 3)
+
+		return Ts
+	
 
 
 
