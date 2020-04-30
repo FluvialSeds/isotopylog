@@ -44,7 +44,9 @@ from .dictionaries import(
 	clump_isos,
 	)
 
-# TODO WEDNESDAY 29 APRIL:
+# TODO Thursday 30 APRIL:
+# * SEND RENT CHECK!
+# * FINISH WRITING EDISTRIBUTION METHODS AND ATTRIBUTES
 
 # * Add methods to HeatingExperiment to change iso_params and ref_frame
 # * Write EDistribution docstring, __init__, __repr__, and @properties
@@ -894,13 +896,6 @@ class HeatingExperiment(object):
 			acidification. That is, 90 C acidified samples will be lower than
 			25 C acidified samples by an amount equal to aff. Defaults to
 			``0.092``, the value used for the CDES scale by Henkes et al. (2014).
-
-		Returns
-		-------
-
-		he : isoclump.HeatingExperiment
-			The updated ``ic.HeatingExperiment`` instance, now containing data
-			in the new reference frame.
 
 		Notes
 		-----

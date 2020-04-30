@@ -43,7 +43,7 @@ from .timedata import(
 #import ratedata classes
 from .ratedata import(
 	kDistribution,
-	# EDistribution,
+	EDistribution,
 	)
 
 #import package-level functions

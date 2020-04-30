@@ -202,7 +202,7 @@ class kDistribution(object):
 
 	#Define magic methods
 	#initialize the object
-	def __init__(self, params, model, **kwargs):
+	def __init__(self, params, model, T, **kwargs):
 		'''
 		Initilizes the object.
 
@@ -220,6 +220,7 @@ class kDistribution(object):
 		#then, set arguments
 		self.params = params
 		self.model = model
+		self.T = T
 
 		#finally, overwrite all attributes in kwargs and raise exception if
 		# unknown
@@ -432,8 +433,10 @@ class kDistribution(object):
 		#return class instance
 		return cls(
 			params,
+			model,
+			he.T,
 			lam = lam,
-			model = model,
+			# model = model,
 			npt = npt,
 			omega = omega,
 			params_cov = params_cov,
@@ -753,7 +756,7 @@ class kDistribution(object):
 	@property
 	def summary(self):
 		'''
-		DataFrame containing all the summary data.
+		Series containing all the summary data.
 		'''
 
 		#extract parameters
@@ -776,62 +779,217 @@ class kDistribution(object):
 				  'npt' : self.npt,
 				  'params' : pstr,
 				  'mean' : pvalstr,
-				  'std. dev.' : pstdstr
+				  'std. dev.' : pstdstr,
+				  'T' : self.T
 				 }
 
 		s = pd.Series(attrs)
 
 		return s
 
+	@property
+	def T(self):
+		'''
+		The temperature for which the rate data correspond, in Kelivn.
+		'''
+		return self._T
+
+	@T.setter
+	def T(self, value):
+		self._T = value
+	
 
 class EDistribution(object):
 	__doc__='''
-	Add docstring here
+	Class for inputting, storing, and visualizing clumped isotope activation
+	energies. Currently only accepts D47 clumps, but will be expanded in the
+	future as new clumped system data becomes available.
+
+	Parameters
+	----------
+	kds : list
+		List of ``isoclump.kDistribution`` objects over which to calculate
+		activation energies.
+
+	Raises
+	------
+
+	Notes
+	-----
+
+	See Also
+	--------
+
+	Examples
+	--------
+
+	References
+	----------
 	'''
 
-	def __init__():
+	_kwattrs = {
+		# 'npt' : None, 
+		'params_cov' : None, 
+		'rmse' : None,
+		# 'model' : 'HH20',
+		}
+
+	def __init__(self, kds):
 		'''
-		Initializes the class
+		Initilizes the object.
+
+		Returns
+		-------
+
+		ed : isoclump.kDistribution
+			The ``EDistribution`` object.
 		'''
 
-	#define classmethod for defining instance directly from literature values
-	@classmethod
-	def from_literature(cls, clumps = 'CO47', mineral = 'calcite',
-		paper = 'HH20'):
+		self.kds = kds
+
+	# def __repr__(self):
+
+	#method to append new data to an existing EDistribution
+	def append(self, new_data):
 		'''
-		ADD DOCSTRING
+		Method for appending new data onto an existing EDistribution. New data
+		can be either a single ``kDistribution`` or a different
+		``EDistribution`` instance.
+
+		Parameters
+		----------
+		new_data : isoclump.kDistribution or isoclump.EDistribution
+			The ``kDistribution`` or ``EDistribution`` object containing the
+			new data to be added
+
+		Raises
+		------
+		TypeError
+			If attempting to add ``new_data`` that is not an instance of either
+			``isoclump.kDistribution`` or ``isoclump.EDistribution``.
+
+		Examples
+		--------
+		Adding an existing k distribution, kd, to an existing E distribution, 
+		ed::
+
+			ed.append(kd)
+
+		Adding an existing E distribution, ed2, to a different E distribution, 
+		ed1, of the same model type::
+
+			ed1.append(ed2)
 		'''
 
-	#define classmethod for defining instance directly from a set of rates
-	@classmethod
-	def from_rates(cls, rate_list):
+		#extract kds list
+		kds = self.kds
+
+		#if new_data is kdistribution, append it directly
+		if isinstance(new_data, kDistribution):
+			kds.append(new_data)
+
+		#if new_data is EDistribution, extract its kds list and append
+		elif isinstance(new_data, EDistribution):
+			kds.append(new_data.kds)
+
+		#raise error of other data type
+		else:
+			ndt = type(new_data).__name__
+
+			raise TypeError(
+				'Unexpected new_data of type %s. Must be kDistribution or'
+				' EDistribution instance' % ndt
+				)
+
+		#save as new kds attribute
+		self.kds = kds
+
+	@property
+	def kds(self):
 		'''
-		ADD DOCSTRING
+		The list of ``isoclump.kDistribution`` objects on which activation
+		energy values will be calculated.
+		'''
+		return self._kds
+	
+	@kds.setter
+	def kds(self, value):
+		'''
+		Setter for kds.
 		'''
 
-	#define method for making Arrhenius plots
-	def Arrhenius_plot(self, ax = None, xaxis = 'Tinv', yaxis = 'mu'):
-		'''
-		ADD DOCSTRING
-		'''
+		#first, make sure value is an iterable list with >= 2 kd objects
 
-	#define method for plotting results
-	def plot(self, ax = None, xaxis = 'E', yaxis = 'pE'):
-		'''
-		ADD DOCSTRING
-		'''
+		#the, check that all kds are of the same model
+		mods = [k.model for k in value]
+		if len(set(mods)) != 1:
+			raise ValueError(
+				'Attempting to calculate E distributions on kDistribution'
+				' objects of different model types.')
 
-	#define method for printing results summary
-	def summary(self):
-		'''
-		ADD DOCSTRING
-		'''
+		self._kds = value
+		self._model = list(set(mods))[0]
 
-	#define function to update E distribution using new results
-	def update(self, ratedata_list):
+	@property
+	def model(self):
 		'''
-		ADD DOCSTRING
+		The model type of the ``kDistribution`` instances used to make the
+		E regression
 		'''
+		return self._model
+	
+
+	@property
+	def npt(self):
+		'''
+		The number of data points in the E regression (i.e., the number of
+		``kDistribution`` instances inputted).
+		'''
+		return len(self._kds)
+	
+
+
+
+
+	# #define classmethod for defining instance directly from literature values
+	# @classmethod
+	# def from_literature(cls, clumps = 'CO47', mineral = 'calcite',
+	# 	paper = 'HH20'):
+	# 	'''
+	# 	ADD DOCSTRING
+	# 	'''
+
+	# #define classmethod for defining instance directly from a set of rates
+	# @classmethod
+	# def from_rates(cls, rate_list):
+	# 	'''
+	# 	ADD DOCSTRING
+	# 	'''
+
+	# #define method for making Arrhenius plots
+	# def Arrhenius_plot(self, ax = None, xaxis = 'Tinv', yaxis = 'mu'):
+	# 	'''
+	# 	ADD DOCSTRING
+	# 	'''
+
+	# #define method for plotting results
+	# def plot(self, ax = None, xaxis = 'E', yaxis = 'pE'):
+	# 	'''
+	# 	ADD DOCSTRING
+	# 	'''
+
+	# #define function to update E distribution using new results
+	# def update(self, ratedata_list):
+	# 	'''
+	# 	ADD DOCSTRING
+	# 	'''
+
+
+
+
+
+
+
 
 
 # if __name__ == __main__:
