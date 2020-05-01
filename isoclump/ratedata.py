@@ -24,6 +24,12 @@ import numpy as np
 import pandas as pd
 import warnings
 
+#import necessary calulation functions
+from .calc_funcs import(
+	_fArrhenius,
+	_Jacobian
+	)
+
 #import helper functions
 from .ratedata_helper import(
 	fit_Arrhenius,
@@ -1005,11 +1011,13 @@ class EDistribution(object):
 	#define method for plotting Arrhenius plots
 	def plot(
 		self, 
-		ax = None, 
-		param = 1, 
+		ax = None,
+		nT = 300, 
+		param = 1,
 		ed = {'fmt' : 'o'}, 
 		ld = {}, 
-		fbd = {'alpha' : 0.5}
+		fbd = {'alpha' : 0.5},
+		**kwargs
 		):
 		'''
 		Generates an Arrhenius plot of a given parameter.
@@ -1019,6 +1027,10 @@ class EDistribution(object):
 
 		ax : None or plt.axis
 			Axis for plotting results; defaults to `None`.
+
+		nT : int
+			The number of temperature points to plot for Arrhenius fit
+			predictions.
 
 		param : int
 			The parameter of interest for making Arrhenius plot, specific to
@@ -1122,22 +1134,41 @@ class EDistribution(object):
 			**ed
 			)
 
-		# #plot inverse data if it exists
-		# if self.rho_lam_inv is not None:
+		#calculate modeled data
+		Tmin_inv = 1/np.min(self.Ts) #go a little above and below data
+		Tmax_inv = 1/np.max(self.Ts)
+		Tinv = np.linspace(0.98*Tmax_inv, 1.02*Tmin_inv, nT)
+		T = 1/Tinv
 
-		# 	#make label
-		# 	invlab = r'inverse model fit ($\omega$ = %.2f)' % self.omega
+		lamfunc = lambda T, E, lnkref : _fArrhenius(T, E, lnkref, self.Tref)
+		lnkhat = lamfunc(T, *self.Eparams[:,i])
 
-		# 	#plot data
-		# 	ax.plot(
-		# 		self.lam,
-		# 		self.rho_lam_inv,
-		# 		label = invlab,
-		# 		**invargs
-		# 		)
+		#plot modeled data
+		ax.plot(
+			1000/T, 
+			lnkhat, 
+			label = 'Best-fit Arrhenius prediction',
+			**ld)
+
+		#calculate the modeled data uncertainty
+		#caclulate Jacobian matrix
+		J = _Jacobian(lamfunc, T, self.Eparams[:,i])
+
+		#calculate covariance matrix
+		pcov = self.Eparams_cov[2*i:2*i+2, 2*i:2*i+2]
+		lnkhat_cov = np.dot(J, np.dot(pcov, J.T))
+		lnkhat_std = np.sqrt(np.diag(lnkhat_cov))
+
+		#plot the modeled data uncertainty
+		ax.fill_between(
+			1000/T,
+			lnkhat - lnkhat_std,
+			lnkhat + lnkhat_std,
+			**fbd
+			)
 
 		#set axis labels
-		ax.set_xlabel(r'1000/T (Kelvin))')
+		ax.set_xlabel(r'1000/T (Kelvin)')
 		ax.set_ylabel(mod_params[self.model][i])
 
 		#add legend
