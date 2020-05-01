@@ -1014,7 +1014,7 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	return params, params_cov, rmse, npt
 
 #function to fit data using SE15 model
-def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6):
+def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 	'''
 	Fits D evolution data using the paired diffusion model of Stolper and
 	Eiler (2015). The function solves for both k1 and k_dif_single as well
@@ -1036,6 +1036,14 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6):
 		The mineral lattice coordination number to use for calculating the
 		concentration of pairs. Defaults to `6` following Stolper and Eiler
 		(2015).
+
+	mp : None or float
+		If inputted, mp is the slope of the ln([p]0/[p]eq) vs. 1/T relationship;
+		i.e., it is defined as:\n
+			ln([p]0/[p]eq) = mp/T\n
+		following Eq. 17 or Stolper and Eiler (2015), who recommend a value of
+		0.0092. If ``mp = None``, ln([p]0/[p]eq) is fitted as an unknown 
+		parameter. Defaults to ``None``.
 
 	Returns
 	-------
@@ -1147,14 +1155,45 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6):
 	#combine constants into list
 	cs = [D0, Deq, Dppeq, he]
 
-	#fit model to lambda function to allow inputting constants
-	lamfunc = lambda t, lnk1f, lnkds, lnp0peq: _fSE15(
-		t, 
-		lnk1f, 
-		lnkds, 
-		lnp0peq, 
-		*cs
-		)
+	#check mp and, if it isn't None, prescribe it and make lambda function
+	if mp is None:
+
+		#fit model to lambda function with all 3 unknowns
+		lamfunc = lambda t, lnk1f, lnkds, lnp0peq: _fSE15(
+			t, 
+			lnk1f, 
+			lnkds, 
+			lnp0peq, 
+			*cs
+			)
+
+		#define bounds for later
+		bounds = ([-np.inf,-np.inf,0.],[np.inf,np.inf,np.inf])
+
+	elif isinstance(mp, float):
+
+		#calculate lnp0/peq
+		lnp0peq = mp/he.T
+
+		#shorten p0
+		p0 = p0[:2]
+
+		#make lambda function with only 2 unknown parameters
+		lamfunc = lambda t, lnk1f, lnkds: _fSE15(
+			t,
+			lnk1f,
+			lnkds,
+			lnp0peq,
+			*cs
+			)
+
+		#define bounds for later
+		bound = ([-np.inf,-np.inf],[np.inf,np.inf])
+
+	else:
+		mpt = type(mp).__name__
+		raise TypeError(
+			'unexpected mp value of type %s. Must be None or float.' % mpt)
 
 	#solve
 	params, params_cov = curve_fit(lamfunc, x, y, p0,
@@ -1168,5 +1207,15 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6):
 
 	#calcualte RMSE
 	rmse = _calc_rmse(he.dex[:,0], D47hat)
+
+	#if mp was passed, add ln(p0/peq) back into the params and cov
+	if mp is not None:
+		#add the parameter
+		params = np.append(params, lnp0peq)
+
+		#extend the covariance matrix
+		pcov = params_cov
+		params_cov = np.zeros([3,3])
+		params_cov[:2,:2] = pcov
 
 	return params, params_cov, rmse, npt

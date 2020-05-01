@@ -601,7 +601,7 @@ def _Jacobian(f, t, p, eps = 1e-6):
 		Length ``np``.
 
 	eps : float
-		The amount to perturb each parameter by. Defaults to ``1e-10``.
+		The amount to perturb each parameter by. Defaults to ``1e-6``.
 
 	Returns
 	-------

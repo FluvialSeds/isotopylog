@@ -284,9 +284,9 @@ class kDistribution(object):
 	@classmethod
 	def invert_experiment(cls, he, model = 'HH20', fit_reg = False, **kwargs):
 		'''
-		Classmethod for generating a `kDistribution` instance directly by
-		inverting a `ic.HeatingExperiment` object that contains clumped isotope
-		heating experiment data.
+		Classmethod for generating a ``kDistribution`` instance directly by
+		inverting a ``ic.HeatingExperiment`` object that contains clumped 
+		isotope heating experiment data.
 
 		Parameters
 		----------
@@ -861,6 +861,8 @@ class EDistribution(object):
 
 	Notes
 	-----
+	Mention params are in kJ/mol; i.e., for SE15 p0/peq should be multiplied by
+	R to get into Stolper value.
 
 	See Also
 	--------
@@ -872,6 +874,7 @@ class EDistribution(object):
 	----------
 	'''
 
+	#define all the possible attributes for __init__ using _kwattrs
 	_kwattrs = {
 		'p0' : [150, -7],
 		'Tref' : np.inf,
@@ -920,6 +923,66 @@ class EDistribution(object):
 		'''
 
 		return str(self.summary)
+
+	#Define @classmethods
+	#define classmethod for generating EDistribution instance from literature
+	# data
+	@classmethod
+	def from_literature(cls, mineral = 'calcite', reference = 'HH20'):
+		'''
+		Classmethod for generating an ``ic.EDistribution`` instance directly
+		from literature data. This method simply inputs the results of
+		literature model fits; it does not re-calculate rate data using raw
+		literature D data.
+
+		Parameters
+		----------
+
+		mineral : string
+			The mineral type whose data will be imported. Current options are:\n
+				``'apatite'`` ('SE15' and 'HH20' references only)\n
+				``'calcite'`` (all references)\n
+				``'dolomite'`` ('Lea18' and 'HH20' references only)
+
+		reference : string
+			The reference whose data will be imported. Current options are:\n
+				``'PH12'`` (Passey and Henkes 2012; model type 'PH12')\n
+				``'Hea14'`` (Henkes et al. 2014; model type 'Hea14')\n
+				``'SE15'`` (Stolper and Eiler 2015; model type 'SE15')\n
+				``'Bea18'`` (Brenner et al. 2018; model type 'SE15')\n
+				``'Lea18'`` (Lloyd et al. 2018; model type 'SE15')\n
+				``'HH20'`` (Hemingway and Henkes 2020; model type 'HH20')
+
+		Returns
+		-------
+
+		ed : isoclump.EDistribution
+			The ``ic.EDistribution`` object containing all the literature data.
+
+		Raises
+		------
+
+		ValueError
+			If inputted ``mineral`` or ``reference`` string are not appropriate.
+
+		Notes
+		-----
+
+		All rate data within the ``ed.kds`` list are reported in units of
+		inverse minutes.
+
+		By default, the model type of the generated EDistribution matches the
+		native model type used in each reference. For example, if
+		``reference = 'SE15'``, then 'SE15' model types will be generated.
+
+		Examples
+		--------
+
+		References
+		----------
+
+
+		'''
 
 	#method to append new data to an existing EDistribution
 	def append(self, new_data):
@@ -1008,16 +1071,16 @@ class EDistribution(object):
 		#store new list
 		self.kds = kds
 
-	#define method for plotting Arrhenius plots
+	#define method for generating Arrhenius plots
 	def plot(
 		self, 
 		ax = None,
 		nT = 300, 
 		param = 1,
+		eps = 1e-6,
 		ed = {'fmt' : 'o'}, 
 		ld = {}, 
 		fbd = {'alpha' : 0.5},
-		**kwargs
 		):
 		'''
 		Generates an Arrhenius plot of a given parameter.
@@ -1041,6 +1104,12 @@ class EDistribution(object):
 				``'SE15'``: [ln(k1), ln(k_dif_single), ln([pair]_0/[pair]_eq)]\n
 			For eample, to make an Arrhenius plot of ln(kc) for 'Hea14' models,
 			pass ``param = 1``.
+
+		eps : float
+			The amount to perturb each parameter when numerically calculating
+			the derivative of ln(k) with respect to each parameter. Used for
+			calculating a Jacobian to propagate parameter uncertainty. Defaults
+			to ``1e-6``.
 
 		ed : dictionary
 			Dictionary of keyward arguments to pass for plotting the 
@@ -1067,6 +1136,7 @@ class EDistribution(object):
 
 		Raises
 		------
+
 		ValueError
 			If passed ``param`` is outside of the range of existing parameters
 			(e.g., >2 for 'HH20' models).
@@ -1152,7 +1222,7 @@ class EDistribution(object):
 
 		#calculate the modeled data uncertainty
 		#caclulate Jacobian matrix
-		J = _Jacobian(lamfunc, T, self.Eparams[:,i])
+		J = _Jacobian(lamfunc, T, self.Eparams[:,i], eps = eps)
 
 		#calculate covariance matrix
 		pcov = self.Eparams_cov[2*i:2*i+2, 2*i:2*i+2]
@@ -1176,8 +1246,6 @@ class EDistribution(object):
 
 		#return result
 		return ax
-
-
 
 	#Define @property getters and setters
 	@property
@@ -1473,11 +1541,6 @@ class EDistribution(object):
 	# 	ADD DOCSTRING
 	# 	'''
 
-	# #define method for making Arrhenius plots
-	# def Arrhenius_plot(self, ax = None, xaxis = 'Tinv', yaxis = 'mu'):
-	# 	'''
-	# 	ADD DOCSTRING
-	# 	'''
 
 
 
