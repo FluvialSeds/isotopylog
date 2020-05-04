@@ -481,6 +481,84 @@ class kDistribution(object):
 			rmse = rmse
 			)
 
+	#define classmethod for generating kDistribution instance directly from
+	# EDistribution
+	@classmethod
+	def from_EDistribution(cls, ed, T):
+		'''
+		Classmethod for generating rate data directly from activation energy
+		data. That is, creates ``ic.kDistribution`` at a given temperature
+		using an ``ic.EDistribution`` instance.
+
+		Parameters
+		----------
+
+		ed : isoclump.EDistribution
+			The ``ic.EDistribution`` instance containing the activation energy
+			data of interest.
+
+		T : float
+			The temperature at which to calculate rates, in Kelvin.
+
+		Returns
+		-------
+
+		kd : isoclump.kDistribution
+			The resutling `ic.kDistribution` instance containing the rate
+			parameters.
+
+		Notes
+		-----
+
+		Uncertainty in resulting kDistribution parameters is highly sensitive
+		to reference temperature in the ``ic.EDistribution`` instance. In order
+		to minimize propagated error, it is strongly recommended to use a Tref
+		value that is within the range of experimental T values (that is,
+		interpolate rather than extrapolate in 1/T space).
+
+		See Also
+		--------
+
+		isoclump.EDistribution
+			The class for combining multiple ``kDistribution`` instances and
+			determining the underlying activation energies.
+
+		Examples
+		--------
+
+		Assuming some EDistribution instance exists, rate data can be calculated
+		simply as::
+
+			#import packages
+			import isoclump as ic
+
+			#say, calculate data at 425 C
+			T = 425 + 273.15
+
+			#assuming EDistribution instance, ed
+			kd = ic.kDistribution.from_EDistribution(ed, T)
+		'''
+
+		#extract relevant data from EDistribution
+		E = ed.Eparams[0,:] #KJ/mol
+		lnkref = ed.Eparams[1,:]
+		Tref = ed.Tref
+		R = 8.314e-3 #KJ/mol/K
+
+		#calculate rate parameters
+		params = lnkref + (E/R)*(1/Tref - 1/T)
+
+		#calculate rate parameter uncertainty
+		Evar = np.diag(ed.Eparams_cov)[::2]
+		lnkref_var = np.diag(ed.Eparams_cov)[1::2]
+
+		lnk_var = lnkref_var + Evar*((1/R)*(1/Tref - 1/T))**2
+		params_cov = np.diag(lnk_var)
+
+		#return class instance
+		return cls(params, ed.model, T, params_cov = params_cov)
+
+
 	#define method for plotting HH20 results
 	def plot(self, ax = None, lnd = {}, invd = {}):
 		'''
@@ -864,6 +942,17 @@ class EDistribution(object):
 		List of ``isoclump.kDistribution`` objects over which to calculate
 		activation energies.
 
+	p0 : list
+		List of initial guesses for fitting E parameters. Defaults to
+		``[150, -7]``, which should be adequate for all model fits.
+
+	Tref : int
+		The temperature at which the reference k value is calculated. Following
+		Passey and Henkes (2012), this can be inputted directly in order to
+		avoid large extrapolations in 1/T space. Defaults to ``np.inf``; that
+		is, defaults to k_ref = k0, the canonical Arrhenius pre-exponential
+		factor.
+
 	Raises
 	------
 
@@ -877,17 +966,103 @@ class EDistribution(object):
 
 	Notes
 	-----
-	Mention params are in kJ/mol; i.e., for SE15 p0/peq should be multiplied by
-	R to get into Stolper value.
+
+	All resulting activation energy parameters are reported in units of kJ/mol.
+	For 'SE15' model types, this means that resulting E([pair]0/[pair]eq) should
+	be multiplied by R, the ideal gas constant, to retrieve a slope value
+	analagous to that in Stolper and Eiler (2015) Eq. 17.
+
+	For 'SE15' models, E([pair]0/[pair]eq) is forced to an intercept of zero in
+	1/T vs. [pair]0/[pair]eq space, analagous to Stolper and Eiler (2015) Eq. 17.
+	Similarly, for 'HH20' models, sig_lam is forced to an intercept of zero in
+	1/T vs. sig_lam space as discussed in Hemingway and Henkes (2020).
 
 	See Also
 	--------
 
+	isoclump.kDistribution
+		The class containing rate data for individual experiments that is to be
+		fit using Arrhenius plots.
+
+	isoclump.GeologicHistory
+		The class for forward-modeling activation energy results and estimating
+		geologic clumped isotope evolution.
+
 	Examples
 	--------
+	Generating an EDistribution object from an existing list of kDistribution
+	objects::
+
+		#import packages
+		import isoclump as ic
+
+		#assuming some list, kd_list, contains kDistributions at different T
+		ed = ic.EDistribution(kd_list)
+
+	Alternatively, EDistribution objects can be generated directly from
+	literature values::
+
+		#make EDistribution object
+		ed = ic.EDistribution.from_literature(
+			mineral = 'calcite', 
+			reference = 'PH12'
+			)
+
+	If an EDistribution object exists, additional data points can also be
+	appended to it. For example, adding an existing k distribution, kd, to an 
+	existing E distribution, ed::
+
+		ed.append(kd)
+
+	Alternatively, adding an existing E distribution, ed2, to a different E 
+	distribution, ed1, of the same model type::
+
+		ed1.append(ed2)
+
+	Similarly, individual data points can be dropped from an EDistribution
+	object::
+
+		#say, drop element zero
+		ed.drop(0)
+
+	Finally, data can be visualized using Arrhenius plots. For example,
+	assuming `ic.EDistribution` instance `ed` exists and contains data of model 
+	type 'HH20'::
+
+		#import additional packages
+		import matplotlib.pyplot as plt
+
+		#make figure
+		fig, ax = plt.subplots(2,1)
+
+		#plot results
+		ed.plot(ax = ax[0], param = 1) #to plot mu_E
+		ed.plot(ax = ax[1], param = 2) #to plot sig_E
+
+	Similar implementation, but now putting in stylistic keyword args::
+
+		#import modules
+		import isoclump as ic
+		import matplotlib.pyplot as plt
+
+		#make figure
+		fig, ax = plt.subplots(2,1)
+
+		#define plotting style
+		ld = {'linewidth':2, 'c':'k'}
+
+		#plot results
+		ed.plot(ax = ax[0], param = 1, ld = ld) #to plot mu_E
+		ed.plot(ax = ax[1], param = 2, ld = ld) #to plot sig_E
 
 	References
 	----------
+	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
+	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
+	[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+	[4] Brenner et al. (2018) *Geochim. Cosmochim. Ac.*, **224**, 42--63.\n
+	[5] Lloyd et al. (2018) *Geochim. Cosmochim. Ac.*, **242**, 1--20.\n
+	[6] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
 	#define all the possible attributes for __init__ using _kwattrs
@@ -1273,8 +1448,8 @@ class EDistribution(object):
 		Examples
 		--------
 
-		Basic implementation, assuming `ic.EDistribution` instance `ed` exists
-		and contains data of model type 'HH20'::
+		Basic implementation, assuming ``ic.EDistribution`` instance ``ed`` 
+		exists and contains data of model type 'HH20'::
 
 			#import modules
 			import isoclump as ic
