@@ -66,52 +66,52 @@ caleqs = {'PH12':{'Ghosh25':lambda T : (PH12(T) - b)/m,
 		 }
 
 
-# # 2) dictionary for holding "isotope parameters" (Daëron et al. 2016)
+# 2) dictionary for holding "isotope parameters" (Daëron et al. 2016)
 
-# #in order: R13_VPDB, R18_VPDB, R17_VPDB, lam17
-# d47_isoparams = {'Gonfiantini':
-# 					[0.0112372, #R13_VPDB
-# 					 0.0020672, #R18_VPDB
-# 					 0.00038592, #R17_VPDB
-# 					 0.5164 #lam17
-# 					],
-# 				 'Brand':
-# 					[0.01118, #R13_VPDB
-# 					 0.0020672, #R18_VPDB
-# 					 0.00039099, #R17_VPDB
-# 					 0.528 #lam17
-# 					],
-# 				 'Craig + Assonov':
-# 					[0.0112372, #R13_VPDB
-# 					 0.0020672, #R18_VPDB
-# 					 0.00039299, #R17_VPDB
-# 					 0.528 #lam17
-# 					],
-# 				 'Chang + Li':
-# 					[0.01118, #R13_VPDB
-# 					 0.0020672, #R18_VPDB
-# 					 0.00038413, #R17_VPDB
-# 					 0.528 #lam17
-# 					],
-# 				 'Craig + Li':
-# 					[0.0112372, #R13_VPDB
-# 					 0.0020672, #R18_VPDB
-# 					 0.00038606, #R17_VPDB
-# 					 0.528 #lam17
-# 					],
-# 				 'Barkan':
-# 					[0.01118, #R13_VPDB
-# 					 0.00206774, #R18_VPDB
-# 					 0.00039089, #R17_VPDB
-# 					 0.528 #lam17
-# 					],
-# 				 'Passey':
-# 					[0.01118, #R13_VPDB
-# 					 0.00206774, #R18_VPDB
-# 					 0.00039094, #R17_VPDB
-# 					 0.528 #lam17
-# 					],
-# 				}
+#in order: R13_VPDB, R18_VPDB, R17_VPDB, lam17
+d47_isoparams = {'Gonfiantini':
+					[0.0112372, #R13_VPDB
+					 0.0020672, #R18_VPDB
+					 0.00038592, #R17_VPDB
+					 0.5164 #lam17
+					],
+				 'Brand':
+					[0.01118, #R13_VPDB
+					 0.0020672, #R18_VPDB
+					 0.00039099, #R17_VPDB
+					 0.528 #lam17
+					],
+				 'Craig + Assonov':
+					[0.0112372, #R13_VPDB
+					 0.0020672, #R18_VPDB
+					 0.00039299, #R17_VPDB
+					 0.528 #lam17
+					],
+				 'Chang + Li':
+					[0.01118, #R13_VPDB
+					 0.0020672, #R18_VPDB
+					 0.00038413, #R17_VPDB
+					 0.528 #lam17
+					],
+				 'Craig + Li':
+					[0.0112372, #R13_VPDB
+					 0.0020672, #R18_VPDB
+					 0.00038606, #R17_VPDB
+					 0.528 #lam17
+					],
+				 'Barkan':
+					[0.01118, #R13_VPDB
+					 0.00206774, #R18_VPDB
+					 0.00039089, #R17_VPDB
+					 0.528 #lam17
+					],
+				 'Passey':
+					[0.01118, #R13_VPDB
+					 0.00206774, #R18_VPDB
+					 0.00039094, #R17_VPDB
+					 0.528 #lam17
+					],
+				}
 
 
 # 3) Dictionary for holding kDistribution model parameters for summary printing

@@ -14,6 +14,7 @@ isoclump.HeatingExperiment
    .. autosummary::
    
       ~HeatingExperiment.__init__
+      ~HeatingExperiment.change_ref_frame
       ~HeatingExperiment.forward_model
       ~HeatingExperiment.from_csv
       ~HeatingExperiment.plot

@@ -41,10 +41,10 @@ import numpy as np
 # 	)
 
 #import dictionaries with conversion information
-from .dictionaries import(
-	caleqs,
-	d47_isoparams,
-	)
+# from .dictionaries import(
+# 	caleqs,
+# 	d47_isoparams,
+# 	)
 
 # #define funtction for making Arrhenius plots
 # def Arrhenius_plot(rate_list, ax = None, xaxis = 'Tinv', yaxis = 'mu'):

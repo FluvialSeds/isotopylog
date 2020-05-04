@@ -14,6 +14,7 @@ isoclump.kDistribution
    .. autosummary::
    
       ~kDistribution.__init__
+      ~kDistribution.from_EDistribution
       ~kDistribution.invert_experiment
       ~kDistribution.plot
    
@@ -25,6 +26,7 @@ isoclump.kDistribution
 
    .. autosummary::
    
+      ~kDistribution.T
       ~kDistribution.lam
       ~kDistribution.model
       ~kDistribution.npt
