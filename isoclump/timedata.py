@@ -231,8 +231,7 @@ class HeatingExperiment(object):
 
 		#make an axis
 		fig, ax = plt.subplots(2,2,
-			sharex = True,
-			sharey = 'row')
+			sharex = True)
 
 		#first, plot D
 		ax[0,0] = he.plot(ax = ax[0,0], yaxis = 'D', logy = False)
@@ -246,22 +245,26 @@ class HeatingExperiment(object):
 		#finally, plot log(G)
 		ax[1,1] = he.plot(ax = ax[1,1], yaxis = 'G', logy = True)
 
+	.. image:: ../_images/he_1.png
+
 	When making plots, one can pass various dictionaries containing 
 	stylistic keyword arguments::
 
 		fig, ax = plt.subplots(1,1)
 
 		#experimental data plt.errorbar dict
-		ed = {fmt = 'o', ecolor = 'k'}
+		ed = {'fmt' : 'o', 'ecolor' : 'k'}
 
 		#forward-modeled mean plt.plot dict
-		ld = {linewidth = 2, c = 'k'}
+		ld = {'linewidth' : 2, 'c' : 'k'}
 
 		#forward-modeled uncertainty plt.fill_between dict
-		fbd = {alpha = 0.5, color = [0.5, 0.5, 0.5]}
+		fbd = {'alpha' : 0.5, 'color' : [0.5, 0.5, 0.5]}
 
 		#plot the data
 		ax = he.plot(ax = ax, ed = ed, ld = ld, fbd = fbd)
+
+	.. image:: ../_images/he_2.png
 
 	Converting from CDES90 to CDES25 increases all data by ``aff``::
 
@@ -613,6 +616,7 @@ class HeatingExperiment(object):
 
 		Parameters
 		----------
+
 		ax : plt.axis or None
 			Matplotlib axis instance to plot data on. If ``None``, creates an
 			axis. Defaults to ``None``.
@@ -654,11 +658,13 @@ class HeatingExperiment(object):
 
 		Returns
 		-------
+
 		ax : plt.axis
 			Updated axis instance containing the plot.
 
 		Warnings
 		--------
+
 		UserWarning
 			If the user is passing ``plot_reg = True`` but the heating
 			experiment does not contain regularized inverse model forward
@@ -667,6 +673,7 @@ class HeatingExperiment(object):
 
 		See Also
 		--------
+
 		isoclump.kDistribution.plot()
 			Plotting function for the ``kDistribution`` class.
 
@@ -675,6 +682,7 @@ class HeatingExperiment(object):
 
 		Examples
 		--------
+
 		Plotting experimental and forward-modeled results::
 
 			#make an axis
@@ -692,6 +700,8 @@ class HeatingExperiment(object):
 			#finally, plot log(G)
 			ax[1,1] = he.plot(ax = ax[1,1], yaxis = 'G', logy = True)
 
+		.. image:: ../../_images/he_1.png
+
 		When making plots, one can pass various dictionaries containing 
 		stylistic keyword arguments::
 
@@ -708,6 +718,8 @@ class HeatingExperiment(object):
 
 			#plot the data
 			ax = he.plot(ax = ax, ed = ed, ld = ld, fbd = fbd)
+
+		.. image:: ../../_images/he_2.png
 		'''
 
 		#make axis if necessary

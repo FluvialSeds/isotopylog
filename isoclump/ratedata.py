@@ -193,6 +193,8 @@ class kDistribution(object):
 		#plot data
 		kd.plot(ax = ax)
 
+	.. image:: ../_images/kd_1.png
+
 	Export summary information for storing and saving::
 
 		sum_tab = kd.summary
@@ -375,7 +377,7 @@ class kDistribution(object):
 			kd = ic.kDistribution.invert_experiment(
 				he,
 				model = 'PH12',
-				p0 = [-7., 0.5], #passing initial guess for model fit
+				p0 = [-10., 0.5], #passing initial guess for model fit
 				thresh = 1e-6 #passing threshold for linear region
 				)
 
@@ -395,10 +397,12 @@ class kDistribution(object):
 		References
 		----------
 
-		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
+		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 
+			223--236.\n
 		[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
 		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
-		[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+		[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, 
+			XX--XX.
 		'''
 
 		#check which model and run the corresponding inversion method:
@@ -626,6 +630,8 @@ class kDistribution(object):
 			#plot results
 			kd.plot(ax = ax)
 
+		.. image:: ../../_images/kd_1.png
+
 		Similar implementation, but now putting in stylistic keyword args::
 
 			#import modules
@@ -641,6 +647,8 @@ class kDistribution(object):
 
 			#plot results
 			kd.plot(ax = ax, lnd = lnd, invd = invd)
+
+		.. image:: ../../_images/kd_2.png
 		'''
 
 		#check if model is right
@@ -1045,11 +1053,13 @@ class EDistribution(object):
 		import matplotlib.pyplot as plt
 
 		#make figure
-		fig, ax = plt.subplots(2,1)
+		fig, ax = plt.subplots(1,2, sharex = True)
 
 		#plot results
 		ed.plot(ax = ax[0], param = 1) #to plot mu_E
 		ed.plot(ax = ax[1], param = 2) #to plot sig_E
+
+	.. image:: ../_images/ed_1.png
 
 	Similar implementation, but now putting in stylistic keyword args::
 
@@ -1058,7 +1068,7 @@ class EDistribution(object):
 		import matplotlib.pyplot as plt
 
 		#make figure
-		fig, ax = plt.subplots(2,1)
+		fig, ax = plt.subplots(1,2, sharex = True)
 
 		#define plotting style
 		ld = {'linewidth':2, 'c':'k'}
@@ -1066,6 +1076,8 @@ class EDistribution(object):
 		#plot results
 		ed.plot(ax = ax[0], param = 1, ld = ld) #to plot mu_E
 		ed.plot(ax = ax[1], param = 2, ld = ld) #to plot sig_E
+
+	.. image:: ../_images/ed_2.png
 
 	References
 	----------
@@ -1468,11 +1480,13 @@ class EDistribution(object):
 			import matplotlib.pyplot as plt
 
 			#make figure
-			fig, ax = plt.subplots(2,1)
+			fig, ax = plt.subplots(2, 1, sharex = True)
 
 			#plot results
 			ed.plot(ax = ax[0], param = 1) #to plot mu_E
 			ed.plot(ax = ax[1], param = 2) #to plot sig_E
+
+		.. image:: ../../_images/ed_1.png
 
 		Similar implementation, but now putting in stylistic keyword args::
 
@@ -1481,7 +1495,7 @@ class EDistribution(object):
 			import matplotlib.pyplot as plt
 
 			#make figure
-			fig, ax = plt.subplots(2,1)
+			fig, ax = plt.subplots(2, 1, sharex = True)
 
 			#define plotting style
 			ld = {'linewidth':2, 'c':'k'}
@@ -1489,6 +1503,8 @@ class EDistribution(object):
 			#plot results
 			ed.plot(ax = ax[0], param = 1, ld = ld) #to plot mu_E
 			ed.plot(ax = ax[1], param = 2, ld = ld) #to plot sig_E
+
+		.. image:: ../../_images/ed_2.png
 		'''
 
 		#check if param is acceptable

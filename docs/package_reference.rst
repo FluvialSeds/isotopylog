@@ -18,6 +18,7 @@ isoclump methods
 
 	isoclump.calc_L_curve
 	isoclump.derivatize
+	isoclump.fit_Arrhenius
 	isoclump.fit_Hea14
 	isoclump.fit_HH20
 	isoclump.fit_HH20inv

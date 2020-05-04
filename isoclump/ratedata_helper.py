@@ -186,8 +186,20 @@ def calc_L_curve(
 		#make axis instance
 		fig,ax = plt.subplots(1,1)
 
+		#pre-set stylistic arguments
+		ld = {'linewidth' : 2, 'color' : 'k'}
+		pd = {'s' : 200, 'color' : 'k'}
+
 		#assume he is a HeatingExperiment instance
-		om_best, ax = ic.calc_L_curve(he, plot = True)
+		om_best, ax = ic.calc_L_curve(
+			he, 
+			ax = ax, 
+			plot = True,
+			ld = ld,
+			pd = pd
+			)
+
+	.. image:: ../_images/rd_helper_1.png
 
 	References
 	----------
@@ -273,7 +285,6 @@ def calc_L_curve(
 		ax.scatter(
 			res_vec[i],
 			rgh_vec[i],
-			s = 250,
 			# label = r'best-fit $\omega$',
 			**pd)
 
