@@ -1,3 +1,13 @@
+#import necessary packages
+import os
+import pandas as pd
+
+#make a function to load files
+#function to load files
+def gen_str(name):
+	p = os.path.join(os.path.dirname(__file__), name)
+	return p
+
 ##############
 # CO47 DICTS #
 ##############
@@ -131,17 +141,47 @@ zi = {'Hea14' : [False, False, False],
 	  'SE15' : [False, False, True]
 	 }
 
+# 5) Dictionary for holding all literature kd data
 
+#first, import stored data as dataframe
+file = gen_str('lit_values/lit_values.csv')
+kdf = pd.read_csv(file, index_col = [0,1])
 
+#pre-allocate dictionary
+lit_kd_dict = {}
 
+#then, loop through each reference and store data
+for r, rdf in kdf.groupby(level = 0):
 
+	#pre-allocate mineral-specific dictionary
+	mindict = {}
 
+	#now loop over rdf for each mineral within each reference
+	for m, mdf in rdf.groupby('mineral'):
 
+		#drop columns with no data (i.e., p3 and s3 for mods with 2 params)
+		mdf_dropped = mdf.dropna(axis = 1)
 
+		#pre-allocate empty list for that reference and that mineral
+		rml = []
 
+		#loop over each row and store in list
+		for n, row in mdf_dropped.iterrows():
 
+			#make empty dictionary to store experiment-specific data
+			e = {}
 
+			#extract T, params, params_std
+			e['T'] = row['T']
+			e['params'] = row.filter(regex=('p')).values.astype(float)
+			e['params_std'] = row.filter(regex=('s')).values.astype(float)
 
+			#append to rml list
+			rml.append(e)
 
+		#store to mindict
+		mindict[m] = rml
 
+	#store in lit_kd_dict
+	lit_kd_dict[r] = mindict
 

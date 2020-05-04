@@ -43,6 +43,7 @@ from .ratedata_helper import(
 #import necessary dictionaries
 from .dictionaries import(
 	ed_params,
+	lit_kd_dict,
 	mod_params,
 	zi,
 	)
@@ -800,16 +801,31 @@ class kDistribution(object):
 		except KeyError: #model not in list
 			params = None
 
-		rmse = '%.3f' % self.rmse
-		pstd = np.sqrt(np.diag(self.params_cov))
+		try:
+			rmse = '%.3f' % self.rmse
+
+		except TypeError:
+			rmse = 'None'
+
+		try:
+			npt = '%s' % self.npt
+
+		except TypeError:
+			npt = 'None'
+
+		try:
+			pstd = np.sqrt(np.diag(self.params_cov))
+			pstdstr = ', '.join(['%.2f' %p for p in pstd])
+
+		except ValueError:
+			pstdstr = 'None'
 
 		pvalstr = ', '.join(['%.2f' %p for p in self.params])
-		pstdstr = ', '.join(['%.2f' %p for p in pstd])
 		
 		#make summary table
 		attrs = {'model' : self.model,
 				  'rmse' : rmse,
-				  'npt' : self.npt,
+				  'npt' : npt,
 				  'params' : pstr,
 				  'mean' : pvalstr,
 				  'std. dev.' : pstdstr,
@@ -928,7 +944,7 @@ class EDistribution(object):
 	#define classmethod for generating EDistribution instance from literature
 	# data
 	@classmethod
-	def from_literature(cls, mineral = 'calcite', reference = 'HH20'):
+	def from_literature(cls, mineral = 'calcite', reference = 'HH20', **kwargs):
 		'''
 		Classmethod for generating an ``ic.EDistribution`` instance directly
 		from literature data. This method simply inputs the results of
@@ -942,7 +958,7 @@ class EDistribution(object):
 			The mineral type whose data will be imported. Current options are:\n
 				``'apatite'`` ('SE15' and 'HH20' references only)\n
 				``'calcite'`` (all references)\n
-				``'dolomite'`` ('Lea18' and 'HH20' references only)
+				``'dolomite'`` ('HH20' reference only)
 
 		reference : string
 			The reference whose data will be imported. Current options are:\n
@@ -950,7 +966,6 @@ class EDistribution(object):
 				``'Hea14'`` (Henkes et al. 2014; model type 'Hea14')\n
 				``'SE15'`` (Stolper and Eiler 2015; model type 'SE15')\n
 				``'Bea18'`` (Brenner et al. 2018; model type 'SE15')\n
-				``'Lea18'`` (Lloyd et al. 2018; model type 'SE15')\n
 				``'HH20'`` (Hemingway and Henkes 2020; model type 'HH20')
 
 		Returns
@@ -969,20 +984,128 @@ class EDistribution(object):
 		-----
 
 		All rate data within the ``ed.kds`` list are reported in units of
-		inverse minutes.
+		inverse seconds, independent of the units used in the original
+		publication.
 
 		By default, the model type of the generated EDistribution matches the
 		native model type used in each reference. For example, if
 		``reference = 'SE15'``, then 'SE15' model types will be generated.
 
+		If ``reference = 'PH12'``, this also includes Brachiopod data from
+		Hea14 and wet-pressurized optical calicte data from Bea18 analyzed using
+		the PH12 model. However, this excludes NE-CC-1 samples since the
+		reported rate data were split into "labile" and "recalcitrant" fractions
+		and are thus not comparable to other reported data.
+
+		If ``reference = 'Hea14'``, this also includes the optical calcite data
+		from PH12 analyzed using the Hea14 model, as reported in Henkes et al.
+		(2014).
+
+		If ``reference = 'SE15'``, this also includes Brachiopod data from
+		Hea14 and optical calcite data from PH12 analyzed using the SE15 model,
+		as reported in Stolper and Eiler 2015.
+
+		Lloyd et al. (2018) do not report calculated rate parameters for
+		individual experiments, only a set of derived activation energy and
+		pre-exponential factor results. This reference is thus not included
+		here; however, dolomite data from Lea18 are included within the HH20
+		reference.
+
 		Examples
 		--------
 
+		Importing all of the calcite data generatd in Passey and Henkes
+		(2012)::
+
+			#import necessary packages
+			import isoclump as ic
+
+			#make EDistribution object
+			ed = ic.EDistribution.from_literature(
+				mineral = 'calcite', 
+				reference = 'PH12'
+				)		
+
 		References
 		----------
-
-
+		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 
+			223--236.\n
+		[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
+		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+		[4] Brenner et al. (2018) *Geochim. Cosmochim. Ac.*, **224**, 42--63.\n
+		[5] Lloyd et al. (2018) *Geochim. Cosmochim. Ac.*, **242**, 1--20.\n
+		[6] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, 
+			XX--XX.
 		'''
+
+		#ensure mineral is acceptable
+		if mineral in ['calcite','Calcite','cal','Cal']:
+			mineral = 'calcite'
+
+		elif mineral in ['apatite','Apatite','apa','Apa']:
+			mineral = 'apatite'
+
+		elif isinstance(mineral, str):
+			raise ValueError(
+				'Unexpected mineral string %s. Currently, must be "calcite" or'
+				' "apatite"' % mineral
+				)
+
+		else:
+			mt = type(mineral).__name__
+			raise TypeError(
+				'Unexpected "mineral" of type %s. Must be string.' % mt)
+
+		#ensure reference is acceptable
+		if reference in ['passey','Passey','PH12','ph12','Ph12']:
+			reference = 'PH12'
+			model = 'PH12'
+
+		elif reference in ['Henkes','henkes','Hea14','hea14','HEA14']:
+			reference = 'Hea14'
+			model = 'Hea14'
+
+		elif reference in ['stolper','Stolper','se15','SE15','Se15']:
+			reference = 'SE15'
+			model = 'SE15'
+
+		elif reference in ['Brenner','brenner','bea18','Bea18','BEA18']:
+			reference = 'Bea18'
+			model = 'SE15'
+
+		elif reference in ['hemingway','Hemingway','hh20','Hh20','HH20']:
+			reference = 'HH20'
+			model = 'HH20'
+
+		elif isinstance(reference, str):
+			raise ValueError(
+				'Unexpected reference string %s. Currently, must be "calcite" or'
+				' "apatite"' % reference
+				)
+
+		else:
+			mt = type(reference).__name__
+			raise TypeError(
+				'Unexpected "reference" of type %s. Must be string.' % mt)
+
+		#get params, params_cov, and T from appropriate dictionary
+		exps = lit_kd_dict[reference][mineral]
+
+		#loop through each and make kd instance, appending to list
+		kds = []
+
+		for e in exps:
+			kd = kDistribution(
+				e['params'], 
+				model, 
+				e['T'] + 273.15, 
+				params_cov = np.diag(e['params_std']**2)
+				)
+
+			kds.append(kd)
+
+		#return class instance
+		return cls(kds, **kwargs)
 
 	#method to append new data to an existing EDistribution
 	def append(self, new_data):
@@ -1531,24 +1654,5 @@ class EDistribution(object):
 		Ts = np.around(Ts, 3)
 
 		return Ts
-	
-
-	# #define classmethod for defining instance directly from literature values
-	# @classmethod
-	# def from_literature(cls, clumps = 'CO47', mineral = 'calcite',
-	# 	paper = 'HH20'):
-	# 	'''
-	# 	ADD DOCSTRING
-	# 	'''
-
-
-
-
-
-
-
-
-
-
 
 # if __name__ == __main__:

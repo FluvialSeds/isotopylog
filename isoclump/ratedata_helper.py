@@ -335,7 +335,8 @@ def fit_Arrhenius(
 	lnk_std : None or array-like
 		Array of corresponding uncertainty in natural logged rate data. If not
 		``None``, then must be of length ``nT``. Defaults to ``None`` for an
-		unweighted fit.
+		unweighted fit (technically, will make an array of 1e-10 of length 
+		``nT`` for lnk_std).
 	
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
@@ -376,6 +377,9 @@ def fit_Arrhenius(
 	corresponding uncertainty. Only the uncertainty in the intercept will be
 	affected.
 
+	If uncertainty is passed but some entires are equal to zero, uncertainty
+	for those entries is set to be equal to the mean value of all other entries.
+
 	See Also
 	--------
 
@@ -400,9 +404,13 @@ def fit_Arrhenius(
 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
 	'''
 
-	#if lnk_std is none, make it be an array of ones (i.e., unweighted)
-	if lnk_std is None:
-		lnk_std = np.ones(len(T))
+	#if lnk_std is None or all zeros, make it None and absolute sigma false
+	if lnk_std is None or (lnk_std == 0).all():
+		lnk_std = None
+
+	#else, if some entries are zero, replace them by the non-zero mean
+	elif (lnk_std == 0).any():
+		lnk_std[lnk_std == 0] = np.mean(lnk_std[lnk_std != 0])
 
 	#for the case of forced zero intercept
 	if zero_int is True:
@@ -421,8 +429,7 @@ def fit_Arrhenius(
 	#solve
 	p, pcov = curve_fit(lamfunc, T, lnk, p0,
 		sigma = lnk_std, 
-		absolute_sigma = True,
-		bounds = ([-np.inf, -np.inf],[np.inf, np.inf]), #everything unbounded
+		absolute_sigma = False,
 		)
 
 	#calcualte lnkhat
@@ -534,7 +541,7 @@ def fit_Hea14(he, p0 = [-7., -7., -7.]):
 	#solve the model
 	params, params_cov = curve_fit(_fHea14, x, y, p0,
 		sigma = y_std,
-		absolute_sigma = True,
+		absolute_sigma = False,
 		bounds = (-np.inf, np.inf), #all lnk are unbounded
 		)
 
@@ -684,7 +691,7 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	sig_max = (lam_max - lam_min)/2
 	params, params_cov = curve_fit(lamfunc, x, y, p0,
 		sigma = y_std, 
-		absolute_sigma = True,
+		absolute_sigma = False,
 		bounds = ([lam_min, 0.],[lam_max, sig_max]), #mu, sig must be in range
 		)
 
@@ -990,7 +997,7 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	#calculate statistics with linear fit to linear region
 	params, params_cov = curve_fit(_fPH12, xl, yl, p0,
 		sigma = yl_std,
-		absolute_sigma = True,
+		absolute_sigma = False,
 		bounds = ([-np.inf,0],[np.inf,1]), #lnk unbounded; 0 < int. < 1
 		)
 
@@ -1042,7 +1049,7 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 		i.e., it is defined as:\n
 			ln([p]0/[p]eq) = mp/T\n
 		following Eq. 17 or Stolper and Eiler (2015), who recommend a value of
-		0.0092. If ``mp = None``, ln([p]0/[p]eq) is fitted as an unknown 
+		0.0992. If ``mp = None``, ln([p]0/[p]eq) is fitted as an unknown 
 		parameter. Defaults to ``None``.
 
 	Returns
@@ -1123,6 +1130,10 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 		#assume he is a HeatingExperiment instance
 		results = ic.fit_SE15(he, p0 = p0)
 
+	Same as above, but now constraining mp to be equal to the SE15 value::
+
+		results = ic.fit_SE15(he, p0 = p0, mp = 0.0992)
+
 	References
 	----------
 
@@ -1188,7 +1199,7 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 			)
 
 		#define bounds for later
-		bound = ([-np.inf,-np.inf],[np.inf,np.inf])
+		bounds = ([-np.inf,-np.inf],[np.inf,np.inf])
 
 	else:
 		mpt = type(mp).__name__
@@ -1198,8 +1209,8 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 	#solve
 	params, params_cov = curve_fit(lamfunc, x, y, p0,
 		sigma = y_std, 
-		absolute_sigma = True,
-		bounds = ([-np.inf,-np.inf,0.],[np.inf,np.inf,np.inf]), #k unbounded
+		absolute_sigma = False,
+		bounds = bounds, #k unbounded
 		)
 
 	#calculate Dex_hat

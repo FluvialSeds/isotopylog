@@ -8,8 +8,9 @@ dist/
 /*.egg-info
 
 #csv and xlsx files used for testing purposes
-*.csv
-*.xlsx
+#actually, keep these since lit data are stored as csv
+#*.csv
+#*.xlsx
 
 #doc builds
 docs/_build/
