@@ -14,7 +14,7 @@ from __future__ import(
 __docformat__ = 'restructuredtext en'
 __all__ = [
 	'kDistribution',
-	'EDistribution'
+	'EDistribution',
 	]
 
 #import modules

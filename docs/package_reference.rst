@@ -7,6 +7,7 @@ isoclump classes
 .. autosummary::
 	:toctree: _generated/
 
+	isoclump.EDistribution
 	isoclump.HeatingExperiment
 	isoclump.kDistribution
 
