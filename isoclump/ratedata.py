@@ -153,8 +153,20 @@ class kDistribution(object):
 		#make instance
 		kd = ic.kDistribution(params, 'HH20')
 
-	Generating a kDistribution instance by fitting some experimental D47
-	data contained in a HeatingExperiment object::
+	Assuming some EDistribution instance exists, rate data can be calculated
+	simply as::
+
+		#import packages
+		import isoclump as ic
+
+		#say, calculate data at 425 C
+		T = 425 + 273.15
+
+		#assuming EDistribution instance, ed
+		kd = ic.kDistribution.from_EDistribution(ed, T)
+
+	Alternatively, one can generate a kDistribution instance by fitting some 
+	experimental D47 data contained in a HeatingExperiment object::
 
 		#assume some he is a HeatingExperiment object
 		kd = ic.kDistribution.invert_experiment(he, model = 'PH12')

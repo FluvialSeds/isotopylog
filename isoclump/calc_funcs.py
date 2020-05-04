@@ -311,7 +311,7 @@ def _fArrhenius(T, E, lnkref, Tref):
 	return lnkref + (E/R)*(1/Tref - 1/T)
 
 #function to fit complete Hea14 model
-def _fHea14(t, lnkc, lnkd, lnk2):
+def _fHea14(t, lnkc, lnkd, lnk2, logG = True):
 	'''
 	Estimates G using the "transient defect/equilibrium" model of Henkes et
 	al. (2014) (Eq. 5).
@@ -331,11 +331,16 @@ def _fHea14(t, lnkc, lnkd, lnk2):
 	lnk2 : float
 		The natural log of the transient defect disappearance rate constant.
 
+	logG : Boolean
+		Tells the function whether or not to fit the natural logarithm of
+		reaction progress.
+
 	Returns
 	-------
 
 	Ghat : array-like
-		Resulting estimated G values.
+		Resulting estimated G values or lnG values, depending on the inputted
+		``logG`` value.
 
 	References
 	----------
@@ -348,10 +353,13 @@ def _fHea14(t, lnkc, lnkd, lnk2):
 	kd = np.exp(lnkd)
 	k2 = np.exp(lnk2)
 
-	#calculate lnGhat
-	lnGhat = -kc*t + (kd/k2)*(np.exp(-k2*t) - 1)
+	#calculate Ghat
+	Ghat = -kc*t + (kd/k2)*(np.exp(-k2*t) - 1)
 
-	return np.exp(lnGhat)
+	if logG is False:
+		Ghat = np.exp(Ghat)
+
+	return Ghat
 
 #function to fit data to lognormal decay k distribution for HH20  model
 def _fHH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
@@ -407,7 +415,7 @@ def _fHH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 	return G
 
 #function to fit complete PH12 model
-def _fPH12(t, lnk, intercept):
+def _fPH12(t, lnk, intercept, logG = True):
 	'''
 	Defines the pseudo-first order model of Passey and Henkes (2012).
 
@@ -423,17 +431,29 @@ def _fPH12(t, lnk, intercept):
 	intercept : float
 		The pre-exponential factor; i.e., the intercept in t vs. G space.
 
+	logG : Boolean
+		Tells the function whether or not to fit the natural logarithm of
+		reaction progress.
+
 	Returns
 	-------
 
 	Ghat : array-like
-		Resulting estimated G values.
+		Resulting estimated G values or lnG values, depending on the inputted
+		``logG``.
 
 	References
 	----------
 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
 	'''
-	return intercept*np.exp(-t*np.exp(lnk))
+
+	Ghat = intercept*np.exp(-t*np.exp(lnk))
+
+	#log transform if necessary
+	if logG is True:
+		Ghat = np.log(Ghat)
+
+	return Ghat
 
 #function to fit SE15 model using backward Euler
 def _fSE15(t, lnk1f, lnkds, lnp0peq, D0, Deq, Dppeq, he):

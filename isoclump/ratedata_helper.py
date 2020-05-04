@@ -72,6 +72,9 @@ from .timedata_helper import(
 	_calc_D_from_G,
 	)
 
+#first, set absolute sigma for curve fitting
+abs_sig = False
+
 #define function for calculating best-fit omega using L-curve approach
 def calc_L_curve(
 	he,
@@ -429,7 +432,7 @@ def fit_Arrhenius(
 	#solve
 	p, pcov = curve_fit(lamfunc, T, lnk, p0,
 		sigma = lnk_std, 
-		absolute_sigma = False,
+		absolute_sigma = abs_sig,
 		)
 
 	#calcualte lnkhat
@@ -454,7 +457,7 @@ def fit_Arrhenius(
 	return params, params_cov, rmse
 
 #function to fit data using Hea14 model
-def fit_Hea14(he, p0 = [-7., -7., -7.]):
+def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 	'''
 	Fits D evolution data using the transient defect/equilibrium model of
 	Henkes et al. (2014) (Equation 5).
@@ -465,9 +468,14 @@ def fit_Hea14(he, p0 = [-7., -7., -7.]):
 	he : isoclump.HeatingExperiment
 		`ic.HeatingExperiment` instance containing the D data to be modeled.
 
+	logy : Boolean
+		Tells the function whether or not to calculate fits using the natural
+		logarithm of reaction progress as the y axis. If ``True``, results
+		should be in closer alignment with PH12 and Hea14 literature values.
+
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
-		order [ln(kc), ln(kd), ln(k2)]. Defaults to `[-7, -7, -7]`.
+		order [ln(kc), ln(kd), ln(k2)]. Defaults to `[-10, -10, -10]`.
 
 	Returns
 	-------
@@ -493,6 +501,9 @@ def fit_Hea14(he, p0 = [-7., -7., -7.]):
 
 	Results are bounded to be non-negative. All calculations are done in lnG
 	space and thus only depend on relative changes in D47.
+
+	If ``logy = True``, note that fits are subject to high uncertainty when
+	approaching equilibrium, so ensure that HeatingExperiment data are culled.
 
 	See Also
 	--------
@@ -538,15 +549,32 @@ def fit_Hea14(he, p0 = [-7., -7., -7.]):
 	y_std = he.Gex_std
 	npt = len(x)
 
+	#log transform y if necessary
+	if logy is True:
+		y_std = y_std/y
+		y = np.log(y)
+
+	#make lambda function to allow passing of logy boolean
+	lamfunc = lambda t, lnkc, lnkd, lnk2: _fHea14(
+		t,
+		lnkc,
+		lnkd,
+		lnk2,
+		logG = logy
+		)
+
 	#solve the model
-	params, params_cov = curve_fit(_fHea14, x, y, p0,
+	params, params_cov = curve_fit(lamfunc, x, y, p0,
 		sigma = y_std,
-		absolute_sigma = False,
+		absolute_sigma = abs_sig,
 		bounds = (-np.inf, np.inf), #all lnk are unbounded
 		)
 
 	#calculate Ghat
 	Ghat = _fHea14(x, *params)
+
+	if logy is True:
+		Ghat = np.exp(Ghat)
 
 	#convert to D47
 	D47hat, _ = _calc_D_from_G(
@@ -691,7 +719,7 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	sig_max = (lam_max - lam_min)/2
 	params, params_cov = curve_fit(lamfunc, x, y, p0,
 		sigma = y_std, 
-		absolute_sigma = False,
+		absolute_sigma = abs_sig,
 		bounds = ([lam_min, 0.],[lam_max, sig_max]), #mu, sig must be in range
 		)
 
@@ -878,7 +906,7 @@ def fit_HH20inv(
 	return rho_lam_inv, omega, res_inv, rgh_inv
 
 #function to fit data using PH12 model
-def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
+def fit_PH12(he, logy = True, p0 = [-10., 0.5], thresh = 1e-10):
 	'''
 	Fits D evolution data using the first-order model approximation of Passey
 	and Henkes (2012). The function uses curvature in t vs. ln(G) space to
@@ -889,6 +917,11 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 
 	he : isoclump.HeatingExperiment
 		`ic.HeatingExperiment` instance containing the D data to be modeled.
+
+	logy : Boolean
+		Tells the function whether or not to calculate fits using the natural
+		logarithm of reaction progress as the y axis. If ``True``, results
+		should be in closer alignment with PH12 and Hea14 literature values.
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
@@ -931,6 +964,9 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	Results are bounded such that k and intercept are non-negative; intercept 
 	value in ``params`` is the intercept in G vs. t space. All calculations 
 	are done in G space and thus only depend on relative changes in D47.
+
+	If ``logy = True``, note that fits are subject to high uncertainty when
+	approaching equilibrium, so ensure that HeatingExperiment data are culled.
 
 	See Also
 	--------
@@ -994,15 +1030,31 @@ def fit_PH12(he, p0 = [-7., 0.5], thresh = 1e-6):
 	yl_std = y_std[i0:]
 	npt = len(xl)
 
+	#log transform y if necessary
+	if logy is True:
+		yl_std = yl_std/yl
+		yl = np.log(yl)
+
+	#make lambda function to allow passing of logy boolean
+	lamfunc = lambda t, lnk, intercept: _fPH12(
+		t,
+		lnk,
+		intercept,
+		logG = logy
+		)
+
 	#calculate statistics with linear fit to linear region
-	params, params_cov = curve_fit(_fPH12, xl, yl, p0,
+	params, params_cov = curve_fit(lamfunc, xl, yl, p0,
 		sigma = yl_std,
-		absolute_sigma = False,
+		absolute_sigma = abs_sig,
 		bounds = ([-np.inf,0],[np.inf,1]), #lnk unbounded; 0 < int. < 1
 		)
 
 	#calculate Ghat
-	Ghat = _fPH12(xl, *params)
+	Ghat = lamfunc(xl, *params)
+
+	if logy is True:
+		Ghat = np.exp(Ghat)
 
 	#convert to D47
 	D47hat, _ = _calc_D_from_G(
@@ -1209,7 +1261,7 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 	#solve
 	params, params_cov = curve_fit(lamfunc, x, y, p0,
 		sigma = y_std, 
-		absolute_sigma = False,
+		absolute_sigma = abs_sig,
 		bounds = bounds, #k unbounded
 		)
 

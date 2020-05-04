@@ -46,12 +46,7 @@ from .dictionaries import(
 
 # RUNNING TODO LIST:
 # * add plot results images to necessary docstrings
-# * Update kd attribute setters to be more specific
 # * Add methods to HeatingExperiment to change iso_params
-# * Write EDistribution docstring
-# * INCLUDE OPTION IN FIT_HEA14 AND FIT_PH12 FOR FITTING IN LN(G) SPACE. I
-#	SUSPECT THIS WILL HELP WITH LITERATURE DISCREPANCIES.
-# * Make method for genearting kDistribution directly from EDistribution.
 
 class HeatingExperiment(object):
 	__doc__='''

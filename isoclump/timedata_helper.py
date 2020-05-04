@@ -346,7 +346,7 @@ def _forward_model(he, kd, t, **kwargs):
 	if kd.model == 'Hea14':
 
 		#calculate G
-		G = _fHea14(t, *p)
+		G = _fHea14(t, *p, logG = False)
 		
 		#calculate Jacobian
 		J = _Jacobian(_fHea14, t, p, **kwargs)
@@ -366,7 +366,7 @@ def _forward_model(he, kd, t, **kwargs):
 	elif kd.model == 'PH12':
 
 		#calculate G
-		G = _fPH12(t, *p)
+		G = _fPH12(t, *p, logG = False)
 		
 		#calculate Jacobian
 		J = _Jacobian(_fPH12, t, p, **kwargs)
