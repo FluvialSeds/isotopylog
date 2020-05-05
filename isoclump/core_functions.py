@@ -18,6 +18,7 @@ __all__ = [
 			# 'calc_Teq',
 			# 'calc_Deq',
 			'derivatize',
+			'geologic_history'
 			# 'resetting_plot',
 			# 'cooling_plot',
 			]
@@ -41,10 +42,215 @@ import numpy as np
 # 	)
 
 #import dictionaries with conversion information
-# from .dictionaries import(
-# 	caleqs,
-# 	d47_isoparams,
-# 	)
+from .dictionaries import(
+	caleqs,
+	)
+
+#define function to derivatize an array w.r.t. another array
+def derivatize(num, denom):
+	'''
+	Method for derivatizing numerator, `num`, with respect to denominator, 
+	`denom`.
+
+	Parameters
+	----------
+
+	num : int or array-like
+		The numerator of the numerical derivative function.
+
+	denom : array-like
+		The denominator of the numerical derivative function. Length `n`.
+
+	Returns
+	-------
+
+	derivative : np.array
+		An `np.array` instance of the derivative. Length `n`.
+
+	Raises
+	------
+
+	ArrayError
+		If `denom` is not array-like.
+
+	See Also
+	--------
+
+	numpy.gradient
+		The method used to calculate derivatives
+
+	Notes
+	-----
+
+	This method uses the ``np.gradient`` method to calculate derivatives. If
+	`denom` is a scalar, resulting array will be all ``np.inf``. If both `num`
+	and `denom` are scalars, resulting array will be all ``np.nan``. If 
+	either `num` or `denom` are 1d and the other is 2d, derivative will be
+	calculated column-wise. If both are 2d, each column will be derivatized 
+	separately.
+	'''
+
+	#calculate separately for each dimensionality case
+	if num.ndim == denom.ndim == 1:
+		dndd = np.gradient(num)/np.gradient(denom)
+
+	elif num.ndim == denom.ndim == 2:
+		dndd = np.gradient(num)[0]/np.gradient(denom)[0]
+
+	#note recursive list comprehension when dimensions are different
+	elif num.ndim == 2 and denom.ndim == 1:
+		col_der = [derivatize(col, denom) for col in num.T]
+		dndd = np.column_stack(col_der)
+
+	elif num.ndim == 1 and denom.ndim == 2:
+		col_der = [derivatize(num, col) for col in denom.T]
+		dndd = np.column_stack(col_der)
+
+	return dndd
+
+#define function to predict D47 evolution along geologic history
+def geologic_history(t, T, ed, d0, calibration = 'Bea17', ref_frame = 'CDES90'):
+	'''
+	Predicts the D47 evolution when a given ``ic.EDistribution`` model is 
+	subjected to any arbitrary time-temperature history.
+	
+	Parameters
+	----------
+
+	t : array-like
+		Array of time points, in the same temporal units used to calculate
+		the ``isoclump.EDistribution`` object passed to this function. Of
+		length ``nt``.
+
+	T : array-like
+		Array of temperatures at each time point, in Kelvin. Of length ``nt``.
+
+	ed : isoclump.EDistribution
+		The ``ic.EDistribution`` object containing the activation energy
+		parameters used for forward modeling.
+
+	d0 : array
+		Array of initial isotope composition, in the order [D47, d13C, d18O],
+		with d13C and d18O both reported relative to VPDB. Note that d13C and
+		d18O are only used if ``ed.model = 'SE15'``; for other model types,
+		these are unused and arbitrary values can be passed.
+
+	calibration : str
+		The D-T calibration equation to use for forward modeling. Defaults to
+		``'Bea17'`` for Bonifacie et al. (2017).
+
+	ref_frame : str
+		The reference frame used to generate D47 values. Defaults to
+		``'CDES90'``.
+
+	Returns
+	-------
+
+	D : np.array
+		Array of resulting D47 values. Of length ``nt``.
+
+
+	Raises
+	------
+
+	TypeError
+		If inputted 'calibration' and/or 'ref_frame' are not strings.
+
+	ValueError
+		If inputted t and T arrays are not the same length.
+
+	ValueError
+		If inputted 'calibration' and/or 'ref_frame' arrays are not acceptable
+		strings.
+
+	See Also
+	--------
+
+	Examples
+	--------
+
+	References
+	----------
+
+	'''
+
+	#set constants and check inputs are correct
+	nt = len(t)
+	dt = np.gradient(t)
+	R = 8.314/1000 #kJ/mol
+
+	if len(T) != nt:
+		raise ValueError(
+			'unexpected length of T array %n. Must be same length as t array.' 
+			% len(T)
+			)
+
+	if calibration not in ['PH12', 'SE15', 'Bea17']:
+		raise ValueError(
+			"unexpected calibration %s. Must be 'PH12', 'SE15', or 'Bea17'."
+			% calibration
+			)
+
+	elif not isattr(calibration, str):
+		ct = type(calibration).__name__
+		raise TypeError(
+			'unexpected calibration of type %s. Must be string.' % ct
+			)
+
+	if ref_frame not in ['Ghosh25', 'Ghosh90', 'CDES25', 'CDES90']:
+		raise ValueError(
+			"unexpected ref_frame %s. Must be 'Ghosh25', 'Ghosh90', 'CDES25',"
+			" or 'CDES90'." % ref_frame
+			)
+
+	elif not isattr(ref_frame, str):
+		rft = type(ref_frame).__name__
+		raise TypeError(
+			'unexpected calibration of type %s. Must be string.' % rft
+			)
+
+	#calculate array of D47eq
+	Deq = caleqs[calibration][ref_frame](T)
+
+	#calculate array of k values
+	if model == 'PH12':
+		k = np.exp(lnk0 - E/(R*T))
+
+	#pre-allocate D array
+	D = np.zeros(nt)
+	D[0] = D0
+
+	#loop through and solve
+	for i in range(1,nt):
+
+		D[i] = (D[i-1] - Deq[i])*np.exp(-k[i]*dt[i]) + Deq[i]
+
+
+	return D
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # #define funtction for making Arrhenius plots
 # def Arrhenius_plot(rate_list, ax = None, xaxis = 'Tinv', yaxis = 'mu'):
@@ -400,67 +606,6 @@ import numpy as np
 # 	'''
 
 
-#define function to derivatize an array w.r.t. another array
-def derivatize(num, denom):
-    '''
-    Method for derivatizing numerator, `num`, with respect to denominator, 
-    `denom`.
-
-    Parameters
-    ----------
-
-    num : int or array-like
-        The numerator of the numerical derivative function.
-
-    denom : array-like
-        The denominator of the numerical derivative function. Length `n`.
-
-    Returns
-    -------
-
-    derivative : np.array
-        An `np.array` instance of the derivative. Length `n`.
-
-    Raises
-    ------
-
-    ArrayError
-        If `denom` is not array-like.
-
-    See Also
-    --------
-
-    numpy.gradient
-        The method used to calculate derivatives
-
-    Notes
-    -----
-
-    This method uses the ``np.gradient`` method to calculate derivatives. If
-    `denom` is a scalar, resulting array will be all ``np.inf``. If both `num`
-    and `denom` are scalars, resulting array will be all ``np.nan``. If 
-    either `num` or `denom` are 1d and the other is 2d, derivative will be
-    calculated column-wise. If both are 2d, each column will be derivatized 
-    separately.
-    '''
-
-    #calculate separately for each dimensionality case
-    if num.ndim == denom.ndim == 1:
-        dndd = np.gradient(num)/np.gradient(denom)
-
-    elif num.ndim == denom.ndim == 2:
-        dndd = np.gradient(num)[0]/np.gradient(denom)[0]
-
-    #note recursive list comprehension when dimensions are different
-    elif num.ndim == 2 and denom.ndim == 1:
-        col_der = [derivatize(col, denom) for col in num.T]
-        dndd = np.column_stack(col_der)
-
-    elif num.ndim == 1 and denom.ndim == 2:
-        col_der = [derivatize(num, col) for col in denom.T]
-        dndd = np.column_stack(col_der)
-
-    return dndd
 
 
 

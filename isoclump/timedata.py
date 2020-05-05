@@ -44,10 +44,6 @@ from .dictionaries import(
 	clump_isos,
 	)
 
-# RUNNING TODO LIST:
-# * add plot results images to necessary docstrings
-# * Add methods to HeatingExperiment to change iso_params
-
 class HeatingExperiment(object):
 	__doc__='''
 	Class for inputting, storing, and visualizing clumped isotope heating 
@@ -1394,4 +1390,35 @@ class HeatingExperiment(object):
 		self._T_std = value
 	
 
+# class GeologicHistory(object):
+# 	__doc__='''
+# 	Class for inputting, storing, and visualizing clumped isotope geologic
+# 	history data. Currently only accepts D47 clumps, but will be expanded 
+# 	in the future as new clumped system data becomes available.
 
+# 	Parameters
+# 	----------
+
+# 	Raises
+# 	------
+
+# 	Notes
+# 	-----
+
+# 	See Also
+# 	--------
+
+# 	Examples
+# 	--------
+
+# 	References
+# 	----------
+
+# 	'''
+
+
+
+
+
+
+# if __name__ == __main__:
