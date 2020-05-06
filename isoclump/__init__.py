@@ -37,7 +37,6 @@ __docformat__ = 'restructuredtext en'
 #import timedata classes
 from .timedata import(
 	HeatingExperiment,
-	# GeologicHistory,
 	)
 
 #import ratedata classes
@@ -59,6 +58,7 @@ from .core_functions import(
 	# resetting_plot,
 	# cooling_plot,
 	derivatize,
+	geologic_history,
 	)
 
 from .ratedata_helper import(

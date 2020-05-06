@@ -41,6 +41,15 @@ import numpy as np
 # 	_assert_iso_params,
 # 	)
 
+#import necessary calculation functions
+from .calc_funcs import(
+	_ghHea14,
+	_ghHH20,
+	_ghPH12,
+	_ghSE15,
+	_Jacobian,
+	)
+
 #import dictionaries with conversion information
 from .dictionaries import(
 	caleqs,
@@ -109,7 +118,16 @@ def derivatize(num, denom):
 	return dndd
 
 #define function to predict D47 evolution along geologic history
-def geologic_history(t, T, ed, d0, calibration = 'Bea17', ref_frame = 'CDES90'):
+def geologic_history(
+	t, 
+	T, 
+	ed, 
+	d0,
+	d0_std = [0.,0.,0.],
+	calibration = 'Bea17', 
+	ref_frame = 'CDES90',
+	**kwargs
+	):
 	'''
 	Predicts the D47 evolution when a given ``ic.EDistribution`` model is 
 	subjected to any arbitrary time-temperature history.
@@ -129,11 +147,15 @@ def geologic_history(t, T, ed, d0, calibration = 'Bea17', ref_frame = 'CDES90'):
 		The ``ic.EDistribution`` object containing the activation energy
 		parameters used for forward modeling.
 
-	d0 : array
+	d0 : array-like
 		Array of initial isotope composition, in the order [D47, d13C, d18O],
 		with d13C and d18O both reported relative to VPDB. Note that d13C and
 		d18O are only used if ``ed.model = 'SE15'``; for other model types,
 		these are unused and arbitrary values can be passed.
+
+	d0_std : array-like
+		Uncertainty associated with the values in d0, as +/- 1 standard
+		deviation. Defaults to array of zeros.
 
 	calibration : str
 		The D-T calibration equation to use for forward modeling. Defaults to
@@ -149,6 +171,9 @@ def geologic_history(t, T, ed, d0, calibration = 'Bea17', ref_frame = 'CDES90'):
 	D : np.array
 		Array of resulting D47 values. Of length ``nt``.
 
+	D_std : np.array
+		Array of corresponding uncertainty for resulting D values. Of length 
+		``nt``.
 
 	Raises
 	------
@@ -174,12 +199,8 @@ def geologic_history(t, T, ed, d0, calibration = 'Bea17', ref_frame = 'CDES90'):
 
 	'''
 
-	#set constants and check inputs are correct
-	nt = len(t)
-	dt = np.gradient(t)
-	R = 8.314/1000 #kJ/mol
-
-	if len(T) != nt:
+	#check inputs are correct
+	if len(T) != len(t):
 		raise ValueError(
 			'unexpected length of T array %n. Must be same length as t array.' 
 			% len(T)
@@ -191,7 +212,7 @@ def geologic_history(t, T, ed, d0, calibration = 'Bea17', ref_frame = 'CDES90'):
 			% calibration
 			)
 
-	elif not isattr(calibration, str):
+	elif not isinstance(calibration, str):
 		ct = type(calibration).__name__
 		raise TypeError(
 			'unexpected calibration of type %s. Must be string.' % ct
@@ -203,7 +224,7 @@ def geologic_history(t, T, ed, d0, calibration = 'Bea17', ref_frame = 'CDES90'):
 			" or 'CDES90'." % ref_frame
 			)
 
-	elif not isattr(ref_frame, str):
+	elif not isinstance(ref_frame, str):
 		rft = type(ref_frame).__name__
 		raise TypeError(
 			'unexpected calibration of type %s. Must be string.' % rft
@@ -211,22 +232,142 @@ def geologic_history(t, T, ed, d0, calibration = 'Bea17', ref_frame = 'CDES90'):
 
 	#calculate array of D47eq
 	Deq = caleqs[calibration][ref_frame](T)
+	D0 = d0[0]
+	D0_cov = d0_std[0]**2
+	Tref = ed.Tref
 
-	#calculate array of k values
-	if model == 'PH12':
-		k = np.exp(lnk0 - E/(R*T))
+	#calculate D depending on model type
 
-	#pre-allocate D array
-	D = np.zeros(nt)
-	D[0] = D0
+	#Henkes et al. 2014 model
+	if ed.model == 'Hea14':
 
-	#loop through and solve
-	for i in range(1,nt):
+		#extract relevant parameters and uncertainty in the order:
+		# Ec, lnkcref, Ed, lnkdref, E2, lnk2ref
+		p = ed.Eparams.T.flatten()
+		pcov = ed.Eparams_cov
 
-		D[i] = (D[i-1] - Deq[i])*np.exp(-k[i]*dt[i]) + Deq[i]
+		#append D0 to params and params_cov to include those in uncertainty
+		p = np.append(p, D0)
+
+		npt = len(pcov)
+		pcov = np.append(pcov, [np.zeros(npt)], 0)
+		pcov = np.append(pcov, np.append(np.zeros(npt), D0_cov).reshape(-1,1),1)
+
+		#solve for D evolution
+		D = _ghHea14(t, *p, Deq, T, Tref)
+
+		#define lambda function for uncertainty propagation
+		lamfunc = lambda t,Ec,lnkcref,Ed,lnkdref,E2,lnk2ref,D0 : _ghHea14(
+			t, 
+			Ec,
+			lnkcref,
+			Ed,
+			lnkdref,
+			E2,
+			lnk2ref,
+			D0,
+			Deq,
+			T,
+			Tref)
+
+	#Hemingway and Henkes 2020 model
+	elif ed.model == 'HH20':
+
+		#extract relevant parameters and uncertainty in the order:
+		# Emu, lnkmuref, Esig, lnksigref
+		p = ed.Eparams.T.flatten()
+		pcov = ed.Eparams_cov
+
+		#append D0 to params and params_cov to include those in uncertainty
+		p = np.append(p, D0)
+
+		npt = len(pcov)
+		pcov = np.append(pcov, [np.zeros(npt)], 0)
+		pcov = np.append(pcov, np.append(np.zeros(npt), D0_cov).reshape(-1,1),1)
+
+		#solve for D evolution
+		D = _ghHH20(t, *p, Deq, T, Tref)
+
+		#define lambda function for uncertainty propagation
+		lamfunc = lambda t, Emu, lnkmuref, Esig, lnksigref, D0 : _ghHH20(
+			t, 
+			Emu, 
+			lnkmuref, 
+			Esig, 
+			lnksigref,
+			D0,
+			Deq,
+			T,
+			Tref)
+
+	#Passey and Henkes 2012 model
+	elif ed.model == 'PH12':
+
+		#extract relevant parameters and uncertainty in the order: 
+		# E, lnkref
+		p = ed.Eparams[:,0]
+		pcov = ed.Eparams_cov[:2,:2]
+
+		#append D0 to params and params_cov to include those in uncertainty
+		p = np.append(p, D0)
+
+		npt = len(pcov)
+		pcov = np.append(pcov, [np.zeros(npt)], 0)
+		pcov = np.append(pcov, np.append(np.zeros(npt), D0_cov).reshape(-1,1),1)
+
+		#solve for D evolution
+		D = _ghPH12(t, *p, Deq, T, Tref)
+
+		#define lambda function for uncertainty propagation
+		lamfunc = lambda t, E, lnkref, D0 : _ghPH12(
+			t, 
+			E, 
+			lnkref, 
+			D0, 
+			Deq,
+			T, 
+			Tref)
+
+	#Stolper and Eiler 2015 model
+	elif ed.model == 'SE15':
+
+		#extract relevant parameters and uncertainty in the order:
+		# E1, lnk1ref, Eds, lnkdsref, Epp, lnkppref
+		p = ed.Eparams.T.flatten()
+		pcov = ed.Eparams_cov
+
+		#append D0 to params and params_cov to include those in uncertainty
+		p = np.append(p, D0)
+
+		npt = len(pcov)
+		pcov = np.append(pcov, [np.zeros(npt)], 0)
+		pcov = np.append(pcov, np.append(np.zeros(npt), D0_cov).reshape(-1,1),1)
+
+		#solve for D evolution
+		D = _ghHH20(t, *p, Deq, T, Tref)
+
+		#define lambda function for uncertainty propagation
+		lamfunc = lambda t,E1,lnk1ref,Eds,lnkdsref,Epp,lnkppref,D0 : _ghHH20(
+			t, 
+			E1, 
+			lnk1ref, 
+			Eds, 
+			lnkdsref, 
+			Epp, 
+			lnkppref,
+			D0,
+			Deq,
+			T,
+			Tref)
+
+	#calculate Jacobian and D uncertainty
+	J = _Jacobian(lamfunc, t, p, **kwargs)
+	Dcov = np.dot(J, np.dot(pcov, J.T))
+	D_std = np.sqrt(np.diag(Dcov))
+
+	return D, D_std
 
 
-	return D
 
 
 
@@ -234,6 +375,40 @@ def geologic_history(t, T, ed, d0, calibration = 'Bea17', ref_frame = 'CDES90'):
 
 
 
+
+
+
+
+
+
+
+
+	# k = np.exp(lnk0 - E/(R*T))
+
+	# #pre-allocate D array
+	# D = np.zeros(nt)
+	# D[0] = D0
+
+	# #loop through and solve
+	# for i in range(1,nt):
+
+	# 	D[i] = (D[i-1] - Deq[i])*np.exp(-k[i]*dt[i]) + Deq[i]
+
+
+	# #calculate D array for PH12, Hea14, and HH20 models (SE15 model requires
+	# # slightly different execution)
+	# if ed.model in ['PH12', 'Hea14', 'HH20']:
+
+	# 	# #calculate k values
+	# 	# k, kcov = _calc_k(ed, t, T)
+
+	# 	# #pre-allocate D array
+	# 	# D = np.zeros(nt)
+	# 	# D[0] = d0[0]
+
+	# 	# #loop through and solve
+	# 	# for i in range(1, nt):
+	# 	# 	D[i] = (D[i-1] - Deq[i])*np.exp(-k[i]*dt[i]) + Deq[i]
 
 
 

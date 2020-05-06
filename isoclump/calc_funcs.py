@@ -6,6 +6,17 @@ Updated: 22/4/20
 By: JDH
 '''
 
+#TODO:
+# * FINISH WRITING GEOLOGIC HISTORY FUNCTION
+# * WRITE GEOLOGIC HISTORY PLOTTING FUNCTIONS
+# * DOUBLE CHECK STOLPER MODEL P0/PEQ IS CORRECT! (suspect it should be peq/prandom??)
+
+# current p_0/p_eq is actually p_eq/p_random
+#	need to change p_random to p_eq and calculate p0 as peq at the temperature
+#	given by D0! ratio of ln(p_0/p_eq) is then just m_p / ∆T!
+
+
+
 #import from future for python 2
 from __future__ import(
 	division,
@@ -15,6 +26,7 @@ from __future__ import(
 #set magic attributes
 __docformat__ = 'restructuredtext en'
 __all__ = ['_calc_A',
+		   '_calc_k',
 		   '_calc_R',
 		   '_calc_R_stoch',
 		   '_calc_rmse',
@@ -24,6 +36,10 @@ __all__ = ['_calc_A',
 		   '_fPH12',
 		   '_fSE15',
 		   '_Gaussian',
+		   '_ghHea14',
+		   '_ghHH20',
+		   '_ghPH12',
+		   '_ghSE15',
 		   '_Jacobian',
 		  ]
 
@@ -37,10 +53,10 @@ from numpy.linalg import (
 	norm,
 	)
 
-#import necessary isoclump core functions
-from .core_functions import(
-	derivatize,
-	)
+# #import necessary isoclump core functions
+# from .core_functions import(
+# 	derivatize,
+# 	)
 
 #import necessary isoclump dictionaries
 from .dictionaries import(
@@ -600,6 +616,166 @@ def _Gaussian(x, mu, sigma):
 	y = s * np.exp(-(x - mu)**2/(2*sigma**2))
 
 	return y
+
+#function for calcualting geologic history with Hea14 model
+def _ghHea14(t, Ec, lnkcref, Ed, lnkdref, E2, lnk2ref, D0, Deq, T, Tref):
+	'''
+	Calculates the D47 value for a given geologic t-T history using the Hea14
+	model.
+
+	Parameters
+	----------
+
+	t : array-like
+		Array of time points on which to calculate D47, in whatever time units
+		were used to calculate lnkref values. Length ``nt``.
+
+	Ec : float
+		The activation energy value for the Hea14 model.
+
+	lnkcref : float
+		The reference lnk value for the Hea14 model.
+
+	Ed : float
+		The activation energy value for the Hea14 model.
+
+	lnkdref : float
+		The reference lnk value for the Hea14 model.
+
+	E2 : float
+		The activation energy value for the Hea14 model.
+
+	lnk2ref : float
+		The reference lnk value for the Hea14 model.
+
+	D0 : float
+		The starting D47 value.
+
+	Deq : array-like
+		The equilibrium D47 values at each time-temperature point on which to
+		calculate D47, using the same reference frame and calibration used for
+		D0. Length ``nt``.
+
+	T : array-like
+		The temperatures coresponding to each time point, in Kelvin. Length
+		``nt``.
+
+	Tref : float
+		The reference temperature at which lnkref was calculated, in Kelvin.
+
+	Returns
+	-------
+
+	D : np.array
+		Array of resulting D47 values, referenced to the same reference frame
+		and D-T calibration used for D0 and Deq. Of length ``nt``.
+
+	References
+	----------
+	
+	[1] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
+	'''
+
+	#get constants
+	nt = len(t)
+	dt = np.gradient(t)
+	R = 8.314/1000 #in kJ/mol/K
+
+	#calculate overall k at each temperature point, termed kappa
+	# This is the only part that is model-specific
+	kappa = np.exp(lnkref + (E/R)*(1/Tref - 1/T))
+
+	#pre-allocate D array
+	D = np.zeros(nt)
+	D[0] = D0
+
+	#loop through and solve for D at each time point
+	for i in range(1,nt):
+
+		D[i] = (D[i-1] - Deq[i])*np.exp(-kappa[i]*dt[i]) + Deq[i]
+
+	return D
+
+#function for calcualting geologic history with HH20 model
+def _ghHH20(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref):
+	'''
+	Add docstring.
+	'''
+	return D
+
+#function for calcualting geologic history with PH12 model
+def _ghPH12(t, E, lnkref, D0, Deq, T, Tref):
+	'''
+	Calculates the D47 value for a given geologic t-T history using the PH12
+	model.
+
+	Parameters
+	----------
+
+	t : array-like
+		Array of time points on which to calculate D47, in whatever time units
+		were used to calculate lnkref values. Length ``nt``.
+
+	E : float
+		The activation energy value for the PH12 model.
+
+	lnkref : float
+		The reference lnk value for the PH12 model.
+
+	D0 : float
+		The starting D47 value.
+
+	Deq : array-like
+		The equilibrium D47 values at each time-temperature point on which to
+		calculate D47, using the same reference frame and calibration used for
+		D0. Length ``nt``.
+
+	T : array-like
+		The temperatures coresponding to each time point, in Kelvin. Length
+		``nt``.
+
+	Tref : float
+		The reference temperature at which lnkref was calculated, in Kelvin.
+
+	Returns
+	-------
+
+	D : np.array
+		Array of resulting D47 values, referenced to the same reference frame
+		and D-T calibration used for D0 and Deq. Of length ``nt``.
+
+	References
+	----------
+
+	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+	'''
+
+	#get constants
+	nt = len(t)
+	dt = np.gradient(t)
+	R = 8.314/1000 #in kJ/mol/K
+
+	#calculate overall k at each temperature point, termed kappa
+	# This is the only part that is model-specific
+	kappa = np.exp(lnkref + (E/R)*(1/Tref - 1/T))
+
+	#pre-allocate D array
+	D = np.zeros(nt)
+	D[0] = D0
+
+	#loop through and solve for D at each time point
+	for i in range(1,nt):
+
+		D[i] = (D[i-1] - Deq[i])*np.exp(-kappa[i]*dt[i]) + Deq[i]
+
+	return D
+
+#function for calcualting geologic history with SE15 model
+def _ghSE15(t, E1, lnk1ref, Eds, lnkdsref, Epp, lnkppref, D0, Deq, T, Tref):
+	'''
+	Add docstring.
+	'''
+	return D
 
 #function for estimating Jacobian matrices for error propagation
 def _Jacobian(f, t, p, eps = 1e-6):
