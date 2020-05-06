@@ -411,6 +411,11 @@ def _fHH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 
 	G : array-like
 		Array of resulting G values at each time point.
+
+	References
+	----------
+
+	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 
 	#setup arrays
@@ -599,21 +604,38 @@ def _Gaussian(x, mu, sigma):
 	x : scalar or array-like
 		Input x value(s).
 	
-	mu : scalar
-		Gaussian mean.
+	mu : scalar or array-like
+		Gaussian mean(s).
 		
-	sigma : scalar
-		Gaussian standard deviation.
+	sigma : scalar or array-like
+		Gaussian standard deviation(s).
 	
 	Returns
 	-------
 
 	y : scalar or array-like
-		Output y value(s).
+		Output y value(s). If ``mu`` and ``sigma`` are arrays, then ``y``
+		is 2d array of shape [len(x) x len(mu)].
 	'''
+
+	#get lengths
+	nx = len(x)
+
+	try:
+		nm = len(mu)
+
+	except TypeError:
+		nm = 1
+
+	xmat = np.outer(x, np.ones(nm))
+	mumat = np.outer(np.ones(nx), mu) 
+	sigmat = np.outer(np.ones(nx), sigma)
 	
-	s = 1/(2*np.pi*sigma**2)**0.5
-	y = s * np.exp(-(x - mu)**2/(2*sigma**2))
+	s = 1/(2*np.pi*sigmat**2)**0.5
+	y = s * np.exp(-(xmat - mumat)**2/(2*sigmat**2))
+
+	if nm == 1:
+		y = y.flatten()
 
 	return y
 
@@ -631,22 +653,22 @@ def _ghHea14(t, Ec, lnkcref, Ed, lnkdref, E2, lnk2ref, D0, Deq, T, Tref):
 		were used to calculate lnkref values. Length ``nt``.
 
 	Ec : float
-		The activation energy value for the Hea14 model.
+		The activation energy value "c" for the Hea14 model.
 
 	lnkcref : float
-		The reference lnk value for the Hea14 model.
+		The reference lnk value "c" for the Hea14 model.
 
 	Ed : float
-		The activation energy value for the Hea14 model.
+		The activation energy value "d" for the Hea14 model.
 
 	lnkdref : float
-		The reference lnk value for the Hea14 model.
+		The reference lnk value for "d" the Hea14 model.
 
 	E2 : float
-		The activation energy value for the Hea14 model.
+		The activation energy value "2" for the Hea14 model.
 
 	lnk2ref : float
-		The reference lnk value for the Hea14 model.
+		The reference lnk value "2" for the Hea14 model.
 
 	D0 : float
 		The starting D47 value.
@@ -700,10 +722,99 @@ def _ghHea14(t, Ec, lnkcref, Ed, lnkdref, E2, lnk2ref, D0, Deq, T, Tref):
 	return D
 
 #function for calcualting geologic history with HH20 model
-def _ghHH20(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref):
+def _ghHH20(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nlam = 400):
 	'''
-	Add docstring.
+	Calculates the D47 value for a given geologic t-T history using the HH20
+	model.
+
+	Parameters
+	----------
+
+	t : array-like
+		Array of time points on which to calculate D47, in whatever time units
+		were used to calculate lnkref values. Length ``nt``.
+
+	Emu : float
+		The activation energy value "mu" for the HH20 model.
+
+	lnkmuref : float
+		The reference lnk value "mu" for the HH20 model.
+
+	Esig : float
+		The activation energy value "sig" for the HH20 model.
+
+	lnksigref : float
+		The reference lnk value "sig" for the HH20 model.
+
+
+	D0 : float
+		The starting D47 value.
+
+	Deq : array-like
+		The equilibrium D47 values at each time-temperature point on which to
+		calculate D47, using the same reference frame and calibration used for
+		D0. Length ``nt``.
+
+	T : array-like
+		The temperatures coresponding to each time point, in Kelvin. Length
+		``nt``.
+
+	Tref : float
+		The reference temperature at which lnkref was calculated, in Kelvin.
+
+	nlam : int
+		The number of points to use in the lambda array. Defaults to ``400``.
+
+	Returns
+	-------
+
+	D : np.array
+		Array of resulting D47 values, referenced to the same reference frame
+		and D-T calibration used for D0 and Deq. Of length ``nt``.
+
+	References
+	----------
+
+	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
+
+	#get constants
+	nt = len(t)
+	dt = np.gradient(t)
+	R = 8.314/1000 #in kJ/mol/K
+
+	#calculate overall k at each temperature point, termed kappa
+	#calculate lam_mu and lam_sig from Emu and Esig
+	lam_mu = lnkmuref + (Emu/R)*(1/Tref - 1/T)
+	lam_sig = lnksigref - (Esig/R)*(1/T)
+
+	#calculate plam from lam_mu and lam_sig
+	# plam is an [nt x nlam] matrix
+
+	#first, make lam array that spans from 5*sigma above max(lam_mu) to 5*sigma
+	# below min(lam_mu)
+	lam_min = np.floor(lam_mu.min() - 5*lam_sig.max())
+	lam_max = np.ceil(lam_mu.max() + 5*lam_sig.max())
+
+	lam = np.linspace(lam_min, lam_max, nlam)
+	dlam = lam[1] - lam[0]
+
+	#then, make into matrix
+	rholam = _Gaussian(lam, lam_mu, lam_sig)
+
+	#make array of kappa = integral(rho_lam * e^(-k*dt))
+	b = np.exp(-np.outer(np.exp(lam), dt))
+	kappa = np.sum(rholam * b * dlam, axis = 0)
+
+	#pre-allocate D array
+	D = np.zeros(nt)
+	D[0] = D0
+
+	#loop through and solve for D at each time point
+	for i in range(1,nt):
+
+		D[i] = (D[i-1] - Deq[i])*kappa[i] + Deq[i]
+
 	return D
 
 #function for calcualting geologic history with PH12 model

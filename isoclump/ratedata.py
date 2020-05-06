@@ -685,7 +685,7 @@ class kDistribution(object):
 				)
 
 		#set axis labels
-		ax.set_xlabel(r'$\lambda$ ($min^{-1}$)')
+		ax.set_xlabel(r'$\lambda$ ($time^{-1}$)')
 		ax.set_ylabel(r'$\rho(\lambda)$')
 
 		#add legend

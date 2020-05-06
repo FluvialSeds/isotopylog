@@ -126,6 +126,7 @@ def geologic_history(
 	d0_std = [0.,0.,0.],
 	calibration = 'Bea17', 
 	ref_frame = 'CDES90',
+	nlam = 400,
 	**kwargs
 	):
 	'''
@@ -164,6 +165,11 @@ def geologic_history(
 	ref_frame : str
 		The reference frame used to generate D47 values. Defaults to
 		``'CDES90'``.
+
+	nlam : int
+		The number of points to use in the lambda array. Only applies if
+		``ed.model = 'HH20'``; for other model types, this is unused. Defaults 
+		to ``400``.
 
 	Returns
 	-------
@@ -298,7 +304,8 @@ def geologic_history(
 			D0,
 			Deq,
 			T,
-			Tref)
+			Tref,
+			nlam = nlam)
 
 	#Passey and Henkes 2012 model
 	elif ed.model == 'PH12':
