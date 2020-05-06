@@ -369,7 +369,7 @@ def _fHea14(t, lnkc, lnkd, lnk2, logG = True):
 	kd = np.exp(lnkd)
 	k2 = np.exp(lnk2)
 
-	#calculate Ghat
+	#calculate Ghat (in log space!)
 	Ghat = -kc*t + (kd/k2)*(np.exp(-k2*t) - 1)
 
 	if logG is False:
@@ -672,7 +672,7 @@ def _ghHea14(t, Ec, lnkcref, Ed, lnkdref, E2, lnk2ref, D0, Deq, T, Tref):
 
 	References
 	----------
-	
+
 	[1] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.
 	'''
 
@@ -683,7 +683,9 @@ def _ghHea14(t, Ec, lnkcref, Ed, lnkdref, E2, lnk2ref, D0, Deq, T, Tref):
 
 	#calculate overall k at each temperature point, termed kappa
 	# This is the only part that is model-specific
-	kappa = np.exp(lnkref + (E/R)*(1/Tref - 1/T))
+	kappac = np.exp(lnkcref + (Ec/R)*(1/Tref - 1/T))
+	kappad = np.exp(lnkdref + (Ed/R)*(1/Tref - 1/T))
+	kappa2 = np.exp(lnk2ref + (E2/R)*(1/Tref - 1/T))
 
 	#pre-allocate D array
 	D = np.zeros(nt)
@@ -692,7 +694,8 @@ def _ghHea14(t, Ec, lnkcref, Ed, lnkdref, E2, lnk2ref, D0, Deq, T, Tref):
 	#loop through and solve for D at each time point
 	for i in range(1,nt):
 
-		D[i] = (D[i-1] - Deq[i])*np.exp(-kappa[i]*dt[i]) + Deq[i]
+		D[i] = (D[i-1] - Deq[i])*np.exp(-kappac[i]*dt[i] + \
+			(kappad[i]/kappa2[i])*(np.exp(-kappa2[i]*dt[i]) - 1)) + Deq[i]
 
 	return D
 
