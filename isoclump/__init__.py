@@ -45,18 +45,13 @@ from .ratedata import(
 	EDistribution,
 	)
 
-#import package-level functions
+#import package-level functions:
+from .calc_funcs import(
+	Deq_from_T,
+	T_from_Deq,
+	)
+
 from .core_functions import(
-	# Arrhenius_plot,
-	# assert_len,
-	# change_ref_frame,
-	# calc_cooling_rate,
-	# calc_d,
-	# calc_R,
-	# calc_Teq,
-	# calc_Deq,
-	# resetting_plot,
-	# cooling_plot,
 	derivatize,
 	geologic_history,
 	)

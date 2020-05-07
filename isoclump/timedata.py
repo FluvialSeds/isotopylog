@@ -12,7 +12,6 @@ from __future__ import(
 __docformat__ = 'restructuredtext en'
 __all__ = [
 	'HeatingExperiment',
-	 # 'GeologicHistory'
 	]
 
 #import packages
@@ -23,6 +22,11 @@ import warnings
 
 #import types for checking
 from types import LambdaType
+
+#import optimization functions
+from scipy.optimize import(
+	minimize
+	)
 
 #import necessary functions for calculations
 from .calc_funcs import(
@@ -1387,38 +1391,6 @@ class HeatingExperiment(object):
 		'''
 		Setter for T_std
 		'''
-		self._T_std = value
+		self._T_std = value	
 	
-
-# class GeologicHistory(object):
-# 	__doc__='''
-# 	Class for inputting, storing, and visualizing clumped isotope geologic
-# 	history data. Currently only accepts D47 clumps, but will be expanded 
-# 	in the future as new clumped system data becomes available.
-
-# 	Parameters
-# 	----------
-
-# 	Raises
-# 	------
-
-# 	Notes
-# 	-----
-
-# 	See Also
-# 	--------
-
-# 	Examples
-# 	--------
-
-# 	References
-# 	----------
-
-# 	'''
-
-
-
-
-
-
 # if __name__ == __main__:

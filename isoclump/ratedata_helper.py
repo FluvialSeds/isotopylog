@@ -48,7 +48,7 @@ from .calc_funcs import(
 	_calc_R,
 	_calc_R_stoch,
 	_calc_rmse,
-	_calc_Rpeq,
+	_calc_Rpr,
 	_fArrhenius,
 	_fHea14,
 	_fPH12,
@@ -1223,7 +1223,7 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 	R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, he.iso_params)
 
 	#calculate Rpeq and convert to Dppeq
-	Rpeq = _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z)
+	Rpeq = _calc_Rpr(R45_stoch, R46_stoch, R47_stoch, z)
 	Dppeq = Rpeq/R47_stoch
 
 	#combine constants into list

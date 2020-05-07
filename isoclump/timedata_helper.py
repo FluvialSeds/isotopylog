@@ -27,7 +27,7 @@ from types import LambdaType
 #import necessary functions for calculations
 from .calc_funcs import(
 	_calc_R_stoch,
-	_calc_Rpeq,
+	_calc_Rpr,
 	_fHea14,
 	_fPH12,
 	_fSE15,
@@ -387,7 +387,7 @@ def _forward_model(he, kd, t, **kwargs):
 
 		#calculate Rpeq and convert to Dppeq
 		z = 6
-		Rpeq = _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, 6)
+		Rpeq = _calc_Rpr(R45_stoch, R46_stoch, R47_stoch, 6)
 		Dppeq = Rpeq/R47_stoch
 
 		#combine constants into list
@@ -578,4 +578,3 @@ def _read_csv(file):
 			' CO47 clumps.')
 
 	return dex, T, tex, file_attrs
-

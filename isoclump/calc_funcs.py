@@ -30,7 +30,7 @@ __all__ = ['_calc_A',
 		   '_calc_R',
 		   '_calc_R_stoch',
 		   '_calc_rmse',
-		   '_calc_Rpeq',
+		   '_calc_Rpr',
 		   '_fHea14',
 		   '_fHH20',
 		   '_fPH12',
@@ -53,13 +53,14 @@ from numpy.linalg import (
 	norm,
 	)
 
-# #import necessary isoclump core functions
-# from .core_functions import(
-# 	derivatize,
-# 	)
+#import optimization functions
+from scipy.optimize import(
+	minimize
+	)
 
 #import necessary isoclump dictionaries
 from .dictionaries import(
+	caleqs,
 	d47_isoparams,
 	)
 
@@ -239,9 +240,9 @@ def _calc_rmse(y,yhat):
 	return norm(y - yhat)/(len(y)**0.5)
 
 #function to calcualte equilibrium pair concentrations
-def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
+def _calc_Rpr(R45_stoch, R46_stoch, R47_stoch, z):
 	'''
-	Function to calculate the equilibrium pair concentration ratio.
+	Function to calculate the random (stochastic) pair concentration ratio.
 
 	Parameters
 	----------
@@ -261,8 +262,8 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 	Returns
 	-------
 
-	Rpeq : float
-		The equilibrium pair concentration, normalied to [44].
+	Rpr : float
+		The random (stochastic) pair concentration, normalied to [44].
 
 	Notes
 	-----
@@ -288,9 +289,9 @@ def _calc_Rpeq(R45_stoch, R46_stoch, R47_stoch, z):
 	p = (pa+pb)/2
 
 	#convert to ratio
-	Rpeq = p/f44
+	Rpr = p/f44
 
-	return Rpeq
+	return Rpr
 
 #function to fit Arrhenius plot
 def _fArrhenius(T, E, lnkref, Tref):
@@ -477,7 +478,7 @@ def _fPH12(t, lnk, intercept, logG = True):
 	return Ghat
 
 #function to fit SE15 model using backward Euler
-def _fSE15(t, lnk1f, lnkds, lnp0peq, D0, Deq, Dppeq, he):
+def _fSE15(t, lnk1f, lnkds, mp, he, z = 6):
 	'''
 	Function for solving the Stolper and Eiler (2015) paired diffusion model
 	using a backward Euler finite difference approach.
@@ -496,23 +497,21 @@ def _fSE15(t, lnk1f, lnkds, lnp0peq, D0, Deq, Dppeq, he):
 		Natural log of the backward k value for the [pair] <-> [45]s + [46]s
 		equation (SE15 Eq. 8b). To be estimated using ``curve_fit``.
 
-	lnp0peq : float
-		Natural log of the ratio of initial pair composition relative to 
-		equilibrium pair composition. To be estimated using ``curve_fit``.
-
-	D0 : float
-		Initial D47 value of the experiment.
-
-	Deq : float
-		Equilibrium D47 value for a the experimental temperature.
-
-	Dppeq : float
-		Equilibrium pair composition, written in 'prime' notation. Calculated 
-		using measured d18O and d13C values (SE15 Eq. 13 a/b).
+	mp : float
+		Slope of the relationship between ln([pair]_eq/[pair]_random) vs.
+		inverse temperature, that is:\n
+			ln([pair]_eq/[pair]_random) = mp/T \n
+		following SE15 Eq. 17. To be estimated using ``curve_fit`` or inputted 
+		directly.
 
 	he : isoclump.HeatingExperiment
 		The HeatingExperiment instance containing data to fit; to be used to
-		convert kdp to kds for ``curve_fit``.
+		calculate D0, Deq, etc. and to convert kdp to kds for ``curve_fit``.
+
+	z : int
+		The mineral lattice coordination number to use for calculating the
+		concentration of pairs. Defaults to ``6`` following Stolper and Eiler
+		(2015).
 
 	Returns
 	-------
@@ -534,28 +533,47 @@ def _fSE15(t, lnk1f, lnkds, lnp0peq, D0, Deq, Dppeq, he):
 	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
 	'''
 
-	#first, need to get lnkds into kdp format (consistent with Stolper)
-	# kdp = kds*(R45_s_eq * R46_s_eq)/Rpeq
+	#FROM PARENT FIT FUNCTION:
 
+	#calculate additional constants for model fit
+	#calculate constants: D0, Deq
+	D0 = he.dex[0,0]
+	Deq = he.caleq(he.T)
+
+	#convert to prime notation
+	Dp470 = D0/1000 + 1
+	Dp47eq = Deq/1000 + 1
+
+	#calculate constants: Dppr
 	#calculate R45_stoch, R46_stoch, R47_stoch
 	d13C = np.mean(he.dex[:,1]) #use average of all experimental points
 	d18O = np.mean(he.dex[:,2]) #use average of all experimental points
 
 	R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, he.iso_params)
-	Rpeq = Dppeq*R47_stoch
 
-	#exponentiate and convert to kdf
+	#calculate Rpr and convert to Dppr
+	Rpr = _calc_Rpr(R45_stoch, R46_stoch, R47_stoch, z)
+	Dppr = Rpr/R47_stoch
+
+	#calculate constants: Dpp0 and Dppeq
+	# use inputted mp and relationship with T to calculate both, assuming
+	# starting composition is at equilibrium at whatever temperature is
+	# inferred from D0
+	peqpr = np.exp(mp/he.T)
+	Dppeq = peqpr*Dppr
+
+	#PICK UP HERE IN MORNING:
+	# * DEFINE T FROM D FUNCTION
+	# * DEFINE D FROM T FUNCTION
+	# * RE-WRITE SE15 MODEL AND MAKE SURE THIS IS AS CLEAN AS POSSIBLE
+	T0 = X
+	p0pr = np.exp(mp/T0)
+	Dpp0 = p0pr*Dppr
+
+	#get inputted constants into the right format
 	kds = np.exp(lnkds)
-	kdp = kds*((R45_stoch - Rpeq) * (R46_stoch - Rpeq))/Rpeq
-	p0peq = np.exp(lnp0peq)
-
-	#get other unknowns into right format
+	kdp = kds*((R45_stoch - Rpr) * (R46_stoch - Rpr))/Rpr
 	k1f = np.exp(lnk1f)
-	Dpp0 = p0peq*Dppeq
-
-	#get constants into the right format
-	Dp470 = D0/1000 + 1
-	Dp47eq = Deq/1000 + 1
 
 	#make A matrix and B array
 
@@ -939,3 +957,385 @@ def _Jacobian(f, t, p, eps = 1e-6):
 		J[:,i] = (f(t, *pp) - f(t, *pm)) / (2*eps)
 
 	return J
+
+#function for calculating T from D
+def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
+	'''
+	Calculates equilibrium clumped isotope values at a given temperature for
+	a given calibration and reference frame.
+
+	Parameters
+	----------
+
+	T : float or array-like
+		The temperature values at which to calculate equilibrium D values,
+		in Kelvin. Can be a single temperature or an array of temperatures.
+
+	calibration : string
+		The D-T calibration curve to use, from the literature. Options are: \n
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
+		Note that literature equations will be adjusted to be consistent with 
+		any reference frame. Defaults to ``'Bea17'``.
+
+	clumps : string
+		The clumped isotope system under consideration. Currently only
+		accepts 'CO47' for D47 clumped isotopes, but will include other
+		isotope systems as they become more widely used and data become
+		available. Defaults to ``'CO47'``.
+
+	ref_frame : string
+		The reference frame used to calculate clumped isotope data. Options
+		are:\n
+			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.\n
+			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
+			``'Ghosh25'``: Heated Gas Line Reference Frame of Ghosh et al. 
+			(2006) acidified at 25 C.\n
+			``'Ghosh90'``: Heated Gas Line Reference Frame of Ghosh et al. 
+			(2006) acidified at 90 C.\n
+		Defaults to ``'CDES90'``.
+
+	Returns
+	-------
+
+	Deq : float or np.array
+		The resulting equilibrium clumped isotope values. If inputted T is
+		scalar, Deq is scalar. If inputted T is an array, Deq will be array of
+		length ``nT``.
+
+	Raises
+	------
+
+	TypeError
+		If inputted keyword arguments are not strings.
+
+	TypeError
+		If inputted keyword arguments are not acceptable strings.
+
+	See Also
+	--------
+
+	isoclump.T_from_Deq
+		Related function to perform the opposite calculation.
+
+	Examples
+	--------
+
+	Simple implementation to calcualte Deq for a single T value::
+
+		#import packages
+		import isoclump as ic
+
+		T = 150 + 273.15 #in Kelvin
+		Deq = ic.Deq_from_T(T)
+
+	Similar implementation, but for an array of T values::
+
+		#import additional packages
+		import numpy as np
+
+		T = np.arange(100,200)
+		Deq = ic.Deq_from_T(T)
+
+	References
+	----------
+
+	[1] Ghosh et al. (2006) *Geochim. Cosmochim. Ac.*, **70**, 1439--1456.\n
+	[2] Dennis et al. (2011) *Geochim. Cosmochim. Ac.*, **75**, 7117--7131.\n
+	[3] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
+	[4] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+	[5] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279.
+	'''
+
+	#make sure clumps is CO47 and extract from dictionary
+	if clumps == 'CO47':
+		Deq = caleqs[calibration][ref_frame](T)
+	
+	elif isinstance(clumps, str):
+		raise ValueError(
+			'unexpected "clumps" string %s. Must be "CO47".' % clumps)
+
+	else:
+		ct = type(clumps).__name__
+
+		raise TypeError(
+			'unexpected "clumps" type %s. Must be string.' % ct)
+
+	return Deq
+
+#function for calculating T from D
+def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Bea17', ref_frame = 'CDES90'):
+	'''
+	Calculates equilibrium temperature for a given clumped isotope value for
+	a given calibration and reference frame.
+
+	Parameters
+	----------
+
+	Deq : float or array-like
+		The clumped isotope values at which to calculate equilibrium T values,
+		in Kelvin. Can be a single clumped isotope value or an array of values.
+
+	calibration : string
+		The D-T calibration curve to use, from the literature. Options are: \n
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
+		Note that literature equations will be adjusted to be consistent with 
+		any reference frame. Defaults to ``'Bea17'``.
+
+	clumps : string
+		The clumped isotope system under consideration. Currently only
+		accepts 'CO47' for D47 clumped isotopes, but will include other
+		isotope systems as they become more widely used and data become
+		available. Defaults to ``'CO47'``.
+
+	ref_frame : string
+		The reference frame used to calculate clumped isotope data. Options
+		are:\n
+			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.\n
+			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
+			``'Ghosh25'``: Heated Gas Line Reference Frame of Ghosh et al. 
+			(2006) acidified at 25 C.\n
+			``'Ghosh90'``: Heated Gas Line Reference Frame of Ghosh et al. 
+			(2006) acidified at 90 C.\n
+		Defaults to ``'CDES90'``.
+
+	Returns
+	-------
+
+	T : float or np.array
+		The resulting equilibrium temperatures, in Kelvin. If inputted Deq is
+		scalar, T is scalar. If inputted Deq is an array, T will be array of
+		length ``nDeq``.
+
+	Raises
+	------
+
+	TypeError
+		If inputted keyword arguments are not strings.
+
+	TypeError
+		If inputted keyword arguments are not acceptable strings.
+
+	See Also
+	--------
+
+	isoclump.Deq_from_T
+		Related function to perform the opposite calculation.
+
+	Examples
+	--------
+
+	Simple implementation to calcualte T for a single Deq value::
+
+		#import packages
+		import isoclump as ic
+
+		Deq = 0.55
+		T = ic.T_from_Deq(Deq)
+
+	Similar implementation, but for an array of T values::
+
+		#import additional packages
+		import numpy as np
+
+		Deq = np.linspace(0.30, 0.60, 0.02)
+		T = ic.T_from_Deq(Deq)
+
+	References
+	----------
+
+	[1] Ghosh et al. (2006) *Geochim. Cosmochim. Ac.*, **70**, 1439--1456.\n
+	[2] Dennis et al. (2011) *Geochim. Cosmochim. Ac.*, **75**, 7117--7131.\n
+	[3] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
+	[4] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+	[5] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279.
+	'''
+
+	#make sure clumps is CO47 and extract function from dictionary
+	if clumps == 'CO47':
+		func = caleqs[calibration][ref_frame]
+	
+	elif isinstance(clumps, str):
+		raise ValueError(
+			'unexpected "clumps" string %s. Must be "CO47".' % clumps)
+
+	else:
+		ct = type(clumps).__name__
+
+		raise TypeError(
+			'unexpected "clumps" type %s. Must be string.' % ct)
+
+	#if Deq is array, loop through and solve
+	try:
+		nDeq = len(Deq)
+		T = np.zeros(nDeq)
+
+		for i in range(nDeq):
+			#make lambda function to minimize squared error
+			lamfunc = lambda T : (func(T) - Deq[i])**2
+
+			#solve, arbitrarily choose initial guess at 400
+			res = minimize(lamfunc, 350, tol = 1e-8)
+			T[i] = res.x[0]
+
+	#if inputted Deq is scalar, simply solve:
+	except TypeError:
+		#make lambda function to minimize squared error
+		lamfunc = lambda T : (func(T) - Deq)**2
+
+		#solve, arbitrarily choose initial guess at 400
+		res = minimize(lamfunc, 400, tol = 1e-8)
+		T = res.x[0]
+
+	return T
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+############
+# OLD CODE #
+############
+
+# #function to fit SE15 model using backward Euler
+# def _fSE15(t, lnk1f, lnkds, lnp0peq, D0, Deq, Dppeq, he):
+# 	'''
+# 	Function for solving the Stolper and Eiler (2015) paired diffusion model
+# 	using a backward Euler finite difference approach.
+
+# 	Paramters
+# 	---------
+
+# 	t : array-like
+# 		Array of time points, in minutes.
+
+# 	lnk1f : float
+# 		Natural log of the forward k value for the [44] + [47] <-> [pair] 
+# 		equation (SE15 Eq. 8a). To be estimated using ``curve_fit``.
+
+# 	lnkds : float
+# 		Natural log of the backward k value for the [pair] <-> [45]s + [46]s
+# 		equation (SE15 Eq. 8b). To be estimated using ``curve_fit``.
+
+# 	lnp0peq : float
+# 		Natural log of the ratio of initial pair composition relative to 
+# 		equilibrium pair composition. To be estimated using ``curve_fit``.
+
+# 	D0 : float
+# 		Initial D47 value of the experiment.
+
+# 	Deq : float
+# 		Equilibrium D47 value for a the experimental temperature.
+
+# 	Dppeq : float
+# 		Equilibrium pair composition, written in 'prime' notation. Calculated 
+# 		using measured d18O and d13C values (SE15 Eq. 13 a/b).
+
+# 	he : isoclump.HeatingExperiment
+# 		The HeatingExperiment instance containing data to fit; to be used to
+# 		convert kdp to kds for ``curve_fit``.
+
+# 	Returns
+# 	-------
+
+# 	D : np.ndarray
+# 		Array of calculated D values at each time point. To be used for
+# 		``curve_fit`` solving. 
+
+# 	Notes
+# 	-----
+
+# 	Because of the requirements for ``curve_fit``, this funciton is only for
+# 	solving the inverse problem for heating experiment data. Geological
+# 	history forward-model solution is in a separate function.
+
+# 	References
+# 	----------
+
+# 	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.
+# 	'''
+
+# 	#first, need to get lnkds into kdp format (consistent with Stolper)
+# 	# kdp = kds*(R45_s_eq * R46_s_eq)/Rpeq
+
+# 	#calculate R45_stoch, R46_stoch, R47_stoch
+# 	d13C = np.mean(he.dex[:,1]) #use average of all experimental points
+# 	d18O = np.mean(he.dex[:,2]) #use average of all experimental points
+
+# 	R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, he.iso_params)
+# 	Rpeq = Dppeq*R47_stoch
+
+# 	#exponentiate and convert to kdf
+# 	kds = np.exp(lnkds)
+# 	kdp = kds*((R45_stoch - Rpeq) * (R46_stoch - Rpeq))/Rpeq
+# 	p0peq = np.exp(lnp0peq)
+
+# 	#get other unknowns into right format
+# 	k1f = np.exp(lnk1f)
+# 	Dpp0 = p0peq*Dppeq
+
+# 	#get constants into the right format
+# 	Dp470 = D0/1000 + 1
+# 	Dp47eq = Deq/1000 + 1
+
+# 	#make A matrix and B array
+
+# 	#values for each entry
+# 	a = k1f
+# 	b = k1f*Dp47eq/Dppeq
+# 	c = kdp
+# 	d = kdp*Dppeq
+
+# 	#combine into arrays
+# 	A = np.array([[-a, b],
+# 				  [a, -(b+c)]])
+
+# 	B = np.array([0, d])
+
+# 	#extract constants, pre-allocate arrays, and set initial conditions
+# 	nt = len(t)
+# 	x = np.zeros([nt, 2])
+# 	x[0,:] = [Dp470, Dpp0]
+
+# 	#loop through each time points and solve backward Euler problem
+# 	for i in range(nt-1):
+
+# 		#calculate inverted A
+# 		Ai = inv(eye(2) - (t[i+1] - t[i])*A)
+
+# 		#calculate x at next time step
+# 		x[i+1,:] = np.dot(Ai, (x[i,:] + (t[i+1] - t[i])*B))
+
+# 	#extract Dp47 for curve-fit purposes
+# 	Dp47 = x[:,0]
+
+# 	#convert back to D
+# 	D = 1000*(Dp47 - 1)
+
+# 	return D
+
