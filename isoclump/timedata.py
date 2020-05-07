@@ -498,7 +498,7 @@ class HeatingExperiment(object):
 		return cls(dex, T, tex, **file_attrs)
 
 	#method for forward modeling rate data to predict D or G evolution
-	def forward_model(self, kd, nt = 300, **kwargs):
+	def forward_model(self, kd, nt = 300, z = 6, **kwargs):
 		'''
 		Forward models a given kDistribution instance to produce predicted
 		evolution.
@@ -513,6 +513,11 @@ class HeatingExperiment(object):
 		nt : int
 			The number of time points to use in the forward-modeled data
 			estimates. Defaults to ``300``.
+
+		z : int
+			The number of neighbors in the carbonate lattice. Only used if
+			``he.model == 'SE15'``. Defaults to ``6``, as desribed in
+			Stolper and Eiler (2015).
 
 		Returns
 		-------
@@ -569,7 +574,7 @@ class HeatingExperiment(object):
 		self.t = t
 
 		#run the forward model
-		mod_attrs = _forward_model(self, kd, t, **kwargs)
+		mod_attrs = _forward_model(self, kd, t, z = z, **kwargs)
 
 		#store attributes (D, D_std, G, G_std)
 		for k, v in mod_attrs.items():

@@ -302,7 +302,7 @@ def _cull_data(dex, T, tex, file_attrs, cull_sig = 1):
 	return dex, T, tex, file_attrs
 
 #function for forward modeling Hea14 model
-def _forward_model(he, kd, t, **kwargs):
+def _forward_model(he, kd, t, z = 6, **kwargs):
 	'''
 	Estimates D and G evolution using the kinetic parameters contained
 	within a given ``kDistribution`` instance. Calculates uncertainty using
@@ -321,6 +321,11 @@ def _forward_model(he, kd, t, **kwargs):
 	t : np.array
 		Array of time steps to predict D and G evolution over, in the same
 		units as those used to calculate rate parameters.
+
+	z : int
+		The number of neighbors in the carbonate lattice. Only used if
+		``he.model == 'SE15'``. Defaults to ``6``, as desribed in
+		Stolper and Eiler (2015).
 
 	Returns
 	-------
@@ -375,31 +380,26 @@ def _forward_model(he, kd, t, **kwargs):
 	if kd.model == 'SE15':
 
 		#make lambda function since SE15 has more args than fit params
-		D0 = he.dex[0,0]
-		Deq = he.caleq(he.T)
-
-		#calculate constants: Dppeq
-		#calculate R45_stoch, R46_stoch, R47_stoch
+		#calculate d0 and T arrays
 		d13C = np.mean(he.dex[:,1]) #use average of all experimental points
 		d18O = np.mean(he.dex[:,2]) #use average of all experimental points
+		
+		d0 = np.array([he.dex[0,0], d13C, d18O])
+		T = np.ones(len(t))*he.T
 
-		R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, he.iso_params)
-
-		#calculate Rpeq and convert to Dppeq
-		z = 6
-		Rpeq = _calc_Rpr(R45_stoch, R46_stoch, R47_stoch, 6)
-		Dppeq = Rpeq/R47_stoch
-
-		#combine constants into list
-		cs = [D0, Deq, Dppeq, he]
-
-		lamfunc = lambda t, lnk1, lnkds, lnp0peq: _fSE15(
-			t, 
-			lnk1, 
-			lnkds, 
-			lnp0peq, 
-			*cs
-			) 
+		#fit model to lambda function with all 3 unknowns
+		lamfunc = lambda t, lnk1f, lnkds, mpfit : _fSE15(
+			t,
+			lnk1f,
+			lnkds,
+			mpfit,
+			d0,
+			T,
+			calibration = he.calibration,
+			iso_params = he.iso_params,
+			ref_frame = he.ref_frame,
+			z = z,
+			)[0]
 
 		#calculate D (note: this model returns D, not G!)
 		D = lamfunc(t, *p)
@@ -411,15 +411,15 @@ def _forward_model(he, kd, t, **kwargs):
 		Dcov = np.dot(J, np.dot(pcov, J.T))
 		D_std = np.sqrt(np.diag(Dcov))
 
-		#finally, convert to G and G_std
-		G, G_std = _calc_G_from_D(
-				D, 
-				he.T, 
-				calibration = he.calibration, 
-				clumps = he.clumps, 
-				D_std = D_std,
-				ref_frame = he.ref_frame,
-				)
+		# #finally, convert to G and G_std
+		# G, G_std = _calc_G_from_D(
+		# 		D, 
+		# 		he.T, 
+		# 		calibration = he.calibration, 
+		# 		clumps = he.clumps, 
+		# 		D_std = D_std,
+		# 		ref_frame = he.ref_frame,
+		# 		)
 
 	else:
 
