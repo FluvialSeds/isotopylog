@@ -1084,12 +1084,13 @@ def fit_PH12(he, logy = True, p0 = [-10., 0.5], thresh = 1e-10):
 	return params, params_cov, rmse, npt
 
 #function to fit data using SE15 model
-def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
+def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 	'''
 	Fits D evolution data using the paired diffusion model of Stolper and
 	Eiler (2015). The function solves for both k1 and k_dif_single as well
-	as the initial pair concentration, p0/peq, by solving a modified version
-	of SE15 Eq. 9-10. Note that p0/peq can be estimated from SE15 Eq. 17.
+	as the slope of the pair concentration with respect to temperature, by 
+	solving a modified version of SE15 Eq. 9-10. Note that mp is defined in
+	Stolper and Eiler (2015) Eq. 17.
 
 	Parameters
 	----------
@@ -1099,28 +1100,28 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
-		order [ln(k1), ln(k_dif_single), ln([pair]0/[pair]eq)]. Defaults to 
-		`[-7, -9, 0.0001]`.
+		order [ln(k1), ln(k_dif_single), mp], where ``mp`` is the slope of the
+		relationship:\n 
+			ln([p]_eq/[p]_random) = mp/T \n
+		as defined in Eq. 17 of Stolper and Eiler (2015). Defaults to 
+		``[-7, -9, 0.0992]``.
+
+	mp : None or float
+		If ``None``, mp is fitted as an unkonwn parameter. If a float value
+		is inputted, then mp is not fitted and the inputted value is assumed
+		to be true and is used for all calculations.
 
 	z : int
 		The mineral lattice coordination number to use for calculating the
 		concentration of pairs. Defaults to `6` following Stolper and Eiler
 		(2015).
 
-	mp : None or float
-		If inputted, mp is the slope of the ln([p]0/[p]eq) vs. 1/T relationship;
-		i.e., it is defined as:\n
-			ln([p]0/[p]eq) = mp/T\n
-		following Eq. 17 or Stolper and Eiler (2015), who recommend a value of
-		0.0992. If ``mp = None``, ln([p]0/[p]eq) is fitted as an unknown 
-		parameter. Defaults to ``None``.
-
 	Returns
 	-------
 
 	params : np.ndarray
 		Array of resulting parameter values, in the order
-		`[ln(k1), ln(k_dif_single), ln([pair]0/[pair]eq)]`.
+		`[ln(k1), ln(k_dif_single), mp]`.
 
 	params_cov : np.ndarray
 		Covariance matrix associated with the resulting parameter values, of
@@ -1146,15 +1147,11 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 	pair concentrations. According to SE15, the relative difference between
 	these equations is ~1-2 percent, so this should be an arbitrary choice.
 
-	Results are bounded such that k values are non-negative and p0/peq >= 1.
+	Results are bounded such that k values are non-negative and mp >= 0.
 	Calculations depend on stochastic 'pair' concentrations, which are a
 	function of the chosen isotope parameters and thus might be sensitive to
-	this choice. See Daëron et al. (2016) and the `calc_R` and `calc_d`
+	this choice. See Daëron et al. (2016) and the ``calc_R`` and ``calc_d``
 	functions for details.
-
-	As mentioned in Stolper and Eiler (2015), results appear to be sensitive
-	to the choice of initial conditions; for this reason, the user can pass
-	different choices of p0 when solving.
 
 	See Also
 	--------
@@ -1186,9 +1183,9 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 		#import modules
 		import isoclump as ic
 
-		#assume some a priori guess at p0; results are sensitive to choice of
-		# p0 as described in SE15
-		p0 = [-7., -9., 0.00014]
+		#assume some a priori guess at p0; results may be sensitive to choice
+		# of p0 as described in SE15
+		p0 = [-7., -9., 0.1]
 
 		#assume he is a HeatingExperiment instance
 		results = ic.fit_SE15(he, p0 = p0)
@@ -1210,56 +1207,51 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 	y_std = he.dex_std[:,0] #in standard D47 notation
 	npt = len(he.tex)
 
-	#calculate additional constants for model fit
-	#calculate constants: D0, Deq
-	D0 = y[0]
-	Deq = he.caleq(he.T)
-
-	#calculate constants: Dppeq
-	#calculate R45_stoch, R46_stoch, R47_stoch
+	#calculate d0 and T arrays
 	d13C = np.mean(he.dex[:,1]) #use average of all experimental points
 	d18O = np.mean(he.dex[:,2]) #use average of all experimental points
-
-	R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, he.iso_params)
-
-	#calculate Rpeq and convert to Dppeq
-	Rpeq = _calc_Rpr(R45_stoch, R46_stoch, R47_stoch, z)
-	Dppeq = Rpeq/R47_stoch
-
-	#combine constants into list
-	cs = [D0, Deq, Dppeq, he]
+	
+	d0 = np.array([he.dex[0,0], d13C, d18O])
+	T = np.ones(npt)*he.T
 
 	#check mp and, if it isn't None, prescribe it and make lambda function
 	if mp is None:
 
 		#fit model to lambda function with all 3 unknowns
-		lamfunc = lambda t, lnk1f, lnkds, lnp0peq: _fSE15(
-			t, 
-			lnk1f, 
-			lnkds, 
-			lnp0peq, 
-			*cs
-			)
+		lamfunc = lambda t, lnk1f, lnkds, mpfit : _fSE15(
+			t,
+			lnk1f,
+			lnkds,
+			mpfit,
+			d0,
+			T,
+			calibration = he.calibration,
+			iso_params = he.iso_params,
+			ref_frame = he.ref_frame,
+			z = z,
+			)[0]
 
 		#define bounds for later
-		bounds = ([-np.inf,-np.inf,0.],[np.inf,np.inf,np.inf])
+		bounds = ([-np.inf, -np.inf, 0.],[np.inf, np.inf, np.inf])
 
 	elif isinstance(mp, float):
-
-		#calculate lnp0/peq
-		lnp0peq = mp/he.T
 
 		#shorten p0
 		p0 = p0[:2]
 
 		#make lambda function with only 2 unknown parameters
-		lamfunc = lambda t, lnk1f, lnkds: _fSE15(
+		lamfunc = lambda t, lnk1f, lnkds : _fSE15(
 			t,
 			lnk1f,
 			lnkds,
-			lnp0peq,
-			*cs
-			)
+			mp,
+			d0,
+			T,
+			calibration = he.calibration,
+			iso_params = he.iso_params,
+			ref_frame = he.ref_frame,
+			z = z,
+			)[0]
 
 		#define bounds for later
 		bounds = ([-np.inf,-np.inf],[np.inf,np.inf])
@@ -1273,7 +1265,7 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 	params, params_cov = curve_fit(lamfunc, x, y, p0,
 		sigma = y_std, 
 		absolute_sigma = abs_sig,
-		bounds = bounds, #k unbounded
+		bounds = bounds,
 		)
 
 	#calculate Dex_hat
@@ -1282,10 +1274,11 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 	#calcualte RMSE
 	rmse = _calc_rmse(he.dex[:,0], D47hat)
 
-	#if mp was passed, add ln(p0/peq) back into the params and cov
+	#if mp was passed, add mp back into the params and cov
 	if mp is not None:
+		
 		#add the parameter
-		params = np.append(params, lnp0peq)
+		params = np.append(params, mp)
 
 		#extend the covariance matrix
 		pcov = params_cov
@@ -1293,3 +1286,221 @@ def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
 		params_cov[:2,:2] = pcov
 
 	return params, params_cov, rmse, npt
+
+
+
+############
+# OLD CODE #
+############
+
+
+# #function to fit data using SE15 model
+# def fit_SE15(he, p0 = [-7., -9., 0.0001], z = 6, mp = None):
+# 	'''
+# 	Fits D evolution data using the paired diffusion model of Stolper and
+# 	Eiler (2015). The function solves for both k1 and k_dif_single as well
+# 	as the initial pair concentration, p0/peq, by solving a modified version
+# 	of SE15 Eq. 9-10. Note that p0/peq can be estimated from SE15 Eq. 17.
+
+# 	Parameters
+# 	----------
+
+# 	he : isoclump.HeatingExperiment
+# 		`ic.HeatingExperiment` instance containing the D data to be modeled.
+
+# 	p0 : array-like
+# 		Array of paramter guess to initialize the fitting algorithm, in the
+# 		order [ln(k1), ln(k_dif_single), ln([pair]0/[pair]eq)]. Defaults to 
+# 		`[-7, -9, 0.0001]`.
+
+# 	z : int
+# 		The mineral lattice coordination number to use for calculating the
+# 		concentration of pairs. Defaults to `6` following Stolper and Eiler
+# 		(2015).
+
+# 	mp : None or float
+# 		If inputted, mp is the slope of the ln([p]0/[p]eq) vs. 1/T relationship;
+# 		i.e., it is defined as:\n
+# 			ln([p]0/[p]eq) = mp/T\n
+# 		following Eq. 17 or Stolper and Eiler (2015), who recommend a value of
+# 		0.0992. If ``mp = None``, ln([p]0/[p]eq) is fitted as an unknown 
+# 		parameter. Defaults to ``None``.
+
+# 	Returns
+# 	-------
+
+# 	params : np.ndarray
+# 		Array of resulting parameter values, in the order
+# 		`[ln(k1), ln(k_dif_single), ln([pair]0/[pair]eq)]`.
+
+# 	params_cov : np.ndarray
+# 		Covariance matrix associated with the resulting parameter values, of
+# 		shape [3 x 3]. The +/- 1 sigma uncertainty for each parameter can be 
+# 		calculated as ``np.sqrt(np.diag(params_cov))``
+
+# 	rmse : float
+# 		Root Mean Square Error (in D47 permil units) of the model fit.
+# 		Includes model fit to all data points.
+
+# 	npt : int
+# 		Number of data points included in the model solution.
+
+# 	Notes
+# 	-----
+
+# 	This function uses the average of all experimental d13C and d18O values
+# 	when calculating stochastic statistics. If d13C and d18O values change
+# 	considerably throughout the course of an experiment, this could cause
+# 	slight inconsistencies in results.
+
+# 	This function uses the average of SE15 Eq. 13a and Eq. 13b when calculating
+# 	pair concentrations. According to SE15, the relative difference between
+# 	these equations is ~1-2 percent, so this should be an arbitrary choice.
+
+# 	Results are bounded such that k values are non-negative and p0/peq >= 1.
+# 	Calculations depend on stochastic 'pair' concentrations, which are a
+# 	function of the chosen isotope parameters and thus might be sensitive to
+# 	this choice. See Daëron et al. (2016) and the `calc_R` and `calc_d`
+# 	functions for details.
+
+# 	As mentioned in Stolper and Eiler (2015), results appear to be sensitive
+# 	to the choice of initial conditions; for this reason, the user can pass
+# 	different choices of p0 when solving.
+
+# 	See Also
+# 	--------
+
+# 	isoclump.fit_Hea14
+# 		Method for fitting heating experiment data using the transient defect/
+# 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
+# 		an updated version of the present method.
+
+# 	isoclump.fit_HH20
+# 		Method for fitting heating experiment data using the distributed
+# 		activation energy model of Hemingway and Henkes (2020).
+
+# 	isoclump.fit_PH12
+# 		Method for fitting heating experiment data using the pseudo first-
+# 		order method of Passey and Henkes (2012). Called to determine
+# 		linear region.
+
+# 	kDistribution.invert_experiment
+# 		Method for generating a `kDistribution` instance from experimental
+# 		data.
+
+# 	Examples
+# 	--------
+
+# 	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
+# 	exists::
+		
+# 		#import modules
+# 		import isoclump as ic
+
+# 		#assume some a priori guess at p0; results are sensitive to choice of
+# 		# p0 as described in SE15
+# 		p0 = [-7., -9., 0.00014]
+
+# 		#assume he is a HeatingExperiment instance
+# 		results = ic.fit_SE15(he, p0 = p0)
+
+# 	Same as above, but now constraining mp to be equal to the SE15 value::
+
+# 		results = ic.fit_SE15(he, p0 = p0, mp = 0.0992)
+
+# 	References
+# 	----------
+
+# 	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+# 	[2] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.
+# 	'''
+
+# 	#extract values to fit
+# 	x = he.tex
+# 	y = he.dex[:,0] #in standard D47 notation
+# 	y_std = he.dex_std[:,0] #in standard D47 notation
+# 	npt = len(he.tex)
+
+# 	#calculate additional constants for model fit
+# 	#calculate constants: D0, Deq
+# 	D0 = y[0]
+# 	Deq = he.caleq(he.T)
+
+# 	#calculate constants: Dppeq
+# 	#calculate R45_stoch, R46_stoch, R47_stoch
+# 	d13C = np.mean(he.dex[:,1]) #use average of all experimental points
+# 	d18O = np.mean(he.dex[:,2]) #use average of all experimental points
+
+# 	R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, he.iso_params)
+
+# 	#calculate Rpeq and convert to Dppeq
+# 	Rpeq = _calc_Rpr(R45_stoch, R46_stoch, R47_stoch, z)
+# 	Dppeq = Rpeq/R47_stoch
+
+# 	#combine constants into list
+# 	cs = [D0, Deq, Dppeq, he]
+
+# 	#check mp and, if it isn't None, prescribe it and make lambda function
+# 	if mp is None:
+
+# 		#fit model to lambda function with all 3 unknowns
+# 		lamfunc = lambda t, lnk1f, lnkds, lnp0peq: _fSE15(
+# 			t, 
+# 			lnk1f, 
+# 			lnkds, 
+# 			lnp0peq, 
+# 			*cs
+# 			)
+
+# 		#define bounds for later
+# 		bounds = ([-np.inf,-np.inf,0.],[np.inf,np.inf,np.inf])
+
+# 	elif isinstance(mp, float):
+
+# 		#calculate lnp0/peq
+# 		lnp0peq = mp/he.T
+
+# 		#shorten p0
+# 		p0 = p0[:2]
+
+# 		#make lambda function with only 2 unknown parameters
+# 		lamfunc = lambda t, lnk1f, lnkds: _fSE15(
+# 			t,
+# 			lnk1f,
+# 			lnkds,
+# 			lnp0peq,
+# 			*cs
+# 			)
+
+# 		#define bounds for later
+# 		bounds = ([-np.inf,-np.inf],[np.inf,np.inf])
+
+# 	else:
+# 		mpt = type(mp).__name__
+# 		raise TypeError(
+# 			'unexpected mp value of type %s. Must be None or float.' % mpt)
+
+# 	#solve
+# 	params, params_cov = curve_fit(lamfunc, x, y, p0,
+# 		sigma = y_std, 
+# 		absolute_sigma = abs_sig,
+# 		bounds = bounds, #k unbounded
+# 		)
+
+# 	#calculate Dex_hat
+# 	D47hat = lamfunc(x, *params)
+
+# 	#calcualte RMSE
+# 	rmse = _calc_rmse(he.dex[:,0], D47hat)
+
+# 	#if mp was passed, add ln(p0/peq) back into the params and cov
+# 	if mp is not None:
+# 		#add the parameter
+# 		params = np.append(params, lnp0peq)
+
+# 		#extend the covariance matrix
+# 		pcov = params_cov
+# 		params_cov = np.zeros([3,3])
+# 		params_cov[:2,:2] = pcov
+
+# 	return params, params_cov, rmse, npt
