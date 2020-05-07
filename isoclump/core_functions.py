@@ -103,6 +103,7 @@ def geologic_history(
 	d0,
 	d0_std = [0.,0.,0.],
 	calibration = 'Bea17', 
+	iso_params = 'Gonfiantini',
 	ref_frame = 'CDES90',
 	nlam = 400,
 	**kwargs
@@ -139,6 +140,21 @@ def geologic_history(
 	calibration : str
 		The D-T calibration equation to use for forward modeling. Defaults to
 		``'Bea17'`` for Bonifacie et al. (2017).
+
+	iso_params : string
+		The isotope parameters used to calculate clumped data. For example, if
+		``clumps = 'CO47'``, then isotope parameters are R13_vpdb, R17_vpdb,
+		R18_vpdb, and lam17. Following Daëron et al. (2016) nomenclature,
+		options are: \n
+			``'Barkan'``: for Barkan and Luz (2005) lam17\n
+			``'Brand'`` (equivalent to ``'Chang+Assonov'``): for Brand (2010)\n
+			``'Chang+Li'``: for Chang and Li (1990) + Li et al. (1988) \n
+			``'Craig+Assonov'``: for Craig (1957) + Assonov and Brenninkmeijer 
+			(2003)\n
+			``'Craig+Li'``: for Craig (1957) + Li et al. (1988)\n
+			``'Gonfiantini'``: for Gonfiantini et al. (1995)\n
+			``'Passey'``: for Passey et al. (2014) lam17\n
+		Defaults to ``'Gonfiantini'``. Only used if ``ed.model = 'SE15'``.
 
 	ref_frame : str
 		The reference frame used to generate D47 values. Defaults to
