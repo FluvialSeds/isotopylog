@@ -1,5 +1,5 @@
 '''
-This module contains helper functions for the TimeData classes.
+This module contains helper functions for the time data classes.
 '''
 
 #import from future for python 2
@@ -411,16 +411,6 @@ def _forward_model(he, kd, t, z = 6, **kwargs):
 		Dcov = np.dot(J, np.dot(pcov, J.T))
 		D_std = np.sqrt(np.diag(Dcov))
 
-		# #finally, convert to G and G_std
-		# G, G_std = _calc_G_from_D(
-		# 		D, 
-		# 		he.T, 
-		# 		calibration = he.calibration, 
-		# 		clumps = he.clumps, 
-		# 		D_std = D_std,
-		# 		ref_frame = he.ref_frame,
-		# 		)
-
 	else:
 
 		#calcualte G covariance matrix and extract G_std
@@ -578,3 +568,7 @@ def _read_csv(file):
 			' CO47 clumps.')
 
 	return dex, T, tex, file_attrs
+
+
+if __name__ == __main__:
+	import isoclump as ic

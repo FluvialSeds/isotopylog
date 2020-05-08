@@ -1,5 +1,5 @@
 '''
-Module to store all the core functions for ``isoclump``.
+Module to store core functions for isoclump package-level methods.
 '''
 
 from __future__ import(
@@ -276,9 +276,9 @@ def geologic_history(
 
 		ax.set_xlabel('time (Myr)')
 		ax.set_ylabel('D47 (‰)')
-		ax.legend(loc = 'bets')
+		ax.legend(loc = 'best')
 
-	.. image:: ../_images/gh_1.png
+	.. image:: ../_images/gh_2.png
 
 	References
 	----------

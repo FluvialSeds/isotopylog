@@ -1,3 +1,7 @@
+'''
+This module contains all the dictionaries that are used for importing data.
+'''
+
 #import necessary packages
 import os
 import pandas as pd
@@ -12,7 +16,9 @@ def gen_str(name):
 # CO47 DICTS #
 ##############
 
-# 1) dictionary holding all calibration equations, and corresponding constants
+#------------------------------------------------------------------------------#
+# 1) dictionary holding all calibration equations, and corresponding constants #
+#------------------------------------------------------------------------------#
 
 #passey and henkes constants (Eq. 5)
 p4 = -3.407e9
@@ -65,8 +71,9 @@ caleqs = {'PH12':{'Ghosh25':lambda T : (PH12(T) - b)/m,
 				  'CDES90': lambda T : Bea17(T)},
 		 }
 
-
-# 2) dictionary for holding "isotope parameters" (Daëron et al. 2016)
+#---------------------------------------------------------------------#
+# 2) dictionary for holding "isotope parameters" (Daëron et al. 2016) #
+#---------------------------------------------------------------------#
 
 #in order: R13_VPDB, R18_VPDB, R17_VPDB, lam17
 d47_isoparams = {'Gonfiantini':
@@ -114,34 +121,45 @@ d47_isoparams = {'Gonfiantini':
 				}
 
 
-# 3) Dictionary for holding kDistribution model parameters for summary printing
+#-------------------------------------------------------------------------------#
+# 3) Dictionary for holding kDistribution model parameters for summary printing #
+#-------------------------------------------------------------------------------#
+
 mod_params = {'Hea14' : ['ln(kc)','ln(kd)','ln(k2)'],
 			  'HH20' : ['ln(k_mu)','ln(k_sig)'],
 			  'PH12' : ['ln(k)','intercept'],
 			  'SE15' : ['ln(k1)','ln(k_dif_single)','mp']
 			  }
 
-# 4) Dictionary for holding EDistribution model parameters for summary printing
+#-------------------------------------------------------------------------------#
+# 4) Dictionary for holding EDistribution model parameters for summary printing #
+#-------------------------------------------------------------------------------#
+
 ed_params = {'Hea14' : ['Ec', 'Ed', 'E2'],
 			'HH20' : ['mu_E', 'sig_E'],
 			'PH12' : ['E', 'intercept'],
 			'SE15' : ['E1', 'Edif_single', 'Emp']
 		   }
 
+#----------------------------------------------------------------------#
+# 5) Dictionary for holding clumped isotope names for summary printing #
+#----------------------------------------------------------------------#
 
-# 4) Dictionary for holding clumped isotope names for summary printing
 clump_isos = {'CO47' : ['D47','d13C_vpdb','d18O_vpdb'],
 			 }
-
-# 4) Dictionary for holding booleans telling the EDistribution which parameters
-#	 to force zero intercepts
+#-------------------------------------------------------------------------------#
+# 6) Dictionary for holding booleans telling the EDistribution which parameters #
+#	 to force zero intercepts													#
+#-------------------------------------------------------------------------------#
 zi = {'Hea14' : [False, False, False],
 	  'HH20' : [False, True], 
 	  'PH12' : [False, False], 
 	  'SE15' : [False, False, False]
 	 }
 
-# 5) Dictionary for holding all literature kd data
+#--------------------------------------------------#
+# 7) Dictionary for holding all literature kd data #
+#--------------------------------------------------#
 
 #first, import stored data as dataframe
 file = gen_str('lit_values/lit_values.csv')

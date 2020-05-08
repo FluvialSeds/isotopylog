@@ -1,9 +1,6 @@
 '''
 This module contains helper functions for the kDistribution and EDistribution
 classes.
-
-Updated: 23/4/20
-By: JDH
 '''
 
 #import from future for python 2
@@ -61,11 +58,6 @@ from .calc_funcs import(
 from .core_functions import(
 	derivatize,
 	)
-
-#import necessary isoclump dictionaries
-# from .dictionaries import(
-# 	caleqs,
-# 	)
 
 #import necessary isoclump timedata helper functions
 from .timedata_helper import(
@@ -1286,3 +1278,6 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 		params_cov[:2,:2] = pcov
 
 	return params, params_cov, rmse, npt
+
+if __name__ == __main__:
+	import isoclump as ic

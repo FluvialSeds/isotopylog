@@ -1,5 +1,5 @@
 '''
-This module contains the TimeData superclass and all corresponding subclasses.
+This module contains the time data classes.
 '''
 
 #import from future for python 2 compatibility
@@ -187,10 +187,6 @@ class HeatingExperiment(object):
 	isoclump.kDistribution
 		The class for extracting and visualizing rate data from a given 
 		``HeatingExperiment`` instance.
-
-	isoclump.GeologicHistory
-		The class for forward-modeling kinetic information onto a geologic
-		time-temperature history.
 
 	Examples
 	--------
@@ -1398,4 +1394,5 @@ class HeatingExperiment(object):
 		'''
 		self._T_std = value	
 	
-# if __name__ == __main__:
+if __name__ == __main__:
+	import isoclump as ic

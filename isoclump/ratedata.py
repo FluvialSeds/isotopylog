@@ -1,8 +1,5 @@
 '''
 This module contains the kDistribution and EDistribution classes.
-
-Updated: 22/4/20
-By: JDH
 '''
 
 #for python 2 compatibility
@@ -1004,10 +1001,6 @@ class EDistribution(object):
 		The class containing rate data for individual experiments that is to be
 		fit using Arrhenius plots.
 
-	isoclump.GeologicHistory
-		The class for forward-modeling activation energy results and estimating
-		geologic clumped isotope evolution.
-
 	Examples
 	--------
 	Generating an EDistribution object from an existing list of kDistribution
@@ -1858,4 +1851,5 @@ class EDistribution(object):
 
 		return Ts
 
-# if __name__ == __main__:
+if __name__ == __main__:
+	import isoclump as ic

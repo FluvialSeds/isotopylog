@@ -1,21 +1,6 @@
 '''
-This module contains assorted fitting and calculation functions for all
-classes.
-
-Updated: 22/4/20
-By: JDH
+This module contains assorted fitting and calculation functions for all classes.
 '''
-
-#TODO:
-# * FINISH WRITING GEOLOGIC HISTORY FUNCTION
-# * WRITE GEOLOGIC HISTORY PLOTTING FUNCTIONS
-# * DOUBLE CHECK STOLPER MODEL P0/PEQ IS CORRECT! (suspect it should be peq/prandom??)
-
-# current p_0/p_eq is actually p_eq/p_random
-#	need to change p_random to p_eq and calculate p0 as peq at the temperature
-#	given by D0! ratio of ln(p_0/p_eq) is then just m_p / ∆T!
-
-
 
 #import from future for python 2
 from __future__ import(
