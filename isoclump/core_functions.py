@@ -9,11 +9,8 @@ from __future__ import(
 
 __docformat__ = 'restructuredtext en'
 __all__ = [
-			# 'calc_cooling_rate',
-			# 'cooling_plot',
 			'derivatize',
 			'geologic_history'
-			# 'resetting_plot',
 			]
 
 import matplotlib.pyplot as plt
@@ -197,11 +194,101 @@ def geologic_history(
 	See Also
 	--------
 
+	isoclump.EDistribution
+		The class that contains the activation energy parameters that are
+		to be modeled.
+
 	Examples
 	--------
 
+	Estimate resetting temperatures during heating for an arbitrarily chosen
+	starting isotope composition. This example creates an ``ic.EDistribution``
+	instance by importing literature values of the 'SE15' model type, and 
+	plots results::
+
+		#import packages
+		import isoclump as ic
+		import matplotlib.pyplot as plt
+
+		#generate EDistribution instance
+		ed = ic.EDistribution.from_literature(
+			mineral = 'calcite', 
+			reference = 'SE15', 
+			Tref = 700)
+
+		#define the initial composition and the time-temperature evolutions
+		d0 = [0.55, 0, 0] #starting D47 = 0.55, d13C and d18O both zero
+		d0_std = [0.010, 0, 0] #assume some reasonable D47 uncertainty
+
+		T0 = 25 + 273.15 #assume starting at 25C, ending at 350C
+		Tf = 350 + 273.15
+		beta = 100/(1e6*365*24*3600) #100C/million years, converted to seconds
+
+		t0 = 0
+		tf = (Tf-T0)/beta
+		nt = 500
+
+		T = np.linspace(T0, Tf, nt)
+		t = np.linspace(t0, tf, nt)
+
+		#now calculate D at each time point
+		D, Dstd = ic.geologic_history(t, T, ed, d0, d0_std = d0_std)
+
+		#plot results, along with equilibrium D at each time point
+		Deq = ic.Deq_from_T(T)
+		tmyr = t/(1e6*365*24*3600) #getting t in Myr for plotting
+
+		fig,ax = plt.subplots(1,1)
+		ax.plot(tmyr, D, label = 'forward-modeled data')
+		ax.fill_between(tmyr, D - Dstd, D + Dstd, alpha = 0.5)
+		ax.plot(tmyr,Deq, label = 'equilibrium values at each time point')
+
+		ax.set_xlabel('time (Myr)')
+		ax.set_ylabel('D47 (‰)')
+		ax.legend(loc = 'best')
+
+	Note the non-monotonic behavior that arises from the intermediate "pair"
+	reservoir (see Stolper and Eiler 2015, Lloyd et al. 2018, and Chen et al.,
+	2019 for further details). 
+
+	.. image:: ../_images/gh_1.png
+
+	Similarly, one can estimate cooling closure temperatures. This is identical
+	to the above example, only the temperature axis is reversed and D is
+	assumed to be in equilibrium at T0::
+
+		#reverse T and Deq arrays
+		T = T[::-1]
+		Deq = Deq[::-1]
+
+		#make D0 in equilibrium
+		D0 = ic.Deq_from_T(T[0])
+		d0 = [D0, 0, 0] #still d13C and d18O of zero
+
+		#fit the new t-T trajectory
+		D, Dstd = ic.geologic_history(t, T, ed, d0, d0_std = d0_std)
+
+		#plot the results
+		fig,ax = plt.subplots(1,1)
+		ax.plot(tmyr, D, label = 'forward-modeled cooling data')
+		ax.fill_between(tmyr, D - Dstd, D + Dstd, alpha = 0.5)
+		ax.plot(tmyr,Deq, label = 'equilibrium values at each time point')
+
+		ax.set_xlabel('time (Myr)')
+		ax.set_ylabel('D47 (‰)')
+		ax.legend(loc = 'bets')
+
+	.. image:: ../_images/gh_1.png
+
 	References
 	----------
+
+	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
+	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
+	[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+	[4] Lloyd et al. (2018) *Geochim. Cosmochim. Ac.*, **242**, 1--20.\n
+	[5] Chen et al. (2019) *Geochim. Cosmochim. Ac.*, **258**, 156--173.\n
+	[7] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 
 	'''
 
@@ -388,263 +475,3 @@ def geologic_history(
 	D_std = np.sqrt(np.diag(Dcov))
 
 	return D, D_std
-
-# #define function to calculate estimated cooling rate
-# def calc_cooling_rate(ds, EDistribution):
-# 	'''
-# 	ADD DOCSTRING
-# 	'''
-
-# #define function to calculate d values from fractional abundances
-# def calc_d(R, clumps = 'CO47', iso_params = 'Brand', sig_figs = 3):
-# 	'''
-# 	Calculates the delta values for a sample with a given set of ratios.
-
-# 	Paramters
-# 	---------
-# 	R : array-like
-# 		Array of isotopologue ratios, written from lowest to highest a.m.u.
-# 		(e.g., d45, d46, d47 for CO47). All ratios are assumed to be relative
-# 		to their commonly used standards:
-
-# 			C : Vienna PeeDee Belemnite
-# 			O : Vienna PeeDee Belemnite (for carbonates; solid CaCO3 not CO2!)
-		
-# 		Note, for 'CO47', R17 is assumed to be mass-dependent. Shape `n` x 3.
-
-# 	clumps : string
-# 		The clumped isotope system under consideration. Currently only accepts
-# 		'CO47' for D47 clumped isotopes, but will include other isotope systems
-# 		as they become more widely used and data become available. Defaults to
-# 		'CO47'.
-
-# 	iso_params: string
-# 		The isotope parameters to use for calculations. If `clumps` is 'CO47',
-# 		possible isotope parameter options are:
-
-# 			'Brand' : Brand et al. (2010)
-# 			'Gonfiantini' : Gonfiantini et al. (1995)
-# 			'Craig + Assonov' : Craig (1957), Assonov and Brennenkmeijer (2003)
-# 			'Chang + Li' : Chang and Li (1990), Li et al. (1988)
-# 			'Craig + Li' : Craig (1957), Li et al. (1988)
-# 			'Barkan' : Chang and Li (1990), Barkan et al. (2015)
-# 			'Passey' : Chang and Li (1990), Passey et al. (2014)
-
-# 		See discussion in Daëron et al. (2016) for further details. Defaults to
-# 		'Brand'.
-
-# 	sig_figs : int
-# 		The number of significant figures to retain for returned d values.
-# 		Defaults to '3'.
-
-# 	Returns
-# 	-------
-# 	d : np.ndarray
-# 		Array of resulting isotope values, written as [D, d1, d2] where D is the
-# 		clumped isotope measurement (e.g., D47) and d1 and d2 are the 
-# 		corresponding major isotope values, listed from lowest to highest a.m.u.
-# 		(e.g., d13C, d18O). 
-
-# 	Raises
-# 	------
-# 	TypeError
-# 		If either 'clumps' or 'iso_params' is not a string.
-
-# 	StringError
-# 		If either 'clumps' or 'iso_params' is not an acceptable string.
-
-# 	Notes
-# 	-----
-# 	This calculation assumes that major isotope compositions conform to the
-# 	"stochastic" definition of Santrock et al. (1985) and elaborated further
-# 	in Daëron et al. (2016). If this is not true, then resulting R values
-# 	will be spurrious!
-
-# 	References
-# 	----------
-# 	[1] Craig (1957) *Geochim. Cosmochim. Ac.*, **12**, 133--149.
-# 	[2] Santrock et al. (1985) *Anal. Chem.*, **57**, 7444--7448.
-# 	[3] Li et al. (1988) *Chin. Sci. Bull.*, **33**, 1610--1613.
-# 	[3] Chang and Li (1990) *Chin. Sci. Bull.*, **35**, 290.
-# 	[4] Gonfiantini et al. (1995) *IAEA Technical Document*.
-# 	[5] Assonov and Brennenkmeijer (2003) *Rapid. Comm. Mass Spec.*, 
-# 		**17**, 1017--1029.
-# 	[6] Brand et al. (2010) *Pure Appl. Chem.*, **82**, 1719--1733.
-# 	[7] Passey et al. (2014) *Geochim. Cosmochim. Ac.*, **141**, 1--25.
-# 	[8] Barkan et al. (2015) *Rapid Comm. Mass. Spec.*, **29**, 2219--2224.
-# 	[9] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.
-# 	'''
-
-# 	#check clumps are right
-# 	clumps = _assert_clumps(clumps)
-
-# 	#check iso_params are right
-# 	iso_params = _assert_iso_params(clumps, iso_params)
-
-# 	#the following steps are specific to each clumped isotope system:
-# 	if clumps == 'CO47':
-
-# 		#extract iso params from dictionary
-# 		R13vpdb, R18vpdb, R17vpdb, lam17 = d47_isoparams[iso_params]
-
-# 		#extract R values from inputted R array
-# 		R45, R46, R47 = R
-
-# 		#do some math!
-# 		#calculate K, A-D from Daëron et al. (2016) appendix A Taylor expansion
-# 		K = R17vpdb*(R18vpdb**-lam17)
-# 		A = -3*(K**2)*(R18vpdb**(2*lam17))
-# 		B = 2*K*R45*(R18vpdb**lam17)
-# 		C = 2*R18vpdb
-# 		D = -R46
-
-# 		#calculate a-c
-# 		a = A*lam17*(2*lam17 - 1) + B*lam17*(lam17-1)/2
-# 		b = 2*A*lam17 + B*lam17 + C
-# 		c = A + B + C + D
-
-# 		#calculate R18, R17, and R13
-# 		x = (-b + (b**2 - 4*a*c)**0.5)/(2*a)
-
-# 		R18 = (1+x)*R18vpdb
-# 		R17 = K*(R18**lam17)
-# 		R13 = R45 - 2*R17
-
-# 		#calculate d13C and d18O
-# 		d13C = (R13/R13vpdb - 1)*1000
-# 		d18O = (R18/R18vpdb - 1)*1000
-
-# 		#calculate R47* and D47
-
-# 		#calculate R47 from D47 and R47stoch
-# 		# [47]* = [13][17][17] + 2*[13][16][18] + 2*[12][17][18]
-# 		# [44]* = [12][16][16]
-# 		# R47* = R13*R17**2 + 2*R13*R18 + 2*R17*R18
-# 		R47stoch = R13*R17*R17 + 2*R13*R18 + 2*R17*R18
-# 		D47 = (R47/R47stoch - 1)*1000
-		
-# 		d = [D47, d13C, d18O]
-
-# 	return np.around(d, sig_figs)
-
-# #define function to calculate fractional abundances from d values
-# def calc_R(d, clumps = 'CO47', iso_params = 'Brand', sig_figs = 15):
-# 	'''
-# 	Calculates the isotopologue ratios for a sample with a given delta
-# 	composition.
-
-# 	Paramters
-# 	---------
-# 	d : array-like
-# 		Array of isotope values, written as [D, d1, d2] where D is the clumped
-# 		isotope measurement (e.g., D47) and d1 and d2 are the corresponding 
-# 		major isotope values, listed from lowest to highest a.m.u. (e.g., d13C,
-# 		d18O). All isotope values are assumed to be relative to their commonly 
-# 		used standards:
-
-# 			C : Vienna PeeDee Belemnite
-# 			O : Vienna PeeDee Belemnite (for carbonates; solid CaCO3 not CO2!)
-		
-# 		Note, for 'CO47', d17O is assumed to be mass-dependent. Shape
-# 		`n` x 3.
-
-# 	clumps : string
-# 		The clumped isotope system under consideration. Currently only accepts
-# 		'CO47' for D47 clumped isotopes, but will include other isotope systems
-# 		as they become more widely used and data become available. Defaults to
-# 		'CO47'.
-
-# 	iso_params: string
-# 		The isotope parameters to use for calculations. If `clumps` is 'CO47',
-# 		possible isotope parameter options are:
-
-# 			'Brand' : Brand et al. (2010)
-# 			'Gonfiantini' : Gonfiantini et al. (1995)
-# 			'Craig + Assonov' : Craig (1957), Assonov and Brennenkmeijer (2003)
-# 			'Chang + Li' : Chang and Li (1990), Li et al. (1988)
-# 			'Craig + Li' : Craig (1957), Li et al. (1988)
-# 			'Barkan' : Chang and Li (1990), Barkan et al. (2015)
-# 			'Passey' : Chang and Li (1990), Passey et al. (2014)
-
-# 		See discussion in Daëron et al. (2016) for further details. Defaults to
-# 		'Brand'.
-
-# 	sig_figs : int
-# 		The number of significant figures to retain for returned R values.
-# 		Defaults to '15'.
-
-# 	Returns
-# 	-------
-# 	R : np.ndarray
-# 		Array of resulting R values, in order of lowest to highest mass (e.g.,
-# 		R45, R46, R47 for 'CO47' clumps).
-
-# 	Raises
-# 	------
-# 	TypeError
-# 		If either 'clumps' or 'iso_params' is not a string.
-
-# 	StringError
-# 		If either 'clumps' or 'iso_params' is not an acceptable string.
-
-# 	Notes
-# 	-----
-# 	This calculation assumes that major isotope compositions conform to the
-# 	"stochastic" definition of Santrock et al. (1985) and elaborated further
-# 	in Daëron et al. (2016). If this is not true, then resulting R values
-# 	will be spurrious!
-
-# 	References
-# 	----------
-# 	[1] Craig (1957) *Geochim. Cosmochim. Ac.*, **12**, 133--149.
-# 	[2] Santrock et al. (1985) *Anal. Chem.*, **57**, 7444--7448.
-# 	[3] Li et al. (1988) *Chin. Sci. Bull.*, **33**, 1610--1613.
-# 	[3] Chang and Li (1990) *Chin. Sci. Bull.*, **35**, 290.
-# 	[4] Gonfiantini et al. (1995) *IAEA Technical Document*.
-# 	[5] Assonov and Brennenkmeijer (2003) *Rapid. Comm. Mass Spec.*, 
-# 		**17**, 1017--1029.
-# 	[6] Brand et al. (2010) *Pure Appl. Chem.*, **82**, 1719--1733.
-# 	[7] Passey et al. (2014) *Geochim. Cosmochim. Ac.*, **141**, 1--25.
-# 	[8] Barkan et al. (2015) *Rapid Comm. Mass. Spec.*, **29**, 2219--2224.
-# 	[9] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.
-# 	'''
-
-# 	#check clumps are right
-# 	clumps = _assert_clumps(clumps)
-
-# 	#check iso_params are right
-# 	iso_params = _assert_iso_params(clumps, iso_params)
-
-# 	#the following steps are specific to each clumped isotope system:
-# 	if clumps == 'CO47':
-
-# 		#extract iso params from dictionary
-# 		R13vpdb, R18vpdb, R17vpdb, lam17 = d47_isoparams[iso_params]
-
-# 		#extract delta values from inputted d array
-# 		D47, d13Cvpdb, d18Ovpdb = d
-
-# 		#do some math!
-# 		#calculate R13, R18 from d13C, d18O
-# 		R13 = (d13Cvpdb/1000 + 1)*R13vpdb
-# 		R18 = (d18Ovpdb/1000 + 1)*R18vpdb
-
-# 		#calculate K, R17 from d18O, lambda
-# 		K = R17vpdb*(R18vpdb**-lam17)
-# 		R17 = K*(R18**lam17)
-
-# 		#calculate R45, R46 from R13, R17, R18 assuming stochastic (Daëron Eq. 4)
-# 		R45 = R13 + 2*R17
-# 		R46 = -3*(K**2)*(R18**(2*lam17)) + 2*K*R45*(R18**lam17) + 2*R18
-
-# 		#calculate R47 from D47 and R47stoch
-# 		# [47]* = [13][17][17] + 2*[13][16][18] + 2*[12][17][18]
-# 		# [44]* = [12][16][16]
-# 		# R47* = R13*R17**2 + 2*R13*R18 + 2*R17*R18
-
-# 		R47stoch = R13*R17*R17 + 2*R13*R18 + 2*R17*R18
-# 		R47 = (D47/1000 + 1)*R47stoch
-
-# 		R = [R45, R46, R47]
-
-# 	return np.around(R, sig_figs)
