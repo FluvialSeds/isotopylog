@@ -1,5 +1,11 @@
-About isoclump
-=================
+.. isoclump documentation master file, created by
+   sphinx-quickstart on Mon Apr  6 14:24:28 2020.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to the isoclump documentation
+=====================================
+
 ``isoclump`` is a Python package for analyzing "clumped" isotope kinetic data; it is particularly suited for assessing carbonate clumped isotope (i.e., ∆\ :sub:`47`\) bond reordering and closure temperatures, but will be expanded in the future to include clumped isotopes of other molecular species (e.g., sulfate). This package performs two basic functions: 
 
 (1) it fits ∆\ :sub:`47`\ reordering data from carbonate heating experiments (inverse model) and 
@@ -8,6 +14,7 @@ About isoclump
 For both functions, the package can use any of the available clumped isotope kinetic models: (1) the "pseudo-first-order" model (Passey and Henkes, 2012), (2) the "transient defect/equilibrium" model (Henkes et al., 2014), (3) the "paired raction/diffusion" model (Stolper and Eiler, 2015), and (4) the "distributed activation energy" model (Hemingway and Henkes, 2020).
 
 This package allows users to quickly and easily assess whether their clumped isotope measurements reflect primary signatures, or if these values have been reset during diagenetic heating. Conversely, it also allows users to easily assess geologic cooling rates using the apparent "closure" or "blocking" temperatures recorded in carbonates that have been diagenetically heated.
+
 
 Package Information
 -------------------
@@ -30,6 +37,12 @@ Package Information
 :doi:
   |doi|
 
+Bug Reports
+-----------
+This software is still in active deveopment. Please report any bugs directly to me at:
+
+	jordon_hemingway@fas.harvard.edu
+
 How to Cite
 -----------
 When analyzing data with ``isoclump`` to be used in a peer-reviewed journal, please cite this package as:
@@ -48,12 +61,6 @@ If analyzing data with any of the previously published models, please also cite 
 
 *D.A. Stolper and J.M. Eiler (2015) The kinetics of solid-state isotope exchange reactions for clumped isotopes: A study of inorganic calcites and apatites from natural and experimental samples. *American Journal of Science*, **315**, 363--411.
 
-
-Documentation
--------------
-The documentation for the latest release---including detailed package references and numerous comprehensive examples detailing various steps of the data analysis process---is available at:
-
-	http://isoclump.readthedocs.io
 
 Package features
 ----------------
@@ -91,7 +98,6 @@ Package features
 
   * Allows users to assess if their results reflect primary signatures or diagenetic overprinting.
 
-
 Future Additions
 ~~~~~~~~~~~~~~~~
 Future versions of ``isoclump`` will aim to include:
@@ -100,27 +106,27 @@ Future versions of ``isoclump`` will aim to include:
 
 * Kinetics of non-carbonate molecular species (e.g., sulfate) as they become available
 
-
-How to Obtain
-=============
-
-Source code can be directly downloaded from GitHub:
-
-	http://github.com/FluvialSeds/isoclump
-
-Binaries can be installed through the Python package index::
-
-	$ pip install isoclump
-
 License
-=======
+-------
 This product is licensed under the GNU GPL license, version 3 or greater.
 
-Bug Reports
-===========
-This software is still in active deveopment. Please report any bugs directly to me at:
+Table of Contents
+=================
 
-	jordon_hemingway@fas.harvard.edu
+.. toctree::
+   :maxdepth: 2
+   
+   quick_guide
+   examples
+   package_reference
+
+Indices and Tables
+==================
+
+* :ref:`genindex`
+* :ref:`search`
+
+.. * :ref:`modindex`
 
 
 .. |date| date::

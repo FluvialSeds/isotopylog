@@ -16,12 +16,8 @@ documentation can be found at:
 
 	http://isoclump.readthedocs.io
 
-Version 0.0.1 is current as of 8 April 2020 and reflects the notation used
+Version 0.0.2 is current as of 8 May 2020 and reflects the notation used
 in Hemingway and Henkes (2020).
-
-To do for future versions:
---------------------------
-
 '''
 
 from __future__ import(
@@ -29,7 +25,7 @@ from __future__ import(
 	print_function,
 	)
 
-__version__ = '0.0.1'
+__version__ = '0.0.2'
 
 __docformat__ = 'restructuredtext en'
 

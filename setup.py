@@ -5,7 +5,7 @@ def readme():
 		return f.read()
 
 setup(name='isoclump',
-	version='0.0.1',
+	version='0.0.2',
 	description='Clumped isotope kinetic analysis',
 	long_description=readme(),
 	classifiers=[
@@ -20,7 +20,7 @@ setup(name='isoclump',
 		'Topic :: Scientific/Engineering'
 	],
 	url='https://github.com/FluvialSeds/isoclump',
-	download_url='https://github.com/FluvialSeds/isoclump/tarball/0.0.1',
+	download_url='https://github.com/FluvialSeds/isoclump/tarball/0.0.2',
 	keywords=[
 		'geochemistry',
 		'clumped isotopes',
@@ -38,7 +38,8 @@ setup(name='isoclump',
 		'pandas',
 		'scipy'
 	],
-	test_suite='nose.collector',
-	tests_require=['nose'],
-	include_package_data=True,
-	zip_safe=False)
+	# test_suite='nose.collector',
+	# tests_require=['nose'],
+	# include_package_data=True,
+	# zip_safe=False
+	)
