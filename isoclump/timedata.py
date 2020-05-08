@@ -1394,5 +1394,5 @@ class HeatingExperiment(object):
 		'''
 		self._T_std = value	
 	
-if __name__ == __main__:
+if __name__ == '__main__':
 	import isoclump as ic

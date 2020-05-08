@@ -203,3 +203,6 @@ for r, rdf in kdf.groupby(level = 0):
 	#store in lit_kd_dict
 	lit_kd_dict[r] = mindict
 
+
+if __name__ == '__main__':
+	import isoclump as ic

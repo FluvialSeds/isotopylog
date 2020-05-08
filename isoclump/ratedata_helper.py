@@ -1279,5 +1279,5 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 
 	return params, params_cov, rmse, npt
 
-if __name__ == __main__:
+if __name__ == '__main__':
 	import isoclump as ic

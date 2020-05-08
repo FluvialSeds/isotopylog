@@ -475,3 +475,7 @@ def geologic_history(
 	D_std = np.sqrt(np.diag(Dcov))
 
 	return D, D_std
+
+
+if __name__ == '__main__':
+	import isoclump as ic
