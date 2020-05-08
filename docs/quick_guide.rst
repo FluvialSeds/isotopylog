@@ -1,6 +1,6 @@
 Quick Guide
 ===========
-The following examples should form a quick reference walkthough of downloading the package, getting experimental data into the right form for importing, running the inverse models to generate activation energies, importing published kinetic values and updating them using new experimental data, and generating predicted clumped isotope evolution for a given time-temperature history.
+The following should form a quick reference walkthough of downloading the package, getting experimental data into the right form for importing, running the inverse models to generate activation energies, importing published kinetic values and updating them using new experimental data, and generating predicted clumped isotope evolution for a given time-temperature history.
 
 For detailed information on class attributes, methods, and parameters, consult the `Package Reference Documentation` or use the ``help()`` command from within Python.
 
@@ -326,6 +326,6 @@ Similarly, one can estimate cooling closure temperatures. This is identical to t
 		ax.set_ylabel('D47 (‰)')
 		ax.legend(loc = 'best')
 
-	.. image:: _images/gh_2.png
+.. image:: _images/gh_2.png
 
 There are numerous ways that one can visualize these geologic history results, some of which are shown in further detail in the "examples" page.
