@@ -106,6 +106,7 @@ def geologic_history(
 	iso_params = 'Gonfiantini',
 	ref_frame = 'CDES90',
 	nlam = 400,
+	z = 6,
 	**kwargs
 	):
 	'''
@@ -164,6 +165,11 @@ def geologic_history(
 		The number of points to use in the lambda array. Only applies if
 		``ed.model = 'HH20'``; for other model types, this is unused. Defaults 
 		to ``400``.
+
+	z : int
+		The mineral coordination number. Only applies if ``ed.model = 'SE15'``;
+		for other model types, this is unused. Defaults to ``6`` as suggested
+		in Stolper and Eiler (2015).
 
 	Returns
 	-------
@@ -333,7 +339,7 @@ def geologic_history(
 	elif ed.model == 'SE15':
 
 		#extract relevant parameters and uncertainty in the order:
-		# E1, lnk1ref, Eds, lnkdsref, Epp, lnkppref
+		# E1, lnk1ref, Eds, lnkdsref, Emp, mpref
 		p = ed.Eparams.T.flatten()
 		pcov = ed.Eparams_cov
 
@@ -345,21 +351,36 @@ def geologic_history(
 		pcov = np.append(pcov, np.append(np.zeros(npt), D0_cov).reshape(-1,1),1)
 
 		#solve for D evolution
-		D = _ghHH20(t, *p, Deq, T, Tref)
+		D = _ghSE15(
+			t, 
+			*p, 
+			d0[1], 
+			d0[2], 
+			T, 
+			Tref, 
+			calibration = calibration,
+			iso_params = iso_params,
+			ref_frame = ref_frame,
+			z = z)[0]
 
 		#define lambda function for uncertainty propagation
-		lamfunc = lambda t,E1,lnk1ref,Eds,lnkdsref,Epp,lnkppref,D0 : _ghHH20(
+		lamfunc = lambda t, E1, lnk1ref, Eds, lnkdsref, Emp, mpref, D0 : _ghSE15(
 			t, 
 			E1, 
 			lnk1ref, 
 			Eds, 
 			lnkdsref, 
-			Epp, 
-			lnkppref,
+			Emp, 
+			mpref,
 			D0,
-			Deq,
-			T,
-			Tref)
+			d0[1], 
+			d0[2], 
+			T, 
+			Tref, 
+			calibration = calibration,
+			iso_params = iso_params,
+			ref_frame = ref_frame,
+			z = z)[0]
 
 	#calculate Jacobian and D uncertainty
 	J = _Jacobian(lamfunc, t, p, **kwargs)

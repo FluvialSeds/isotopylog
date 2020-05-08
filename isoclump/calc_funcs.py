@@ -480,7 +480,7 @@ def _fPH12(t, lnk, intercept, logG = True):
 #function to fit SE15 model using backward Euler
 def _fSE15(
 	t, 
-	lnk1f, 
+	lnk1, 
 	lnkds, 
 	mp, 
 	d0, 
@@ -500,7 +500,7 @@ def _fSE15(
 	t : array-like
 		Array of time points, of length ``nt``.
 
-	lnk1f : float
+	lnk1 : float
 		Natural log of the forward k value for the [44] + [47] <-> [pair] 
 		equation (SE15 Eq. 8a). To be estimated using ``curve_fit``.
 
@@ -519,7 +519,8 @@ def _fSE15(
 		Array of initial isotope composition, in the order [D47, d13C, d18O],
 		with d13C and d18O both relative to VPDB.
 
-	T : array of temperature at each time point, of length ``nt``.
+	T : float
+		The experimental temperature, in Kelvin.
 
 	calibration : string
 		The D-T calibration curve to use, from the literature. Options are: \n
@@ -589,13 +590,13 @@ def _fSE15(
 	# y = Rp
 
 	#calculate necessary inputs, each as a vector of length nt:
-	# a = k1f
-	# b = (k1f * R47_eq / Rp_r) * e^(-mp/T)
+	# a = k1
+	# b = (k1 * R47_eq / Rp_r) * e^(-mp/T)
 	# c = (kds * R45_s * R46_s / Rp_r) * e^(-mp/T)
 	# d = kds * R45_s * R46_s
 
 	#a
-	a = np.exp(lnk1f)*np.ones(nt)
+	a = np.exp(lnk1)*np.ones(nt)
 
 	#b
 	D47_eq = Deq_from_T(
@@ -615,7 +616,7 @@ def _fSE15(
 	R45_sin = R45_stoch - Rp_r
 	R46_sin = R46_stoch - Rp_r
 
-	c = (kds*R45_sin*R46_sin/Rp_r)*np.exp(-mp/T)
+	c = (kds*R45_sin*R46_sin/Rp_r)*np.exp(-mp/T)*np.ones(nt)
 
 	#d
 	d = kds*R45_sin*R46_sin*np.ones(nt)
@@ -954,11 +955,211 @@ def _ghPH12(t, E, lnkref, D0, Deq, T, Tref):
 	return D
 
 #function for calcualting geologic history with SE15 model
-def _ghSE15(t, E1, lnk1ref, Eds, lnkdsref, Epp, lnkppref, D0, Deq, T, Tref):
+def _ghSE15(
+	t, 
+	E1, 
+	lnk1ref, 
+	Eds, 
+	lnkdsref, 
+	Emp, 
+	mpref, 
+	D0, 
+	d13C,
+	d18O,
+	T, 
+	Tref,
+	calibration = 'Bea17', 
+	iso_params = 'Gonfiantini', 
+	ref_frame = 'CDES90',
+	z = 6
+	):
 	'''
-	Add docstring.
+	Calculates the D47 value for a given geologic t-T history using the SE15
+	model.
+
+	Parameters
+	----------
+
+	t : array-like
+		Array of time points on which to calculate D47, in whatever time units
+		were used to calculate lnkref values. Length ``nt``.
+
+	E1 : float
+		The activation energy value for 'k1' in the SE15 model.
+
+	lnkref : float
+		The reference lnk1 value for the SE15 model.
+
+	Eds : float
+		The activation energy value for 'kds' in the SE15 model.
+
+	lnksref : float
+		The reference lnkds value for the SE15 model.
+
+	Emp : float
+		The activation energy value for the pair slope, mp, in the SE15 model.
+
+	mpref : float
+		The reference mp value for the SE15 model.
+
+	D0 : float
+		The starting D47 value.
+
+	d13C : float
+		The d13C value, referenced to VPDB.
+
+	d18O : float
+		The d18O value, referenced to VPDB.
+
+	T : array-like
+		The temperatures coresponding to each time point, in Kelvin. Length
+		``nt``.
+
+	Tref : float
+		The reference temperature at which lnkref was calculated, in Kelvin.
+
+	calibration : string
+		The D-T calibration curve to use, from the literature. Options are: \n
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
+		Note that literature equations will be adjusted to be consistent with 
+		any reference frame. Defaults to ``'Bea17'``.
+
+	iso_params : string
+		The isotope parameters used to calculate clumped data. For example, if
+		``clumps = 'CO47'``, then isotope parameters are R13_vpdb, R17_vpdb,
+		R18_vpdb, and lam17. Following Daëron et al. (2016) nomenclature,
+		options are: \n
+			``'Barkan'``: for Barkan and Luz (2005) lam17\n
+			``'Brand'`` (equivalent to ``'Chang+Assonov'``): for Brand (2010)\n
+			``'Chang+Li'``: for Chang and Li (1990) + Li et al. (1988) \n
+			``'Craig+Assonov'``: for Craig (1957) + Assonov and Brenninkmeijer 
+			(2003)\n
+			``'Craig+Li'``: for Craig (1957) + Li et al. (1988)\n
+			``'Gonfiantini'``: for Gonfiantini et al. (1995)\n
+			``'Passey'``: for Passey et al. (2014) lam17\n
+		Defaults to ``'Gonfiantini'``.
+
+	ref_frame : string
+		The reference frame used to calculate clumped isotope data. Options
+		are:\n
+			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.\n
+			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
+			``'Ghosh25'``: Heated Gas Line Reference Frame of Ghosh et al. 
+			(2006) acidified at 25 C.\n
+			``'Ghosh90'``: Heated Gas Line Reference Frame of Ghosh et al. 
+			(2006) acidified at 90 C.\n
+		Defaults to ``'CDES90'``.
+
+	z : int
+		The mineral lattice coordination number to use for calculating the
+		concentration of pairs. Defaults to ``6`` following Stolper and Eiler
+		(2015).
+
+	Returns
+	-------
+
+	D47 : np.array
+		Array of resulting D47 values, referenced to the same reference frame
+		and D-T calibration used for D0 and Deq. Of length ``nt``.
+
+	Dp : np.array
+		Array of resulting Dpair values. Of length ``nt``.
+
+	References
+	----------
+
+	[1] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
 	'''
-	return D
+	#extract constants
+	nt = len(t)
+	R = 8.314/1000 #in kJ/mol/K
+
+	R45_stoch, R46_stoch, R47_stoch = _calc_R_stoch(d13C, d18O, iso_params)
+
+	#get k values at each temperature
+	lnk1 = lnk1ref + (E1/R)*(1/Tref - 1/T)
+	lnkds = lnkdsref + (Eds/R)*(1/Tref - 1/T)
+	mp = mpref + (Emp/R)*(1/Tref - 1/T)
+
+	#function will solve for variables in the following format:
+	# x = R47
+	# y = Rp
+
+	#calculate necessary inputs, each as a vector of length nt:
+	# a = k1
+	# b = (k1 * R47_eq / Rp_r) * e^(-mp/T)
+	# c = (kds * R45_s * R46_s / Rp_r) * e^(-mp/T)
+	# d = kds * R45_s * R46_s
+
+	#a
+	a = np.exp(lnk1)*np.ones(nt)
+
+	#b
+	D47_eq = Deq_from_T(
+		T, 
+		calibration = calibration, 
+		clumps = 'CO47', 
+		ref_frame = ref_frame,
+		)
+
+	R47_eq = (D47_eq/1000 + 1)*R47_stoch
+	Rp_r = _calc_Rpr(R45_stoch, R46_stoch, R47_stoch, z)
+
+	b = (a*R47_eq/Rp_r)*np.exp(-mp/T)
+
+	#c
+	kds = np.exp(lnkds)
+	R45_sin = R45_stoch - Rp_r
+	R46_sin = R46_stoch - Rp_r
+
+	c = (kds*R45_sin*R46_sin/Rp_r)*np.exp(-mp/T)*np.ones(nt)
+
+	#d
+	d = kds*R45_sin*R46_sin*np.ones(nt)
+
+	#combine into array (shape nt x 4)
+	A = np.array([-a, b, a, -(b+c)]).T
+
+	#combine into array (shape nt x 2)
+	B = np.array([np.zeros(nt), d]).T
+
+	#pre-allocate arrays and set initial conditions
+
+	R47_0 = (D0/1000 + 1)*R47_stoch
+	
+	Teq_0 = T_from_Deq(
+		D0,
+		calibration = calibration,
+		clumps = 'CO47',
+		ref_frame = ref_frame
+		)
+
+	Rp_0 = Rp_r*np.exp(mp[0]/Teq_0)
+
+	x = np.zeros([nt, 2])
+	x[0,:] = [R47_0, Rp_0]
+
+	#loop through each time points and solve backward Euler problem
+	for i in range(nt-1):
+
+		#get A matrix and B array for that time point
+		Ai = A[i,:].reshape(2,2)
+		Bi = B[i,:]
+
+		#calculate inverted A
+		Ainv = inv(eye(2) - (t[i+1] - t[i])*Ai)
+
+		#calculate x at next time step
+		x[i+1,:] = np.dot(Ainv, (x[i,:] + (t[i+1] - t[i])*Bi))
+
+	#convert back to meaningful units
+	D47 = (x[:,0]/R47_stoch - 1)*1000
+	Dp = (x[:,1]/Rp_r - 1)*1000
+
+	#return D for curve fitting purposes
+	return D47, Dp
 
 #function for estimating Jacobian matrices for error propagation
 def _Jacobian(f, t, p, eps = 1e-6):

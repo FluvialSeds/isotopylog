@@ -1218,9 +1218,9 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 	if mp is None:
 
 		#fit model to lambda function with all 3 unknowns
-		lamfunc = lambda t, lnk1f, lnkds, mpfit : _fSE15(
+		lamfunc = lambda t, lnk1, lnkds, mpfit : _fSE15(
 			t,
-			lnk1f,
+			lnk1,
 			lnkds,
 			mpfit,
 			d0,
@@ -1240,9 +1240,9 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 		p0 = p0[:2]
 
 		#make lambda function with only 2 unknown parameters
-		lamfunc = lambda t, lnk1f, lnkds : _fSE15(
+		lamfunc = lambda t, lnk1, lnkds : _fSE15(
 			t,
-			lnk1f,
+			lnk1,
 			lnkds,
 			mp,
 			d0,

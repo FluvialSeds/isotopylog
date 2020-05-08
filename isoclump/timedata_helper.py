@@ -388,9 +388,9 @@ def _forward_model(he, kd, t, z = 6, **kwargs):
 		T = np.ones(len(t))*he.T
 
 		#fit model to lambda function with all 3 unknowns
-		lamfunc = lambda t, lnk1f, lnkds, mpfit : _fSE15(
+		lamfunc = lambda t, lnk1, lnkds, mpfit : _fSE15(
 			t,
-			lnk1f,
+			lnk1,
 			lnkds,
 			mpfit,
 			d0,

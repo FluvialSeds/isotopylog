@@ -118,14 +118,14 @@ d47_isoparams = {'Gonfiantini':
 mod_params = {'Hea14' : ['ln(kc)','ln(kd)','ln(k2)'],
 			  'HH20' : ['ln(k_mu)','ln(k_sig)'],
 			  'PH12' : ['ln(k)','intercept'],
-			  'SE15' : ['ln(k1)','ln(k_dif_single)','ln([pair]0/[pair]eq)']
+			  'SE15' : ['ln(k1)','ln(k_dif_single)','mp']
 			  }
 
 # 4) Dictionary for holding EDistribution model parameters for summary printing
 ed_params = {'Hea14' : ['Ec', 'Ed', 'E2'],
 			'HH20' : ['mu_E', 'sig_E'],
 			'PH12' : ['E', 'intercept'],
-			'SE15' : ['E1', 'Edif_single', 'E[pair]_0/[pair]_eq']
+			'SE15' : ['E1', 'Edif_single', 'Emp']
 		   }
 
 
@@ -138,7 +138,7 @@ clump_isos = {'CO47' : ['D47','d13C_vpdb','d18O_vpdb'],
 zi = {'Hea14' : [False, False, False],
 	  'HH20' : [False, True], 
 	  'PH12' : [False, False], 
-	  'SE15' : [False, False, True]
+	  'SE15' : [False, False, False]
 	 }
 
 # 5) Dictionary for holding all literature kd data
