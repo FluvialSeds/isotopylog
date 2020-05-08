@@ -24,6 +24,7 @@ isoclump methods
 	isoclump.fit_HH20inv
 	isoclump.fit_PH12
 	isoclump.fit_SE15
+	isoclump.geologic_history
 
 References
 ----------
