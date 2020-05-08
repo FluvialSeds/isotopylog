@@ -248,7 +248,7 @@ Furthermore, activation energy Arrhenius plots can be easily visualized. For exa
 		ed.plot(ax = ax[0], param = 1) #to plot mu_E
 		ed.plot(ax = ax[1], param = 2) #to plot sig_E
 
-	.. image:: _images/ed_1.png
+.. image:: _images/ed_1.png
 
 Mapping Back to Rates
 ~~~~~~~~~~~~~~~~~~~~~
