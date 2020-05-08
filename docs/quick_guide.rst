@@ -72,8 +72,16 @@ Importing Experimental Data
 
 If you are using ``isoclump`` to fit reordering rate parameters to new clumped isotope heating experiments, then the first step is to import those data in an appropriate format. This requires making a .csv file that contains the following columns:
 
-| t | D47 | D47_std | d13C_vpdb | d13C_std | d18O_vpdb | d18O_std | T_C	| ref_frame | iso_params |
-|---|-----|---------|-----------|----------|-----------|----------|-----|-----------|------------|
+* t 
+* D47 
+* D47_std 
+* d13C_vpdb 
+* d13C_std 
+* d18O_vpdb 
+* d18O_std 
+* T_C
+* ref_frame 
+* iso_params 
 
 where the first entry contains the initial (unheated) isotope data. The "t" column can contain time points in any units (e.g., seconds, minuts, etc.), and note that the resulting rate data will correspond to the time unit used. The "ref_frame" column contains the reference frame used to generate the clumped isotope data (i.e., "Ghosh25", "Ghosh90", "CDES25", or "CDES90"), whereas the "iso_params" column contains the isotope parameters used to generate the clumped isotope data (typically "Gonfiantini" for older data or "Brand" for recently generated data. See Daëron et al.(2016) for further details).
 
