@@ -33,6 +33,7 @@ from numpy.linalg import (
 #import necessary optimization functions
 from scipy.optimize import (
 	curve_fit,
+	lsq_linear,
 	nnls,
 	)
 
@@ -754,6 +755,7 @@ def fit_HH20inv(
 	lam_max = 10,
 	lam_min = -50,
 	nlam = 300,
+	non_neg = True,
 	omega = 'auto',
 	**kwargs
 	):
@@ -779,6 +781,10 @@ def fit_HH20inv(
 	nlam : int
 		The number of lam values in the array such that
 		dlam = (lam_max - lam_min)/nlam. Defaults to `300`.
+
+	non_neg : boolean
+		Tells the function whether or not to constrain the solution to be
+		non-negative. Defaults to ``True``.
 
 	omega : str or float
 		The "smoothing parameter" to use. This can be a number or `auto`; if 
@@ -898,7 +904,13 @@ def fit_HH20inv(
 		(Gex, np.zeros(nlam + 1)))
 
 	#calculate inverse results and estimated G
-	rho_lam_inv, _ = nnls(A_reg, Gex_reg)
+	if non_neg is True:
+		rho_lam_inv, _ = nnls(A_reg, Gex_reg)
+
+	else:
+		res = lsq_linear(A_reg, Gex_reg)
+		rho_lam_inv = res.x
+
 	Ghat = np.inner(A, rho_lam_inv)
 	rgh = np.inner(R, rho_lam_inv)
 
