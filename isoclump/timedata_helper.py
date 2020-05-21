@@ -45,7 +45,8 @@ def _calc_D_from_G(
 	D0,
 	G,
 	Teq,
-	calibration = 'Bea17',
+	# calibration = 'Bea17',
+	caleq,
 	clumps = 'CO47',
 	G_std = None,
 	ref_frame = 'CDES90'
@@ -67,9 +68,12 @@ def _calc_D_from_G(
 		The equilibrium temperature (in Kelvin) used to calculate reaction
 		progress.
 
-	calibration : string
-		The T-D calibration to use for calculating equilibrium D. Defaults to
-		``'Bea17'``.
+	# calibration : string
+	# 	The T-D calibration to use for calculating equilibrium D. Defaults to
+	# 	``'Bea17'``.
+
+	caleq : lambda function
+		The T-D calibration function to use for calculating equilibrium D.
 
 	clumps : string
 		The clumped isotope system being analyzed. Defaults to ``'CO47'``.
@@ -98,7 +102,8 @@ def _calc_D_from_G(
 
 		try:
 			#calculate equilibrium D value
-			Deq = caleqs[calibration][ref_frame](Teq)
+			# Deq = caleqs[calibration][ref_frame](Teq)
+			Deq = caleq(Teq)
 
 			#calculate D values
 			D = G*(D0 - Deq) + Deq
@@ -121,7 +126,8 @@ def _calc_D_from_G(
 def _calc_G_from_D(
 	D, 
 	Teq, 
-	calibration = 'Bea17', 
+	# calibration = 'Bea17', 
+	caleq,
 	clumps = 'CO47', 
 	D0 = None,
 	D_std = None,
@@ -144,9 +150,12 @@ def _calc_G_from_D(
 		The equilibrium temperature (in Kelvin) used to calculate reaction
 		progress.
 
-	calibration : string
-		The T-D calibration to use for calculating equilibrium D. Defaults to
-		``'Bea17'``.
+	# calibration : string
+	# 	The T-D calibration to use for calculating equilibrium D. Defaults to
+	# 	``'Bea17'``.
+
+	caleq : lambda function
+		The T-D calibration function to use for calculating equilibrium D.
 
 	clumps : string
 		The clumped isotope system being analyzed. Defaults to ``'CO47'``.
@@ -179,7 +188,8 @@ def _calc_G_from_D(
 
 		try:
 			#calcualte equilibrium D value
-			Deq = caleqs[calibration][ref_frame](Teq)
+			# Deq = caleqs[calibration][ref_frame](Teq)
+			Deq = caleq(Teq)
 			
 			#get uncertainty if it exists
 			if D_std is None:
@@ -422,7 +432,8 @@ def _forward_model(he, kd, t, z = 6, **kwargs):
 			he.dex[0,0], 
 			G, 
 			he.T, 
-			calibration = he.calibration,
+			# calibration = he.calibration,
+			he.caleq,
 			clumps = he.clumps,
 			G_std = G_std,
 			ref_frame = he.ref_frame

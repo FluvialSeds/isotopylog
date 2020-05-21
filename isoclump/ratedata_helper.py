@@ -585,7 +585,8 @@ def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 		he.dex[0,0],
 		Ghat,
 		he.T,
-		calibration = he.calibration,
+		# calibration = he.calibration,
+		he.caleq,
 		clumps = he.clumps,
 		G_std = None,
 		ref_frame = he.ref_frame
@@ -738,7 +739,8 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 		he.dex[0,0],
 		Ghat,
 		he.T,
-		calibration = he.calibration,
+		# calibration = he.calibration,
+		he.caleq,
 		clumps = he.clumps,
 		G_std = None,
 		ref_frame = he.ref_frame
@@ -1076,7 +1078,8 @@ def fit_PH12(he, logy = True, p0 = [-10., 0.5], thresh = 1e-10):
 		he.dex[0,0],
 		Ghat,
 		he.T,
-		calibration = he.calibration,
+		# calibration = he.calibration,
+		he.caleq,
 		clumps = he.clumps,
 		G_std = None,
 		ref_frame = he.ref_frame

@@ -588,7 +588,8 @@ class HeatingExperiment(object):
 				self.dex[0,0], 
 				self._Ginv, 
 				self.T, 
-				calibration = self.calibration,
+				# calibration = self.calibration,
+				self.caleq,
 				clumps = self.clumps,
 				G_std = None,
 				ref_frame = self.ref_frame
@@ -1148,7 +1149,8 @@ class HeatingExperiment(object):
 		G, _ = _calc_G_from_D(
 			self.D,
 			self.T,
-			calibration = self.calibration,
+			# calibration = self.calibration,
+			self.caleq,
 			clumps = self.clumps,
 			D0 = self.dex[0,0],
 			D_std = None,
@@ -1168,7 +1170,8 @@ class HeatingExperiment(object):
 		_, G_std = _calc_G_from_D(
 			self.D,
 			self.T,
-			calibration = self.calibration,
+			# calibration = self.calibration,
+			self.caleq,
 			clumps = self.clumps,
 			D0 = self.dex[0,0],
 			D_std = self.D_std,
@@ -1187,7 +1190,8 @@ class HeatingExperiment(object):
 		Gex, _ = _calc_G_from_D(
 			self.dex[:,0],
 			self.T,
-			calibration = self.calibration,
+			# calibration = self.calibration,
+			self.caleq,
 			clumps = self.clumps,
 			D_std = None,
 			ref_frame = self.ref_frame,
@@ -1206,7 +1210,8 @@ class HeatingExperiment(object):
 		_, Gex_std = _calc_G_from_D(
 			self.dex[:,0],
 			self.T,
-			calibration = self.calibration,
+			# calibration = self.calibration,
+			self.caleq,
 			clumps = self.clumps,
 			D_std = self.dex_std[:,0],
 			ref_frame = self.ref_frame,
