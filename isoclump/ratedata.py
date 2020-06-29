@@ -1148,7 +1148,7 @@ class EDistribution(object):
 
 		mineral : string
 			The mineral type whose data will be imported. Current options are:\n
-				``'apatite'`` ('SE15' and 'HH20' references only)\n
+				``'apatite'`` ('SE15' reference only)\n
 				``'calcite'`` (all references)\n
 				``'dolomite'`` ('HH20' reference only)
 
@@ -1237,10 +1237,13 @@ class EDistribution(object):
 		elif mineral in ['apatite','Apatite','apa','Apa']:
 			mineral = 'apatite'
 
+		elif mineral in ['dolomite','Dolomite','dol','Dol']:
+			mineral = 'dolomite'
+
 		elif isinstance(mineral, str):
 			raise ValueError(
-				'Unexpected mineral string %s. Currently, must be "calcite" or'
-				' "apatite"' % mineral
+				'Unexpected mineral string %s. Currently, must be "calcite",'
+				' "apatite", or "dolomite"' % mineral
 				)
 
 		else:
@@ -1271,8 +1274,8 @@ class EDistribution(object):
 
 		elif isinstance(reference, str):
 			raise ValueError(
-				'Unexpected reference string %s. Currently, must be "calcite" or'
-				' "apatite"' % reference
+				'Unexpected reference string %s. Currently, must be "PH12",'
+				' "Hea14", "SE15", "Bea18", "Lea18", "HH20"' % reference
 				)
 
 		else:
