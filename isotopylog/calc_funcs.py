@@ -43,14 +43,14 @@ from scipy.optimize import(
 	minimize
 	)
 
-#import necessary isoclump dictionaries
+#import necessary isotopylog dictionaries
 from .dictionaries import(
 	caleqs,
 	d47_isoparams,
 	)
 
 #define function for calculating HH20 inverse A matrix
-def _calc_A(t, lam):
+def _calc_A(t, nu):
 	'''
 	Function for calculating A matrix for HH20 data inversion.
 
@@ -60,14 +60,14 @@ def _calc_A(t, lam):
 	t : array-like
 		Array of time points, of length `nt`.
 
-	lam : array-like
-		Array of lambda points, of lnegth `nlam`.
+	nu : array-like
+		Array of nu points, of length `nnu`.
 
 	Returns
 	-------
 
 	A : np.ndarray
-		2-D array A matrix, of shape [`n_t` x `n_lam`]
+		2-D array A matrix, of shape [`n_t` x `n_nu`]
 
 	References
 	----------
@@ -78,14 +78,14 @@ def _calc_A(t, lam):
 
 	#extract constants
 	nt = len(t)
-	nlam = len(lam)
-	dlam = lam[1] - lam[0]
+	nnu = len(nu)
+	dnu = nu[1] - nu[0]
 
 	#define matrices
-	t_mat = np.outer(t, np.ones(nlam))
-	lam_mat = np.outer(np.ones(nt), lam)
+	t_mat = np.outer(t, np.ones(nnu))
+	nu_mat = np.outer(np.ones(nt), nu)
 
-	A = np.exp(- np.exp(lam_mat) * t_mat) * dlam
+	A = np.exp(- np.exp(nu_mat) * t_mat) * dnu
 	
 	return A
 
@@ -202,7 +202,7 @@ def _calc_R_stoch(d13C, d18O, iso_params):
 	return R45_stoch, R46_stoch, R47_stoch
 
 #rmse function for curve fitting
-def _calc_rmse(y,yhat):
+def _calc_rmse(y, yhat):
 	'''
 	Defines a straight line.
 
@@ -315,8 +315,8 @@ def _fArrhenius(T, E, lnkref, Tref):
 #function to fit complete Hea14 model
 def _fHea14(t, lnkc, lnkd, lnk2, logG = True):
 	'''
-	Estimates G using the "transient defect/equilibrium" model of Henkes et
-	al. (2014) (Eq. 5).
+	Estimates G using the "transient defect/equilibrium defect" model of Henkes
+	et al. (2014) (Eq. 5).
 
 	Parameters
 	----------
@@ -364,7 +364,7 @@ def _fHea14(t, lnkc, lnkd, lnk2, logG = True):
 	return Ghat
 
 #function to fit data to lognormal decay k distribution for HH20  model
-def _fHH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
+def _fHH20(t, mu_nu, sig_nu, nu_max, nu_min, nnu):
 	'''
 	Function to calculate G as a function of time assuming a lognormal 
 	distribution of decay rates described by mu and sigma.
@@ -375,22 +375,22 @@ def _fHH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 	t : array-like
 		Array of time, in seconds; of length `n_t`.
 
-	mu_lam : scalar
-		Mean of lam, the lognormal rate distribution.
+	mu_nu : scalar
+		Mean of nu, the lognormal rate distribution.
 		
-	sig_lam : scalar
-		Standard deviation of lam, the lognormal rate distribution.
+	sig_nu : scalar
+		Standard deviation of nu, the lognormal rate distribution.
 
-	lam_max : scalar
-		Maximum lambda value for distribution range; should be at least 4 sigma
+	nu_max : scalar
+		Maximum nubda value for distribution range; should be at least 4 sigma
 		above the mean. 
 
-	lam_min : scalar
-		Minimum lambda value for distribution range; should be at least 4 sigma
+	nu_min : scalar
+		Minimum nubda value for distribution range; should be at least 4 sigma
 		below the mean.
 		
-	nlam : int
-		Number of nodes in lam array.
+	nnu : int
+		Number of nodes in nu array.
 
 	Returns
 	-------
@@ -406,18 +406,18 @@ def _fHH20(t, mu_lam, sig_lam, lam_max, lam_min, nlam):
 
 	#setup arrays
 	nt = len(t)
-	lam = np.linspace(lam_min, lam_max, nlam)
-	dlam = lam[1] - lam[0]
-	rho = _Gaussian(lam, mu_lam, sig_lam)
+	nu = np.linspace(nu_min, nu_max, nnu)
+	dnu = nu[1] - nu[0]
+	rho = _Gaussian(nu, mu_nu, sig_nu)
 
 	#make matrices
-	t_mat = np.outer(t, np.ones(nlam))
-	lam_mat = np.outer(np.ones(nt), lam)
+	t_mat = np.outer(t, np.ones(nnu))
+	nu_mat = np.outer(np.ones(nt), nu)
 	rho_mat = np.outer(np.ones(nt), rho)
 
 	#solve
-	x = rho_mat * np.exp(- np.exp(lam_mat) * t_mat) * dlam
-	G = np.inner(x, np.ones(nlam))
+	x = rho_mat * np.exp(- np.exp(nu_mat) * t_mat) * dnu
+	G = np.inner(x, np.ones(nnu))
 
 	return G
 
@@ -777,7 +777,7 @@ def _ghHea14(t, Ec, lnkcref, Ed, lnkdref, E2, lnk2ref, D0, Deq, T, Tref):
 	return D
 
 #function for calcualting geologic history with HH20 model
-def _ghHH20(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nlam = 400):
+def _ghHH20(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nnu = 400):
 	'''
 	Calculates the D47 value for a given geologic t-T history using the HH20
 	model.
@@ -817,8 +817,8 @@ def _ghHH20(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nlam = 400):
 	Tref : float
 		The reference temperature at which lnkref was calculated, in Kelvin.
 
-	nlam : int
-		The number of points to use in the lambda array. Defaults to ``400``.
+	nnu : int
+		The number of points to use in the nu array. Defaults to ``400``.
 
 	Returns
 	-------
@@ -839,27 +839,27 @@ def _ghHH20(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nlam = 400):
 	R = 8.314/1000 #in kJ/mol/K
 
 	#calculate overall k at each temperature point, termed kappa
-	#calculate lam_mu and lam_sig from Emu and Esig
-	lam_mu = lnkmuref + (Emu/R)*(1/Tref - 1/T)
-	lam_sig = lnksigref - (Esig/R)*(1/T)
+	#calculate nu_mu and nu_sig from Emu and Esig
+	nu_mu = lnkmuref + (Emu/R)*(1/Tref - 1/T)
+	nu_sig = lnksigref - (Esig/R)*(1/T)
 
-	#calculate plam from lam_mu and lam_sig
-	# plam is an [nt x nlam] matrix
+	#calculate pnu from nu_mu and nu_sig
+	# pnu is an [nt x nnu] matrix
 
-	#first, make lam array that spans from 5*sigma above max(lam_mu) to 5*sigma
-	# below min(lam_mu)
-	lam_min = np.floor(lam_mu.min() - 5*lam_sig.max())
-	lam_max = np.ceil(lam_mu.max() + 5*lam_sig.max())
+	#first, make nu array that spans from 5*sigma above max(nu_mu) to 5*sigma
+	# below min(nu_mu)
+	nu_min = np.floor(nu_mu.min() - 5*nu_sig.max())
+	nu_max = np.ceil(nu_mu.max() + 5*nu_sig.max())
 
-	lam = np.linspace(lam_min, lam_max, nlam)
-	dlam = lam[1] - lam[0]
+	nu = np.linspace(nu_min, nu_max, nnu)
+	dnu = nu[1] - nu[0]
 
 	#then, make into matrix
-	rholam = _Gaussian(lam, lam_mu, lam_sig)
+	rhonu = _Gaussian(nu, nu_mu, nu_sig)
 
-	#make array of kappa = integral(rho_lam * e^(-k*dt))
-	b = np.exp(-np.outer(np.exp(lam), dt))
-	kappa = np.sum(rholam * b * dlam, axis = 0)
+	#make array of kappa = integral(rho_nu * e^(-k*dt))
+	b = np.exp(-np.outer(np.exp(nu), dt))
+	kappa = np.sum(rhonu * b * dnu, axis = 0)
 
 	#pre-allocate D array
 	D = np.zeros(nt)
@@ -1253,7 +1253,7 @@ def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
 	See Also
 	--------
 
-	isoclump.T_from_Deq
+	isotopylog.T_from_Deq
 		Related function to perform the opposite calculation.
 
 	Examples
@@ -1262,10 +1262,10 @@ def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
 	Simple implementation to calcualte Deq for a single T value::
 
 		#import packages
-		import isoclump as ic
+		import isotopylog as ipl
 
 		T = 150 + 273.15 #in Kelvin
-		Deq = ic.Deq_from_T(T)
+		Deq = ipl.Deq_from_T(T)
 
 	Similar implementation, but for an array of T values::
 
@@ -1273,7 +1273,7 @@ def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
 		import numpy as np
 
 		T = np.arange(100,200)
-		Deq = ic.Deq_from_T(T)
+		Deq = ipl.Deq_from_T(T)
 
 	References
 	----------
@@ -1359,7 +1359,7 @@ def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Bea17', ref_frame = 'CDES90'
 	See Also
 	--------
 
-	isoclump.Deq_from_T
+	isotopylog.Deq_from_T
 		Related function to perform the opposite calculation.
 
 	Notes
@@ -1375,10 +1375,10 @@ def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Bea17', ref_frame = 'CDES90'
 	Simple implementation to calcualte T for a single Deq value::
 
 		#import packages
-		import isoclump as ic
+		import isotopylog as ipl
 
 		Deq = 0.55
-		T = ic.T_from_Deq(Deq)
+		T = ipl.T_from_Deq(Deq)
 
 	Similar implementation, but for an array of T values::
 
@@ -1386,7 +1386,7 @@ def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Bea17', ref_frame = 'CDES90'
 		import numpy as np
 
 		Deq = np.linspace(0.30, 0.60, 0.02)
-		T = ic.T_from_Deq(Deq)
+		T = ipl.T_from_Deq(Deq)
 
 	References
 	----------

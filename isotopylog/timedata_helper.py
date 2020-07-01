@@ -35,7 +35,7 @@ from .calc_funcs import(
 	_Jacobian,
 	)
 
-#import necessary isoclump dictionaries
+#import necessary isotopylog dictionaries
 from .dictionaries import(
 	caleqs
 	)
@@ -321,11 +321,11 @@ def _forward_model(he, kd, t, z = 6, **kwargs):
 	Parameters
 	----------
 
-	he : isoclump.HeatingExperiment
-		The ``ic.HeatingExperiment`` instance containing the data of interest.
+	he : isotopylog.HeatingExperiment
+		The ``ipl.HeatingExperiment`` instance containing the data of interest.
 
-	kd : isoclump.kDistribution
-		The ``ic.kDistribution`` instance containing the rate parameters of
+	kd : isotopylog.kDistribution
+		The ``ipl.kDistribution`` instance containing the rate parameters of
 		interest.
 
 	t : np.array
@@ -369,8 +369,8 @@ def _forward_model(he, kd, t, z = 6, **kwargs):
 	elif kd.model == 'HH20':
 
 		#make lambda function since HH20 has more args than fit params
-		l = [np.max(kd.lam), np.min(kd.lam), len(kd.lam)] #additional inputs
-		lamfunc = lambda t, mu_lam, sig_lam: _fHH20(t, mu_lam, sig_lam, *l) 
+		l = [np.max(kd.nu), np.min(kd.nu), len(kd.nu)] #additional inputs
+		lamfunc = lambda t, mu_nu, sig_nu: _fHH20(t, mu_nu, sig_nu, *l) 
 
 		#calculate G
 		G = lamfunc(t, *p)
@@ -582,4 +582,4 @@ def _read_csv(file):
 
 
 if __name__ == '__main__':
-	import isoclump as ic
+	import isotopylog as ipl

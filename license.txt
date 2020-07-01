@@ -1,4 +1,4 @@
-``isoclump``, a multifunction Python package for analyzing "clumped" isotope kinetic rate data from a range of scientific experiment types. This includes inverse modeling of clumped isotope data using a suite of kinetic model approaches (i.e., pseudo-first order models, paired reaction/diffusion models, and distributed activation energy models) as well as forward modeling of geologic clumped isotope evolution.
+``isotopylog``, a multifunction Python package for analyzing "clumped" isotope kinetic rate data from a range of scientific experiment types. This includes inverse modeling of clumped isotope data using a suite of kinetic model approaches (i.e., pseudo-first order models, paired reaction/diffusion models, and distributed activation energy models) as well as forward modeling of geologic clumped isotope evolution.
 
 All code and written materials copyright (c) 2020, Jordon D. Hemingway, Harvard University.
 

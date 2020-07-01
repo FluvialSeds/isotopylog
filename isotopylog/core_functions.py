@@ -1,5 +1,5 @@
 '''
-Module to store core functions for isoclump package-level methods.
+Module to store core functions for isotopylog package-level methods.
 '''
 
 from __future__ import(
@@ -102,12 +102,12 @@ def geologic_history(
 	calibration = 'Bea17', 
 	iso_params = 'Gonfiantini',
 	ref_frame = 'CDES90',
-	nlam = 400,
+	nnu = 400,
 	z = 6,
 	**kwargs
 	):
 	'''
-	Predicts the D47 evolution when a given ``ic.EDistribution`` model is 
+	Predicts the D47 evolution when a given ``ipl.EDistribution`` model is 
 	subjected to any arbitrary time-temperature history.
 	
 	Parameters
@@ -115,14 +115,14 @@ def geologic_history(
 
 	t : array-like
 		Array of time points, in the same temporal units used to calculate
-		the ``isoclump.EDistribution`` object passed to this function. Of
+		the ``isotopylog.EDistribution`` object passed to this function. Of
 		length ``nt``.
 
 	T : array-like
 		Array of temperatures at each time point, in Kelvin. Of length ``nt``.
 
-	ed : isoclump.EDistribution
-		The ``ic.EDistribution`` object containing the activation energy
+	ed : isotopylog.EDistribution
+		The ``ipl.EDistribution`` object containing the activation energy
 		parameters used for forward modeling.
 
 	d0 : array-like
@@ -158,8 +158,8 @@ def geologic_history(
 		The reference frame used to generate D47 values. Defaults to
 		``'CDES90'``.
 
-	nlam : int
-		The number of points to use in the lambda array. Only applies if
+	nnu : int
+		The number of points to use in the nu array. Only applies if
 		``ed.model = 'HH20'``; for other model types, this is unused. Defaults 
 		to ``400``.
 
@@ -194,7 +194,7 @@ def geologic_history(
 	See Also
 	--------
 
-	isoclump.EDistribution
+	isotopylog.EDistribution
 		The class that contains the activation energy parameters that are
 		to be modeled.
 
@@ -202,16 +202,16 @@ def geologic_history(
 	--------
 
 	Estimate resetting temperatures during heating for an arbitrarily chosen
-	starting isotope composition. This example creates an ``ic.EDistribution``
+	starting isotope composition. This example creates an ``ipl.EDistribution``
 	instance by importing literature values of the 'SE15' model type, and 
 	plots results::
 
 		#import packages
-		import isoclump as ic
+		import isotopylog as ipl
 		import matplotlib.pyplot as plt
 
 		#generate EDistribution instance
-		ed = ic.EDistribution.from_literature(
+		ed = ipl.EDistribution.from_literature(
 			mineral = 'calcite', 
 			reference = 'SE15', 
 			Tref = 700)
@@ -232,10 +232,10 @@ def geologic_history(
 		t = np.linspace(t0, tf, nt)
 
 		#now calculate D at each time point
-		D, Dstd = ic.geologic_history(t, T, ed, d0, d0_std = d0_std)
+		D, Dstd = ipl.geologic_history(t, T, ed, d0, d0_std = d0_std)
 
 		#plot results, along with equilibrium D at each time point
-		Deq = ic.Deq_from_T(T)
+		Deq = ipl.Deq_from_T(T)
 		tmyr = t/(1e6*365*24*3600) #getting t in Myr for plotting
 
 		fig,ax = plt.subplots(1,1)
@@ -262,11 +262,11 @@ def geologic_history(
 		Deq = Deq[::-1]
 
 		#make D0 in equilibrium
-		D0 = ic.Deq_from_T(T[0])
+		D0 = ipl.Deq_from_T(T[0])
 		d0 = [D0, 0, 0] #still d13C and d18O of zero
 
 		#fit the new t-T trajectory
-		D, Dstd = ic.geologic_history(t, T, ed, d0, d0_std = d0_std)
+		D, Dstd = ipl.geologic_history(t, T, ed, d0, d0_std = d0_std)
 
 		#plot the results
 		fig,ax = plt.subplots(1,1)
@@ -392,7 +392,7 @@ def geologic_history(
 			Deq,
 			T,
 			Tref,
-			nlam = nlam)
+			nnu = nnu)
 
 	#Passey and Henkes 2012 model
 	elif ed.model == 'PH12':
@@ -478,4 +478,4 @@ def geologic_history(
 
 
 if __name__ == '__main__':
-	import isoclump as ic
+	import isotopylog as ipl

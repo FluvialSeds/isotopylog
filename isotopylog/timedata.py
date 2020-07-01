@@ -33,7 +33,7 @@ from .calc_funcs import(
 	_calc_A,
 	)
 
-#import necessary isoclump timedata helper functions
+#import necessary isotopylog timedata helper functions
 from .timedata_helper import(
 	_calc_D_from_G,
 	_calc_G_from_D,
@@ -42,7 +42,7 @@ from .timedata_helper import(
 	_read_csv,
 	)
 
-#import necessary isoclump dictionaries
+#import necessary isotopylog dictionaries
 from .dictionaries import(
 	caleqs,
 	clump_isos,
@@ -184,7 +184,7 @@ class HeatingExperiment(object):
 	See Also
 	--------
 
-	isoclump.kDistribution
+	isotopylog.kDistribution
 		The class for extracting and visualizing rate data from a given 
 		``HeatingExperiment`` instance.
 
@@ -195,7 +195,7 @@ class HeatingExperiment(object):
 	actual data::
 
 		#import packages
-		import isoclump as ic
+		import isotopylog as ipl
 		import numpy as np
 
 		#make arbitrary dex, T, and tex
@@ -204,7 +204,7 @@ class HeatingExperiment(object):
 		T = 450 + 273.15 #get to K
 
 		#make instance
-		he = ic.HeatingExperiment(dex, T, tex)
+		he = ipl.HeatingExperiment(dex, T, tex)
 
 	Generating a HeatingExperiment instance by extracting data from a csv
 	file::
@@ -213,10 +213,10 @@ class HeatingExperiment(object):
 		file = 'string_with_file_name.csv'
 
 		#make HeatingExperiment instance without culling data
-		he = ic.HeatingExperiment.from_csv(file, culled = False)
+		he = ipl.HeatingExperiment.from_csv(file, culled = False)
 
 		#or, cull the data that are too close to equilibrium (see PH12)
-		he = ic.HeatingExperiment.from_csv(file, culled = True, cull_sig = 1)
+		he = ipl.HeatingExperiment.from_csv(file, culled = True, cull_sig = 1)
 
 	Forward modeling some rate data::
 
@@ -314,7 +314,7 @@ class HeatingExperiment(object):
 
 		Returns
 		-------
-		he : isoclump.HeatingExperiment
+		he : isotopylog.HeatingExperiment
 			The ``HeatingExperiment`` object.
 		'''
 
@@ -406,7 +406,7 @@ class HeatingExperiment(object):
 
 		Returns
 		-------
-		he : isoclump.HeatingExperiment
+		he : isotopylog.HeatingExperiment
 			The ``HeatingExperiment`` object.
 
 		Raises
@@ -438,7 +438,7 @@ class HeatingExperiment(object):
 		See Also
 		--------
 
-		isoclump.HeatingExperiment
+		isotopylog.HeatingExperiment
 			The HeatingExperiment class that is created by this function.
 
 		Examples
@@ -451,10 +451,10 @@ class HeatingExperiment(object):
 			file = 'string_with_file_name.csv'
 
 			#make HeatingExperiment instance without culling data
-			he = ic.HeatingExperiment.from_csv(file, culled = False)
+			he = ipl.HeatingExperiment.from_csv(file, culled = False)
 
 			#or, cull the data that are too close to equilibrium (see PH12)
-			he = ic.HeatingExperiment.from_csv(
+			he = ipl.HeatingExperiment.from_csv(
 				file, 
 				culled = True, 
 				cull_sig = 1 #can make higher for a more liberal cutoff
@@ -502,8 +502,8 @@ class HeatingExperiment(object):
 		Parameters
 		----------
 
-		kd : isoclump.kDistribution
-			The ``ic.kDistribution`` instance containing the rate model used
+		kd : isotopylog.kDistribution
+			The ``ipl.kDistribution`` instance containing the rate model used
 			to fit the data.
 
 		nt : int
@@ -518,8 +518,8 @@ class HeatingExperiment(object):
 		Returns
 		-------
 
-		he : isoclump.HeatingExperiment
-			The updated ``ic.HeatingExperiment`` instance, now containing
+		he : isotopylog.HeatingExperiment
+			The updated ``ipl.HeatingExperiment`` instance, now containing
 			forward-modeled clumped isotope and reaction progressestimates.
 
 		Notes
@@ -533,7 +533,7 @@ class HeatingExperiment(object):
 		See Also
 		--------
 
-		isoclump.kDistribution
+		isotopylog.kDistribution
 			The class containing all rate data that are to be forward-modeled.
 
 		Examples
@@ -577,11 +577,11 @@ class HeatingExperiment(object):
 			setattr(self, k, v)
 
 		#additionally, store regularized inverse forward model if it exists
-		if kd.model == 'HH20' and kd.rho_lam_inv is not None:
+		if kd.model == 'HH20' and kd.rho_nu_inv is not None:
 
 			#calculate G
-			A = _calc_A(t, kd.lam)
-			self._Ginv = np.inner(A, kd.rho_lam_inv)
+			A = _calc_A(t, kd.nu)
+			self._Ginv = np.inner(A, kd.rho_nu_inv)
 
 			#convert to D
 			self._Dinv, _ = _calc_D_from_G(
@@ -676,10 +676,10 @@ class HeatingExperiment(object):
 		See Also
 		--------
 
-		isoclump.kDistribution.plot()
+		isotopylog.kDistribution.plot()
 			Plotting function for the ``kDistribution`` class.
 
-		isoclump.EDistribution.plot()
+		isotopylog.EDistribution.plot()
 			Plotting function for the ``EDistribution`` class.
 
 		Examples
@@ -1400,4 +1400,4 @@ class HeatingExperiment(object):
 		self._T_std = value	
 	
 if __name__ == '__main__':
-	import isoclump as ic
+	import isotopylog as ipl

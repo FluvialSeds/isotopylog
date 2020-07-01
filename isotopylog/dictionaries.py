@@ -205,4 +205,4 @@ for r, rdf in kdf.groupby(level = 0):
 
 
 if __name__ == '__main__':
-	import isoclump as ic
+	import isotopylog as ipl

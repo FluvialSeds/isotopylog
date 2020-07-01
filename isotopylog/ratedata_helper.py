@@ -40,7 +40,7 @@ from scipy.optimize import (
 # #import signal processing functions
 from scipy.signal import argrelmax
 
-#import necessary isoclump calculation and fitting functions
+#import necessary isotopylog calculation and fitting functions
 from .calc_funcs import(
 	_calc_A,
 	_calc_R,
@@ -55,12 +55,12 @@ from .calc_funcs import(
 	_fHH20,
 	)
 
-#import necessary isoclump core functions
+#import necessary isotopylog core functions
 from .core_functions import(
 	derivatize,
 	)
 
-#import necessary isoclump timedata helper functions
+#import necessary isotopylog timedata helper functions
 from .timedata_helper import(
 	_calc_D_from_G,
 	)
@@ -73,9 +73,9 @@ def calc_L_curve(
 	he,
 	ax = None,
 	kink = 1,
-	lam_max = 10, 
-	lam_min = -50, 
-	nlam = 300,
+	nu_max = 10, 
+	nu_min = -50, 
+	nnu = 300,
 	nom = 150,
 	omega_max = 1e2, 
 	omega_min = 1e-2,
@@ -92,8 +92,8 @@ def calc_L_curve(
 	Parameters
 	----------
 
-	he : isoclump.HeatingExperiment
-		``ic.HeatingExperiment`` instance containing the D data to be modeled.
+	he : isotopylog.HeatingExperiment
+		``ipl.HeatingExperiment`` instance containing the D data to be modeled.
 
 	ax : Non` or plt.axis
 		Matplotlib axis to plot on, only relevant if ``plot = True``.
@@ -104,16 +104,16 @@ def calc_L_curve(
 		for the lower kink and `2` for the upper kink. Without fail, the lower
 		kink appears to be a significantly more robust fit.
 
-	lam_max : scalar
-		Maximum lambda value for distribution range; should be at least 4 sigma
+	nu_max : scalar
+		Maximum nu value for distribution range; should be at least 4 sigma
 		above the mean; defaults to `30`.
 
-	lam_min : scalar
-		Minimum lambda value for distribution range; should be at least 4 sigma
+	nu_min : scalar
+		Minimum nu value for distribution range; should be at least 4 sigma
 		below the mean; defaults to `-30`.
 
-	nlam : int
-		Number of nodes in lambda array.
+	nnu : int
+		Number of nodes in nu array.
 
 	nom : int
 		Number of nodes on omega array.
@@ -150,7 +150,7 @@ def calc_L_curve(
 	See Also
 	--------
 
-	isoclump.fit_HH20inv
+	isotopylog.fit_HH20inv
 		Method for fitting heating experiment data using the L-curve approach
 		of Hemingway and Henkes (2020).
 
@@ -161,14 +161,14 @@ def calc_L_curve(
 	Examples
 	--------
 
-	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
+	Basic implementation, assuming a `ipl.HeatingExperiment` instance `he`
 	exists::
 		
 		#import modules
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assume he is a HeatingExperiment instance
-		om_best = ic.calc_L_curve(he, plot = False)
+		om_best = ipl.calc_L_curve(he, plot = False)
 
 	Similar implementation, but now also generating a plot of the resulting
 	L-curve::
@@ -184,7 +184,7 @@ def calc_L_curve(
 		pd = {'s' : 200, 'color' : 'k'}
 
 		#assume he is a HeatingExperiment instance
-		om_best, ax = ic.calc_L_curve(
+		om_best, ax = ipl.calc_L_curve(
 			he, 
 			ax = ax, 
 			plot = True,
@@ -205,7 +205,7 @@ def calc_L_curve(
 	#extract arrays
 	tex = he.tex
 	Gex = he.Gex
-	lam = np.linspace(lam_min, lam_max, nlam)
+	nu = np.linspace(nu_min, nu_max, nnu)
 	nt = len(tex)
 
 	#define additional arrays
@@ -221,9 +221,9 @@ def calc_L_curve(
 		#call the inverse fit parent function
 		_, _, res_inv, rgh_inv = fit_HH20inv(
 			he, 
-			lam_max = lam_max,
-			lam_min = lam_min,
-			nlam = nlam,
+			nu_max = nu_max,
+			nu_min = nu_min,
+			nnu = nnu,
 			omega = w
 			)
 
@@ -390,7 +390,7 @@ def fit_Arrhenius(
 	See Also
 	--------
 
-	isoclump.EDistribution
+	isotopylog.EDistribution
 		The class for performing all activation energy based calculations.
 
 	Examples
@@ -400,10 +400,10 @@ def fit_Arrhenius(
 	some temperature range::
 		
 		#import modules
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assume T and lnk exist
-		results = ic.fit_Arrhenius(T, lnk)
+		results = ipl.fit_Arrhenius(T, lnk)
 
 	References
 	----------
@@ -469,8 +469,8 @@ def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 	Parameters
 	----------
 
-	he : isoclump.HeatingExperiment
-		`ic.HeatingExperiment` instance containing the D data to be modeled.
+	he : isotopylog.HeatingExperiment
+		`ipl.HeatingExperiment` instance containing the D data to be modeled.
 
 	logy : Boolean
 		Tells the function whether or not to calculate fits using the natural
@@ -512,16 +512,16 @@ def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 	See Also
 	--------
 
-	isoclump.fit_HH20
+	isotopylog.fit_HH20
 		Method for fitting heating experiment data using the distributed
 		activation energy model of Hemingway and Henkes (2020).
 
-	isoclump.fit_PH12
+	isotopylog.fit_PH12
 		Method for fitting heating experiment data using the pseudo first-
 		order method of Passey and Henkes (2012). Called to determine
 		linear region.
 
-	isoclump.fit_SE15
+	isotopylog.fit_SE15
 		Method for fitting heatinge experiment data using the paird diffusion
 		model of Stolper and Eiler (2015).
 
@@ -532,14 +532,14 @@ def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 	Examples
 	--------
 
-	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
+	Basic implementation, assuming a `ipl.HeatingExperiment` instance `he`
 	exists::
 		
 		#import modules
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assume he is a HeatingExperiment instance
-		results = ic.fit_Hea14(he, p0 = [-7., -7., -7.])
+		results = ipl.fit_Hea14(he, p0 = [-7., -7., -7.])
 
 	References
 	----------
@@ -598,28 +598,28 @@ def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 	return params, params_cov, rmse, npt
 
 #function to fit data using HH20 lognormal model
-def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
+def fit_HH20(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 	'''
 	Fits D evolution data using the distributed activation energy model of
-	Hemingway and Henkes (2020). This function solves for mu_lam and sig_lam,
+	Hemingway and Henkes (2020). This function solves for mu_nu and sig_nu,
 	the mean and standard deviation of a Gaussian distribution in lnk space.
 	See HH20 Eq. X for notation and details.
 
 	Parameters
 	----------
 
-	he : isoclump.HeatingExperiment
-		``ic.HeatingExperiment`` instance containing the D data to be modeled.
+	he : isotopylog.HeatingExperiment
+		``ipl.HeatingExperiment`` instance containing the D data to be modeled.
 
-	lam_max : float
+	nu_max : float
 		The maximum lnk value to consider. Defaults to ``10``.
 
-	lam_min : float
+	nu_min : float
 		The minimum lnk value to consider. Defaults to ``-50``.
 
-	nlam : int
-		The number of lam values in the array such that
-		dlam = (lam_max - lam_min)/nlam. Defaults to ``300``.
+	nnu : int
+		The number of nu values in the array such that
+		dnu = (nu_max - nu_min)/nnu. Defaults to ``300``.
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
@@ -643,38 +643,38 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	npt : int
 		Number of data points included in the model solution.
 
-	lam : np.ndarray
-		The array of lam values used for calcualtions, of length `nlam` and
-		ranging from `lam_min` to `lam_max`.
+	nu : np.ndarray
+		The array of nu values used for calcualtions, of length `nnu` and
+		ranging from `nu_min` to `nu_max`.
 
-	rho_lam : np.ndarray
-		The array of corresponding Gaussian rho_lam values.
+	rho_nu : np.ndarray
+		The array of corresponding Gaussian rho_nu values.
 
 	Notes
 	-----
 
-	Results are bounded such that mu_lam is between lam_min and lam_max; sig_lam
-	<= (lam_max - lam_min)/2. All calculations are done in G space and thus
+	Results are bounded such that mu_nu is between nu_min and nu_max; sig_nu
+	<= (nu_max - nu_min)/2. All calculations are done in G space and thus
 	only depend on relative changes in D47.
 
 	See Also
 	--------
 
-	isoclump.fit_Hea14
+	isotopylog.fit_Hea14
 		Method for fitting heating experiment data using the transient defect/
 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
 		an updated version of the present method.
 
-	isoclump.fit_HH20inv
+	isotopylog.fit_HH20inv
 		Method for fitting heating experiment data using the L-curve approach
 		of Hemingway and Henkes (2020).
 
-	isoclump.fit_PH12
+	isotopylog.fit_PH12
 		Method for fitting heating experiment data using the pseudo first-
 		order method of Passey and Henkes (2012). Called to determine
 		linear region.
 
-	isoclump.fit_SE15
+	isotopylog.fit_SE15
 		Method for fitting heatinge experiment data using the paird diffusion
 		model of Stolper and Eiler (2015).
 
@@ -685,14 +685,14 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	Examples
 	--------
 
-	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
+	Basic implementation, assuming a `ipl.HeatingExperiment` instance `he`
 	exists::
 		
 		#import modules
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assume he is a HeatingExperiment instance
-		results = ic.fit_HH20(he)
+		results = ipl.fit_HH20(he)
 
 	References
 	----------
@@ -706,30 +706,30 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	y_std = he.Gex_std
 	npt = len(x)
 
-	#make lam array
-	# dlam = (lam_max - lam_min)/nlam
-	lam = np.linspace(lam_min, lam_max, nlam)
+	#make nu array
+	# dnu = (nu_max - nu_min)/nnu
+	nu = np.linspace(nu_min, nu_max, nnu)
 
 	#fit model to lambda function to allow inputting constants
-	lamfunc = lambda x, mu_lam, sig_lam: _fHH20(
+	lamfunc = lambda x, mu_nu, sig_nu: _fHH20(
 		x, 
-		mu_lam, 
-		sig_lam, 
-		lam_max,
-		lam_min,
-		nlam
+		mu_nu, 
+		sig_nu, 
+		nu_max,
+		nu_min,
+		nnu
 		)
 
 	#solve
-	sig_max = (lam_max - lam_min)/2
+	sig_max = (nu_max - nu_min)/2
 	params, params_cov = curve_fit(lamfunc, x, y, p0,
 		sigma = y_std, 
 		absolute_sigma = abs_sig,
-		bounds = ([lam_min, 0.],[lam_max, sig_max]), #mu, sig must be in range
+		bounds = ([nu_min, 0.],[nu_max, sig_max]), #mu, sig must be in range
 		)
 
-	#calculate rho_lam array
-	rho_lam = _Gaussian(lam, *params)
+	#calculate rho_nu array
+	rho_nu = _Gaussian(nu, *params)
 
 	#calculate Gex_hat
 	Ghat = lamfunc(x, *params)
@@ -749,21 +749,21 @@ def fit_HH20(he, lam_max = 10, lam_min = -50, nlam = 300, p0 = [-20, 5]):
 	#calcualte RMSE
 	rmse = _calc_rmse(he.dex[:,0], D47hat)
 
-	return params, params_cov, rmse, npt, lam, rho_lam
+	return params, params_cov, rmse, npt, nu, rho_nu
 
 #function to fit data using the HH20 inverse model
 def fit_HH20inv(
 	he,
-	lam_max = 10,
-	lam_min = -50,
-	nlam = 300,
+	nu_max = 10,
+	nu_min = -50,
+	nnu = 300,
 	non_neg = True,
 	omega = 'auto',
 	**kwargs
 	):
 	'''
 	Fits D evolution data using the distributed activation energy model of
-	Hemingway and Henkes (2020). This function solves for rho_lam, the
+	Hemingway and Henkes (2020). This function solves for rho_nu, the
 	regularized distribution of rates in lnk space. See HH20 Eq. X for
 	notation and details. This function can estimate best-fit omega using
 	Tikhonov regularization.
@@ -771,18 +771,18 @@ def fit_HH20inv(
 	Parameters
 	----------
 
-	he : isoclump.HeatingExperiment
-		`ic.HeatingExperiment` instance containing the D data to be modeled.
+	he : isotopylog.HeatingExperiment
+		`ipl.HeatingExperiment` instance containing the D data to be modeled.
 
-	lam_max : float
+	nu_max : float
 		The maximum lnk value to consider. Defaults to `10`.
 
-	lam_min : float
+	nu_min : float
 		The minimum lnk value to consider. Defaults to `-50`.
 
-	nlam : int
-		The number of lam values in the array such that
-		dlam = (lam_max - lam_min)/nlam. Defaults to `300`.
+	nnu : int
+		The number of nu values in the array such that
+		dnu = (nu_max - nu_min)/nnu. Defaults to `300`.
 
 	non_neg : boolean
 		Tells the function whether or not to constrain the solution to be
@@ -796,8 +796,8 @@ def fit_HH20inv(
 	Returns
 	-------
 
-	rho_lam_inv : array-like
-		Resulting regularized rho distribution, of length `n_lam`.
+	rho_nu_inv : array-like
+		Resulting regularized rho distribution, of length `n_nu`.
 
 	omega : float
 		If inputed `omega = 'auto'`, then this is the best-fit omega value.
@@ -822,7 +822,7 @@ def fit_HH20inv(
 	See Also
 	--------
 
-	isoclump.fit_HH20
+	isotopylog.fit_HH20
 		Method for fitting heating experiment data using the lognormal model
 		of Hemingway and Henkes (2020).
 
@@ -833,25 +833,25 @@ def fit_HH20inv(
 	Examples
 	--------
 
-	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
+	Basic implementation, assuming a `ipl.HeatingExperiment` instance `he`
 	exists::
 		
 		#import modules
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assume he is a HeatingExperiment instance
-		results = ic.fit_HH20inv(he, omega = 'auto')
+		results = ipl.fit_HH20inv(he, omega = 'auto')
 
 	Same implementation, but if best-fit `omega` is known a priori::
 
 		#import modules
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assume best-fit omega is 3
 		omega = 3
 
 		#assume he is a HeatingExperiment instance
-		results = ic.fit_HH20inv(he, omega = 3)
+		results = ipl.fit_HH20inv(he, omega = 3)
 
 	References
 	----------
@@ -863,14 +863,14 @@ def fit_HH20inv(
 	#extract variables
 	tex = he.tex
 	Gex = he.Gex
-	lam = np.linspace(lam_min, lam_max, nlam)
+	nu = np.linspace(nu_min, nu_max, nnu)
 	nt = len(tex)
 
 	#calculate A matrix
-	A = _calc_A(tex, lam)
+	A = _calc_A(tex, nu)
 	
 	#calculate regularization matrix, R
-	R = _calc_R(nlam)
+	R = _calc_R(nnu)
 	
 	#calculate omega using L curve if necessary:
 	if omega in ['auto', 'Auto']:
@@ -878,9 +878,9 @@ def fit_HH20inv(
 		#run L curve function to calculate best-fit omega
 		omega = calc_L_curve(
 			he,
-			lam_max = lam_max,
-			lam_min = lam_min,
-			nlam = nlam,
+			nu_max = nu_max,
+			nu_min = nu_min,
+			nnu = nnu,
 			plot = False,
 			**kwargs
 			)
@@ -903,24 +903,24 @@ def fit_HH20inv(
 		(A, R*omega))
 
 	Gex_reg = np.concatenate(
-		(Gex, np.zeros(nlam + 1)))
+		(Gex, np.zeros(nnu + 1)))
 
 	#calculate inverse results and estimated G
 	if non_neg is True:
-		rho_lam_inv, _ = nnls(A_reg, Gex_reg)
+		rho_nu_inv, _ = nnls(A_reg, Gex_reg)
 
 	else:
 		res = lsq_linear(A_reg, Gex_reg)
-		rho_lam_inv = res.x
+		rho_nu_inv = res.x
 
-	Ghat = np.inner(A, rho_lam_inv)
-	rgh = np.inner(R, rho_lam_inv)
+	Ghat = np.inner(A, rho_nu_inv)
+	rgh = np.inner(R, rho_nu_inv)
 
 	#calculate errors
 	res_inv = norm(Gex - Ghat)/nt**0.5
-	rgh_inv = norm(rgh)/nlam**0.5
+	rgh_inv = norm(rgh)/nnu**0.5
 
-	return rho_lam_inv, omega, res_inv, rgh_inv
+	return rho_nu_inv, omega, res_inv, rgh_inv
 
 #function to fit data using PH12 model
 def fit_PH12(he, logy = True, p0 = [-10., 0.5], thresh = 1e-10):
@@ -932,8 +932,8 @@ def fit_PH12(he, logy = True, p0 = [-10., 0.5], thresh = 1e-10):
 	Parameters
 	----------
 
-	he : isoclump.HeatingExperiment
-		`ic.HeatingExperiment` instance containing the D data to be modeled.
+	he : isotopylog.HeatingExperiment
+		`ipl.HeatingExperiment` instance containing the D data to be modeled.
 
 	logy : Boolean
 		Tells the function whether or not to calculate fits using the natural
@@ -988,34 +988,34 @@ def fit_PH12(he, logy = True, p0 = [-10., 0.5], thresh = 1e-10):
 	See Also
 	--------
 
-	isoclump.fit_Hea14
+	isotopylog.fit_Hea14
 		Method for fitting heating experiment data using the transient defect/
 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
 		an updated version of the present method.
 
-	isoclump.fit_HH20
+	isotopylog.fit_HH20
 		Method for fitting heating experiment data using the distributed
 		activation energy model of Hemingway and Henkes (2020).
 
-	isoclump.fit_SE15
+	isotopylog.fit_SE15
 		Method for fitting heatinge experiment data using the paird diffusion
 		model of Stolper and Eiler (2015).
 
-	isoclump.kDistribution.invert_experiment
+	isotopylog.kDistribution.invert_experiment
 		Method for generating a ``kDistribution`` instance from experimental
 		data.
 
 	Examples
 	--------
 
-	Basic implementation, assuming a ``ic.HeatingExperiment`` instance ``he``
+	Basic implementation, assuming a ``ipl.HeatingExperiment`` instance ``he``
 	exists::
 		
 		#import modules
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assume he is a HeatingExperiment instance
-		results = ic.fit_PH12(he, thresh = 1e-6)
+		results = ipl.fit_PH12(he, thresh = 1e-6)
 
 	References
 	----------
@@ -1102,8 +1102,8 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 	Parameters
 	----------
 
-	he : isoclump.HeatingExperiment
-		`ic.HeatingExperiment` instance containing the D data to be modeled.
+	he : isotopylog.HeatingExperiment
+		`ipl.HeatingExperiment` instance containing the D data to be modeled.
 
 	p0 : array-like
 		Array of paramter guess to initialize the fitting algorithm, in the
@@ -1163,16 +1163,16 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 	See Also
 	--------
 
-	isoclump.fit_Hea14
+	isotopylog.fit_Hea14
 		Method for fitting heating experiment data using the transient defect/
 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
 		an updated version of the present method.
 
-	isoclump.fit_HH20
+	isotopylog.fit_HH20
 		Method for fitting heating experiment data using the distributed
 		activation energy model of Hemingway and Henkes (2020).
 
-	isoclump.fit_PH12
+	isotopylog.fit_PH12
 		Method for fitting heating experiment data using the pseudo first-
 		order method of Passey and Henkes (2012). Called to determine
 		linear region.
@@ -1184,22 +1184,22 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 	Examples
 	--------
 
-	Basic implementation, assuming a `ic.HeatingExperiment` instance `he`
+	Basic implementation, assuming a `ipl.HeatingExperiment` instance `he`
 	exists::
 		
 		#import modules
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assume some a priori guess at p0; results may be sensitive to choice
 		# of p0 as described in SE15
 		p0 = [-7., -9., 0.1]
 
 		#assume he is a HeatingExperiment instance
-		results = ic.fit_SE15(he, p0 = p0)
+		results = ipl.fit_SE15(he, p0 = p0)
 
 	Same as above, but now constraining mp to be equal to the SE15 value::
 
-		results = ic.fit_SE15(he, p0 = p0, mp = 0.0992)
+		results = ipl.fit_SE15(he, p0 = p0, mp = 0.0992)
 
 	References
 	----------
@@ -1295,4 +1295,4 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 	return params, params_cov, rmse, npt
 
 if __name__ == '__main__':
-	import isoclump as ic
+	import isotopylog as ipl

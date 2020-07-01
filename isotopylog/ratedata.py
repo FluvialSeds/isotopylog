@@ -70,8 +70,8 @@ class kDistribution(object):
 		The type of model associated with a given kDistribution. Options are:
 		``'Hea14'``, ``'HH20'``, ``'PH12'``, or ``'SE15'``.
 
-	lam : None or array-like
-		The ln(k) values over which the rate distribution is calculated. ``lam``
+	nu : None or array-like
+		The ln(k) values over which the rate distribution is calculated. ``nu``
 		only applies when ``model = 'HH20'``. Defaults to ``None``.
 
 	npt : None or int
@@ -90,13 +90,13 @@ class kDistribution(object):
 		The +/- 1 sigma uncertainty for each parameter is calculated as
 		``np.sqrt(np.diag(params_cov))``. Defaults to ``None``.
 
-	rho_lam : None or array-like
+	rho_nu : None or array-like
 		The modeled lognormal probability density function of ln(k) values.
-		``rho_lam`` only applies when ``model = 'HH20'``. Defaults to ``None``.
+		``rho_nu`` only applies when ``model = 'HH20'``. Defaults to ``None``.
 
-	rho_lam_inv : None or array-like
+	rho_nu_inv : None or array-like
 		The modeled inverse probability density function of ln(k) values
-		calculated using Tikhonov regularization. ``rho_lam_inv`` only applies
+		calculated using Tikhonov regularization. ``rho_nu_inv`` only applies
 		when ``model = 'HH20'`` and ``fit_reg = True``. Defaults to ``None``.
 
 	res_inv : None or float
@@ -127,11 +127,11 @@ class kDistribution(object):
 	See Also
 	--------
 
-	isoclump.EDistribution
+	isotopylog.EDistribution
 		The class for combining multiple ``kDistribution`` instances and
 		determining the underlying activation energies.
 
-	isoclump.HeatingExperiment
+	isotopylog.HeatingExperiment
 		The class containing heating experiment clumped isotope data whose
 		rate data are determined.
 
@@ -142,37 +142,37 @@ class kDistribution(object):
 	actual data::
 
 		#import packages
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assume some values for HH20 model parameters
 		params = [-14., 5.]
 
 		#make instance
-		kd = ic.kDistribution(params, 'HH20')
+		kd = ipl.kDistribution(params, 'HH20')
 
 	Assuming some EDistribution instance exists, rate data can be calculated
 	simply as::
 
 		#import packages
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#say, calculate data at 425 C
 		T = 425 + 273.15
 
 		#assuming EDistribution instance, ed
-		kd = ic.kDistribution.from_EDistribution(ed, T)
+		kd = ipl.kDistribution.from_EDistribution(ed, T)
 
 	Alternatively, one can generate a kDistribution instance by fitting some 
 	experimental D47 data contained in a HeatingExperiment object::
 
 		#assume some he is a HeatingExperiment object
-		kd = ic.kDistribution.invert_experiment(he, model = 'PH12')
+		kd = ipl.kDistribution.invert_experiment(he, model = 'PH12')
 
 	Same as above, but now including the Tikhonov regularization inverse fit
 	for 'HH20' model type::
 
 		#assume some he is a HeatingExperiment object
-		kd = ic.kDistribution.invert_experiment(
+		kd = ipl.kDistribution.invert_experiment(
 			he,
 			model = 'HH20',
 			fit_reg = True
@@ -211,12 +211,12 @@ class kDistribution(object):
 
 	#define all the possible attributes for __init__ using _kwattrs
 	_kwattrs = {
-		'lam' : None, 
+		'nu' : None, 
 		'npt' : None, 
 		'omega' : None, 
 		'params_cov' : None, 
-		'rho_lam' : None, 
-		'rho_lam_inv' : None,
+		'rho_nu' : None, 
+		'rho_nu_inv' : None,
 		'res_inv' : None,
 		'rgh_inv' : None,
 		'rmse' : None,
@@ -231,7 +231,7 @@ class kDistribution(object):
 		Returns
 		-------
 
-		kd : isoclump.kDistribution
+		kd : isotopylog.kDistribution
 			The ``kDistribution`` object.
 		'''
 
@@ -297,14 +297,14 @@ class kDistribution(object):
 	def invert_experiment(cls, he, model = 'HH20', fit_reg = False, **kwargs):
 		'''
 		Classmethod for generating a ``kDistribution`` instance directly by
-		inverting a ``ic.HeatingExperiment`` object that contains clumped 
+		inverting a ``ipl.HeatingExperiment`` object that contains clumped 
 		isotope heating experiment data.
 
 		Parameters
 		----------
 
-		he : isoclump.HeatingExperiment
-			The `ic.HeatingExperiment` instance to fit.
+		he : isotopylog.HeatingExperiment
+			The `ipl.HeatingExperiment` instance to fit.
 
 		model : string
 			The type of model associated with a given kDistribution. Options
@@ -329,8 +329,8 @@ class kDistribution(object):
 		Returns
 		-------
 
-		kd : isoclump.kDistribution
-			The resutling `ic.kDistribution` instance containing the fit
+		kd : isotopylog.kDistribution
+			The resutling `ipl.kDistribution` instance containing the fit
 			parameters.
 
 		Raises
@@ -345,20 +345,20 @@ class kDistribution(object):
 		See Also
 		--------
 
-		isoclump.fit_Hea14
+		isotopylog.fit_Hea14
 			Fitting function for Henkes et al. (2014) model.
 
-		isoclump.fit_HH20
+		isotopylog.fit_HH20
 			Fitting function for Hemingway and Henkes (2020) lognormal model.
 
-		isoclump.fit_HH20inv
+		isotopylog.fit_HH20inv
 			Fitting function for Tikhonov regularization inversion model of
 			Hemingway and Henkes (2020).
 
-		isoclump.fit_PH12
+		isotopylog.fit_PH12
 			Fitting function for Passey and Henkes (2012) model.
 
-		isoclump.fit_SE15
+		isotopylog.fit_SE15
 			Fitting function for Stolper and Eiler (2015) model.
 
 		Examples
@@ -368,10 +368,10 @@ class kDistribution(object):
 		data contained in a HeatingExperiment object::
 
 			#import packages
-			import isoclump as ic
+			import isotopylog as ipl
 
 			#assume some he is a HeatingExperiment object
-			kd = ic.kDistribution.invert_experiment(
+			kd = ipl.kDistribution.invert_experiment(
 				he,
 				model = 'PH12',
 				p0 = [-10., 0.5], #passing initial guess for model fit
@@ -382,13 +382,13 @@ class kDistribution(object):
 		fit for 'HH20' model type::
 
 			#assume some he is a HeatingExperiment object
-			kd = ic.kDistribution.invert_experiment(
+			kd = ipl.kDistribution.invert_experiment(
 				he,
 				model = 'HH20',
 				fit_reg = True,
 				omega = 'auto', #passing omega value for model fit
-				lam_min = -30, #passing lambda bounds
-				lam_max = 10
+				nu_min = -30, #passing nu bounds
+				nu_max = 10
 				)	
 
 		References
@@ -432,7 +432,7 @@ class kDistribution(object):
 			if fit_reg is True:
 
 				#fit the model using the inverse function
-				rho_lam_inv, omega, res_inv, rgh_inv = fit_HH20inv(
+				rho_nu_inv, omega, res_inv, rgh_inv = fit_HH20inv(
 					he, 
 					**kwargs
 					)
@@ -444,7 +444,7 @@ class kDistribution(object):
 				kwa = {k : kwargs[k] for k in dict(kwargs) if k in ars}
 
 				#run Gaussian fit
-				params, params_cov, rmse, npt, lam, rho_lam = fit_HH20(
+				params, params_cov, rmse, npt, nu, rho_nu = fit_HH20(
 					he, 
 					**kwa
 					)
@@ -452,13 +452,13 @@ class kDistribution(object):
 			else:
 
 				#run Gaussian fit
-				params, params_cov, rmse, npt, lam, rho_lam = fit_HH20(
+				params, params_cov, rmse, npt, nu, rho_nu = fit_HH20(
 					he, 
 					**kwargs
 					)
 
-				#this model has no rho_lam_inv and associated statistics
-				rho_lam_inv = omega = res_inv = rgh_inv = None
+				#this model has no rho_nu_inv and associated statistics
+				rho_nu_inv = omega = res_inv = rgh_inv = None
 
 		#raise exception if it's not an acceptable string
 		elif isinstance(model, str):
@@ -476,19 +476,19 @@ class kDistribution(object):
 
 		#set HH20 specific attributes to not if model is not HH20
 		if model != 'HH20':
-			lam = omega = rho_lam = rho_lam_inv = res_inv = rgh_inv = None
+			nu = omega = rho_nu = rho_nu_inv = res_inv = rgh_inv = None
 
 		#return class instance
 		return cls(
 			params,
 			model,
 			he.T,
-			lam = lam,
+			nu = nu,
 			npt = npt,
 			omega = omega,
 			params_cov = params_cov,
-			rho_lam = rho_lam,
-			rho_lam_inv = rho_lam_inv,
+			rho_nu = rho_nu,
+			rho_nu_inv = rho_nu_inv,
 			res_inv = res_inv,
 			rgh_inv = rgh_inv,
 			rmse = rmse
@@ -500,14 +500,14 @@ class kDistribution(object):
 	def from_EDistribution(cls, ed, T):
 		'''
 		Classmethod for generating rate data directly from activation energy
-		data. That is, creates ``ic.kDistribution`` at a given temperature
-		using an ``ic.EDistribution`` instance.
+		data. That is, creates ``ipl.kDistribution`` at a given temperature
+		using an ``ipl.EDistribution`` instance.
 
 		Parameters
 		----------
 
-		ed : isoclump.EDistribution
-			The ``ic.EDistribution`` instance containing the activation energy
+		ed : isotopylog.EDistribution
+			The ``ipl.EDistribution`` instance containing the activation energy
 			data of interest.
 
 		T : float
@@ -516,15 +516,15 @@ class kDistribution(object):
 		Returns
 		-------
 
-		kd : isoclump.kDistribution
-			The resutling `ic.kDistribution` instance containing the rate
+		kd : isotopylog.kDistribution
+			The resutling `ipl.kDistribution` instance containing the rate
 			parameters.
 
 		Notes
 		-----
 
 		Uncertainty in resulting kDistribution parameters is highly sensitive
-		to reference temperature in the ``ic.EDistribution`` instance. In order
+		to reference temperature in the ``ipl.EDistribution`` instance. In order
 		to minimize propagated error, it is strongly recommended to use a Tref
 		value that is within the range of experimental T values (that is,
 		interpolate rather than extrapolate in 1/T space).
@@ -532,7 +532,7 @@ class kDistribution(object):
 		See Also
 		--------
 
-		isoclump.EDistribution
+		isotopylog.EDistribution
 			The class for combining multiple ``kDistribution`` instances and
 			determining the underlying activation energies.
 
@@ -543,13 +543,13 @@ class kDistribution(object):
 		simply as::
 
 			#import packages
-			import isoclump as ic
+			import isotopylog as ipl
 
 			#say, calculate data at 425 C
 			T = 425 + 273.15
 
 			#assuming EDistribution instance, ed
-			kd = ic.kDistribution.from_EDistribution(ed, T)
+			kd = ipl.kDistribution.from_EDistribution(ed, T)
 		'''
 
 		#extract relevant data from EDistribution
@@ -608,17 +608,17 @@ class kDistribution(object):
 		See Also
 		--------
 
-		isoclump.EDistribution.plot
+		isotopylog.EDistribution.plot
 			Class method for plotting EDistribution data as Arrhenius plots.
 
 		Examples
 		--------
 
-		Basic implementation, assuming `ic.kDistribution` instance `kd` exists
+		Basic implementation, assuming `ipl.kDistribution` instance `kd` exists
 		and is of 'HH20' model type::
 
 			#import modules
-			import isoclump as ic
+			import isotopylog as ipl
 			import matplotlib.pyplot as plt
 
 			#make figure
@@ -632,7 +632,7 @@ class kDistribution(object):
 		Similar implementation, but now putting in stylistic keyword args::
 
 			#import modules
-			import isoclump as ic
+			import isotopylog as ipl
 			import matplotlib.pyplot as plt
 
 			#make figure
@@ -661,29 +661,29 @@ class kDistribution(object):
 
 		#plot lognormal data
 		ax.plot(
-			self.lam,
-			self.rho_lam,
+			self.nu,
+			self.rho_nu,
 			label = 'lognormal fit',
 			**lnd
 			)
 
 		#plot inverse data if it exists
-		if self.rho_lam_inv is not None:
+		if self.rho_nu_inv is not None:
 
 			#make label
 			invlab = r'inverse model fit ($\omega$ = %.2f)' % self.omega
 
 			#plot data
 			ax.plot(
-				self.lam,
-				self.rho_lam_inv,
+				self.nu,
+				self.rho_nu_inv,
 				label = invlab,
 				**invd
 				)
 
 		#set axis labels
-		ax.set_xlabel(r'$\lambda$ ($time^{-1}$)')
-		ax.set_ylabel(r'$\rho(\lambda)$')
+		ax.set_xlabel(r'$\nu$ ($time^{-1}$)')
+		ax.set_ylabel(r'$\rho(\nu)$')
 
 		#add legend
 		ax.legend(loc = 'best')
@@ -693,18 +693,18 @@ class kDistribution(object):
 
 	#Define @property getters and setters
 	@property
-	def lam(self):
+	def nu(self):
 		'''
 		The ln(k) values over which the rate distribution is calculated.
 		'''
-		return self._lam
+		return self._nu
 
-	@lam.setter
-	def lam(self, value):
+	@nu.setter
+	def nu(self, value):
 		'''
-		Setter for lam
+		Setter for nu
 		'''
-		self._lam = value
+		self._nu = value
 
 	@property
 	def model(self):
@@ -812,33 +812,33 @@ class kDistribution(object):
 		self._params_cov = value
 
 	@property
-	def rho_lam(self):
+	def rho_nu(self):
 		'''
 		The modeled lognormal probability density function of ln(k) values.
 		'''
-		return self._rho_lam
+		return self._rho_nu
 	
-	@rho_lam.setter
-	def rho_lam(self, value):
+	@rho_nu.setter
+	def rho_nu(self, value):
 		'''
-		Setter for rho_lam
+		Setter for rho_nu
 		'''
-		self._rho_lam = value
+		self._rho_nu = value
 
 	@property
-	def rho_lam_inv(self):
+	def rho_nu_inv(self):
 		'''
 		The modeled inverse probability density function of ln(k) values
 		calculated using Tikhonov regularization.
 		'''
-		return self._rho_lam_inv
+		return self._rho_nu_inv
 
-	@rho_lam_inv.setter
-	def rho_lam_inv(self, value):
+	@rho_nu_inv.setter
+	def rho_nu_inv(self, value):
 		'''
-		Setter for rho_lam_inv
+		Setter for rho_nu_inv
 		'''
-		self._rho_lam_inv = value
+		self._rho_nu_inv = value
 
 	@property
 	def res_inv(self):
@@ -956,7 +956,7 @@ class EDistribution(object):
 	----------
 
 	kds : list
-		List of ``isoclump.kDistribution`` objects over which to calculate
+		List of ``isotopylog.kDistribution`` objects over which to calculate
 		activation energies.
 
 	p0 : list
@@ -975,7 +975,7 @@ class EDistribution(object):
 
 	TypeError
 		If attempting to pass kds that is not an iterable list of
-		``isoclump.kDistribution`` and/or ``isoclump.EDistribution`` objects.
+		``isotopylog.kDistribution`` and/or ``isotopylog.EDistribution`` objects.
 
 	ValueError
 		If attempting to create an EDistribution object using kDistributions
@@ -991,13 +991,13 @@ class EDistribution(object):
 
 	For 'SE15' models, E([pair]0/[pair]eq) is forced to an intercept of zero in
 	1/T vs. [pair]0/[pair]eq space, analagous to Stolper and Eiler (2015) Eq. 17.
-	Similarly, for 'HH20' models, sig_lam is forced to an intercept of zero in
-	1/T vs. sig_lam space as discussed in Hemingway and Henkes (2020).
+	Similarly, for 'HH20' models, sig_nu is forced to an intercept of zero in
+	1/T vs. sig_nu space as discussed in Hemingway and Henkes (2020).
 
 	See Also
 	--------
 
-	isoclump.kDistribution
+	isotopylog.kDistribution
 		The class containing rate data for individual experiments that is to be
 		fit using Arrhenius plots.
 
@@ -1007,16 +1007,16 @@ class EDistribution(object):
 	objects::
 
 		#import packages
-		import isoclump as ic
+		import isotopylog as ipl
 
 		#assuming some list, kd_list, contains kDistributions at different T
-		ed = ic.EDistribution(kd_list)
+		ed = ipl.EDistribution(kd_list)
 
 	Alternatively, EDistribution objects can be generated directly from
 	literature values::
 
 		#make EDistribution object
-		ed = ic.EDistribution.from_literature(
+		ed = ipl.EDistribution.from_literature(
 			mineral = 'calcite', 
 			reference = 'PH12'
 			)
@@ -1039,7 +1039,7 @@ class EDistribution(object):
 		ed.drop(0)
 
 	Finally, data can be visualized using Arrhenius plots. For example,
-	assuming `ic.EDistribution` instance `ed` exists and contains data of model 
+	assuming `ipl.EDistribution` instance `ed` exists and contains data of model 
 	type 'HH20'::
 
 		#import additional packages
@@ -1057,7 +1057,7 @@ class EDistribution(object):
 	Similar implementation, but now putting in stylistic keyword args::
 
 		#import modules
-		import isoclump as ic
+		import isotopylog as ipl
 		import matplotlib.pyplot as plt
 
 		#make figure
@@ -1097,7 +1097,7 @@ class EDistribution(object):
 		Returns
 		-------
 
-		ed : isoclump.kDistribution
+		ed : isotopylog.kDistribution
 			The ``EDistribution`` object.
 		'''
 
@@ -1138,7 +1138,7 @@ class EDistribution(object):
 	@classmethod
 	def from_literature(cls, mineral = 'calcite', reference = 'HH20', **kwargs):
 		'''
-		Classmethod for generating an ``ic.EDistribution`` instance directly
+		Classmethod for generating an ``ipl.EDistribution`` instance directly
 		from literature data. This method simply inputs the results of
 		literature model fits; it does not re-calculate rate data using raw
 		literature D data.
@@ -1163,8 +1163,8 @@ class EDistribution(object):
 		Returns
 		-------
 
-		ed : isoclump.EDistribution
-			The ``ic.EDistribution`` object containing all the literature data.
+		ed : isotopylog.EDistribution
+			The ``ipl.EDistribution`` object containing all the literature data.
 
 		Raises
 		------
@@ -1210,10 +1210,10 @@ class EDistribution(object):
 		(2012)::
 
 			#import necessary packages
-			import isoclump as ic
+			import isotopylog as ipl
 
 			#make EDistribution object
-			ed = ic.EDistribution.from_literature(
+			ed = ipl.EDistribution.from_literature(
 				mineral = 'calcite', 
 				reference = 'PH12'
 				)		
@@ -1311,7 +1311,7 @@ class EDistribution(object):
 
 		Parameters
 		----------
-		new_data : isoclump.kDistribution or isoclump.EDistribution
+		new_data : isotopylog.kDistribution or isotopylog.EDistribution
 			The ``kDistribution`` or ``EDistribution`` object containing the
 			new data to be added
 
@@ -1319,7 +1319,7 @@ class EDistribution(object):
 		------
 		TypeError
 			If attempting to add ``new_data`` that is not an instance of either
-			``isoclump.kDistribution`` or ``isoclump.EDistribution``.
+			``isotopylog.kDistribution`` or ``isotopylog.EDistribution``.
 
 		Examples
 		--------
@@ -1462,17 +1462,17 @@ class EDistribution(object):
 		See Also
 		--------
 
-		isoclump.kDistribution.plot
+		isotopylog.kDistribution.plot
 			Class method for plotting rate distributions for 'HH20' model types.
 
 		Examples
 		--------
 
-		Basic implementation, assuming ``ic.EDistribution`` instance ``ed`` 
+		Basic implementation, assuming ``ipl.EDistribution`` instance ``ed`` 
 		exists and contains data of model type 'HH20'::
 
 			#import modules
-			import isoclump as ic
+			import isotopylog as ipl
 			import matplotlib.pyplot as plt
 
 			#make figure
@@ -1487,7 +1487,7 @@ class EDistribution(object):
 		Similar implementation, but now putting in stylistic keyword args::
 
 			#import modules
-			import isoclump as ic
+			import isotopylog as ipl
 			import matplotlib.pyplot as plt
 
 			#make figure
@@ -1629,7 +1629,7 @@ class EDistribution(object):
 	@property
 	def kds(self):
 		'''
-		The list of ``isoclump.kDistribution`` objects on which activation
+		The list of ``isotopylog.kDistribution`` objects on which activation
 		energy values will be calculated.
 		'''
 		return self._kds
@@ -1855,4 +1855,4 @@ class EDistribution(object):
 		return Ts
 
 if __name__ == '__main__':
-	import isoclump as ic
+	import isotopylog as ipl

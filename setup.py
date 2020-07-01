@@ -4,8 +4,8 @@ def readme():
 	with open('README.rst') as f:
 		return f.read()
 
-setup(name='isoclump',
-	version='0.0.2',
+setup(name='isotopylog',
+	version='0.0.4',
 	description='Clumped isotope kinetic analysis',
 	long_description=readme(),
 	classifiers=[
@@ -19,8 +19,8 @@ setup(name='isoclump',
 		'Programming Language :: Python :: 2.7',
 		'Topic :: Scientific/Engineering'
 	],
-	url='https://github.com/FluvialSeds/isoclump',
-	download_url='https://github.com/FluvialSeds/isoclump/tarball/0.0.2',
+	url='https://github.com/FluvialSeds/isotopylog',
+	download_url='https://github.com/FluvialSeds/isotopylog/tarball/0.0.4',
 	keywords=[
 		'geochemistry',
 		'clumped isotopes',
@@ -31,7 +31,7 @@ setup(name='isoclump',
 	author='Jordon D. Hemingway',
 	author_email='jordon_hemingway@fas.harvard.edu',
 	license='GNU GPL Version 3',
-	packages=['isoclump'],
+	packages=['isotopylog'],
 	install_requires=[
 		'matplotlib',
 		'numpy',
