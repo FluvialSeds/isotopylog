@@ -7,11 +7,6 @@ dist/
 # Python egg metadata, regenerated from source files by setuptools.
 /*.egg-info
 
-#csv and xlsx files used for testing purposes
-#actually, keep these since lit data are stored as csv
-#*.csv
-#*.xlsx
-
 #doc builds
 docs/_build/
 docs/_static/
