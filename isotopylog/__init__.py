@@ -1,7 +1,7 @@
 '''
-isoclump was created as a supplement to Hemingway and Henkes (2020) "A 
+isotopylog was created as a supplement to Hemingway and Henkes (2020) "A 
 distributed activation energy model for clumped isotope bond reordering in
-carbonates", *Earth and Planetary Science Letters*, **volume**, pages. It was
+carbonates", *Earth and Planetary Science Letters*, **in review**, pages. It was
 created by:
 
 	Jordon D. Hemingway
@@ -10,13 +10,13 @@ created by:
 
 source code can be found at:
 	
-	https://github.com/FluvialSeds/isoclump
+	https://github.com/FluvialSeds/isotopylog
 
 documentation can be found at:
 
-	http://isoclump.readthedocs.io
+	http://isotopylog.readthedocs.io
 
-Version 0.0.2 is current as of 8 May 2020 and reflects the notation used
+Version 0.0.4 is current as of 1 July 2020 and reflects the notation used
 in Hemingway and Henkes (2020).
 '''
 
@@ -25,7 +25,7 @@ from __future__ import(
 	print_function,
 	)
 
-__version__ = '0.0.2'
+__version__ = '0.0.4'
 
 __docformat__ = 'restructuredtext en'
 

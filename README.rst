@@ -15,7 +15,7 @@ Package Information
   Jordon D. Hemingway (jordon_hemingway@fas.harvard.edu)
 
 :Version:
-  0.0.3
+  0.0.4
 
 :Release:
   1 July 2020
