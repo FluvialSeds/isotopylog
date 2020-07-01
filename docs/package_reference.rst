@@ -1,34 +1,34 @@
 Package Reference Documentation
 ===============================
-The following classes and methods form the `isoclump` package:
+The following classes and methods form the `isotopylog` package:
 
-isoclump classes
-----------------
+isotopylog classes
+------------------
 .. autosummary::
 	:toctree: _generated/
 
-	isoclump.EDistribution
-	isoclump.HeatingExperiment
-	isoclump.kDistribution
+	isotopylog.EDistribution
+	isotopylog.HeatingExperiment
+	isotopylog.kDistribution
 
-isoclump methods
-----------------
+isotopylog methods
+------------------
 .. autosummary::
 	:toctree: _generated/
 
-	isoclump.calc_L_curve
-	isoclump.derivatize
-	isoclump.fit_Arrhenius
-	isoclump.fit_Hea14
-	isoclump.fit_HH20
-	isoclump.fit_HH20inv
-	isoclump.fit_PH12
-	isoclump.fit_SE15
-	isoclump.geologic_history
+	isotopylog.calc_L_curve
+	isotopylog.derivatize
+	isotopylog.fit_Arrhenius
+	isotopylog.fit_Hea14
+	isotopylog.fit_HH20
+	isotopylog.fit_HH20inv
+	isotopylog.fit_PH12
+	isotopylog.fit_SE15
+	isotopylog.geologic_history
 
 References
 ----------
-The following references were used during creation of the core ``isoclump``
+The following references were used during creation of the core ``isotopylog``
 pacakge or provide information regarding the choice of user-inputted parameters.
 
 * Craig (1957) *Geochim. Cosmochim. Ac.*, **12**, 133--149.

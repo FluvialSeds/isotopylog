@@ -1,17 +1,17 @@
 Examples
 ========
 
-The following is a collection of detailed examples highlighting various aspects of the ``isoclump`` functionality, in addition to the basic walkthough shown in the "quick guide". These examples will be updated regularly.
+The following is a collection of detailed examples highlighting various aspects of the ``isotopylog`` functionality, in addition to the basic walkthough shown in the "quick guide". These examples will be updated regularly.
 
 Cooling Plots
 -------------
 
-One way to visualize equilibrium blocking temperature is to generate plots analogous to Figure 12 in Stolper and Eiler (2015). The following code walks through how to generate this plot, which can be done for any of the model types used in ``isoclump``::
+One way to visualize equilibrium blocking temperature is to generate plots analogous to Figure 12 in Stolper and Eiler (2015). The following code walks through how to generate this plot, which can be done for any of the model types used in ``isotopylog``::
 
 	#recreate SE15 Fig. 12
 
 	#import literature E distribution data
-	ed = ic.EDistribution.from_literature(
+	ed = ipl.EDistribution.from_literature(
 		mineral = 'calcite', 
 		reference = 'SE15', 
 		Tref = 700
@@ -24,7 +24,7 @@ One way to visualize equilibrium blocking temperature is to generate plots analo
 	nt = 500
 
 	#input initial isotope composition
-	D0 = ic.Deq_from_T(T0)
+	D0 = ipl.Deq_from_T(T0)
 	d0 = [D0, 0, 0]
 	d0_std = [0.013, 0, 0]
 
@@ -42,10 +42,10 @@ One way to visualize equilibrium blocking temperature is to generate plots analo
 		T = np.linspace(T0, Tf, nt)
 
 		#calculate D at each time step
-		D, Dstd = ic.geologic_history(t, T, ed, d0, d0_std = d0_std)
+		D, Dstd = ipl.geologic_history(t, T, ed, d0, d0_std = d0_std)
 
 		#convert D into apparent temperature
-		Tapp = ic.T_from_Deq(D)
+		Tapp = ipl.T_from_Deq(D)
 
 		#make label text
 		lab = 'cooling rate: %s K/Myr' % beta

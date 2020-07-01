@@ -10,9 +10,9 @@ Downloading the package
 
 Using the ``pip`` package manager
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``isoclump`` and the associated dependencies can be downloaded directly from the command line using ``pip``::
+``isotopylog`` and the associated dependencies can be downloaded directly from the command line using ``pip``::
 
-	$ pip install isoclump
+	$ pip install isotopylog
 
 You can check that your installed version is up to date with the latest release by doing::
 
@@ -21,20 +21,20 @@ You can check that your installed version is up to date with the latest release 
 
 Downloading from source
 ~~~~~~~~~~~~~~~~~~~~~~~
-Alternatively, ``isoclump`` source code can be downloaded directly from `the github repo <http://github.com/FluvialSeds/isoclump>`_. Or, if you have git installed::
+Alternatively, ``isotopylog`` source code can be downloaded directly from `the github repo <http://github.com/FluvialSeds/isotopylog>`_. Or, if you have git installed::
 
-	$ git clone git://github.com/FluvialSeds/isoclump.git
+	$ git clone git://github.com/FluvialSeds/isotopylog.git
 
 And keep up-to-date with the latest version by doing::
 
 	$ git pull
 
-from within the isoclump directory.
+from within the isotopylog directory.
 
 
 Dependencies
 ~~~~~~~~~~~~
-The following packages are required to run ``isoclump``:
+The following packages are required to run ``isotopylog``:
 
 * `python <http://www.python.org>`_ >= 2.7, including Python 3.x
 
@@ -70,7 +70,7 @@ Python IDEs provide a "MATLAB-like" environment as well as package management. T
 Importing Experimental Data
 ---------------------------
 
-If you are using ``isoclump`` to fit reordering rate parameters to new clumped isotope heating experiments, then the first step is to import those data in an appropriate format. This requires making a .csv file that contains the following columns:
+If you are using ``isotopylog`` to fit reordering rate parameters to new clumped isotope heating experiments, then the first step is to import those data in an appropriate format. This requires making a .csv file that contains the following columns:
 
 * t 
 * D47 
@@ -85,21 +85,21 @@ If you are using ``isoclump`` to fit reordering rate parameters to new clumped i
 
 where the first entry contains the initial (unheated) isotope data. The "t" column can contain time points in any units (e.g., seconds, minuts, etc.), and note that the resulting rate data will correspond to the time unit used. The "ref_frame" column contains the reference frame used to generate the clumped isotope data (i.e., "Ghosh25", "Ghosh90", "CDES25", or "CDES90"), whereas the "iso_params" column contains the isotope parameters used to generate the clumped isotope data (typically "Gonfiantini" for older data or "Brand" for recently generated data. See Daëron et al.(2016) for further details).
 
-Once this table is made, it can be easily imported into an ``isoclump.HeatingExperiment`` object::
+Once this table is made, it can be easily imported into an ``isotopylog.HeatingExperiment`` object::
 	
 	#import packages
-	import isoclump as ic
+	import isotopylog as ipl
 
 	#make a string pionting to the file
 	file = '/path/to/data/data_file.csv'
 
 	#import the data to a heatingexperiment object, he
-	he = ic.HeatingExperiment.from_csv(file, culled = False)
+	he = ipl.HeatingExperiment.from_csv(file, culled = False)
 
 Note that users can choose to cull the data such that any measurements within some threshold of the equilibrium value at that temperature are excluded (see Passey and Henkes (2012) for details). The culling threshold is defined by the number of analytical standard deviations away from equilibrium (i.e., if ``cull_thresh = 1``, then any data within 1 sigma of equilibrium is discarded)::
 	
 	#import the data to a heatingexperiment object, he, now culling data
-	he = ic.HeatingExperiment.from_csv(file, culled = True, cull_sig = 1)
+	he = ipl.HeatingExperiment.from_csv(file, culled = True, cull_sig = 1)
 
 Finally, this imported data can be visualized by plotting in various ways::
 	
@@ -129,27 +129,27 @@ Calculating Rate Parameters
 The next step is to fit the heating experiment data with one of the avaialable kinetic models in order to generate rate parameters. This is done as follows::
 	
 	#for fitting the Passey and Henkes 2012 model:
-	kd_ph = ic.kDistribution.invert_experiment(
+	kd_ph = ipl.kDistribution.invert_experiment(
 		he,
 		model = 'PH12',
 		thresh = 1e-8, #needed to determine which points are "linear"
 		)
 
 	#for fitting the Henkes et al. 2012 model:
-	kd_hea = ic.kDistribution.invert_experiment(
+	kd_hea = ipl.kDistribution.invert_experiment(
 		he,
 		model = 'Hea14',
 		)
 
 	#for fitting the Stolper and Eiler (2015) model:
-	kd_se = ic.kDistribution.invert_experiment(
+	kd_se = ipl.kDistribution.invert_experiment(
 		he,
 		model = 'SE15',
 		mp = 0.0992 #can pass a value to force the pair/pair_random slope
 		)
 
 	#finally, for fitting the Hemingway and Henkes (2020) model:
-	kd_hh = ic.kDistribution.invert_experiment(
+	kd_hh = ipl.kDistribution.invert_experiment(
 		he,
 		model = 'HH20',
 		fit_inv = True #include the inversion as well as the lognormal fits
@@ -195,15 +195,15 @@ Calculating Activation Energies
 Calculating From Rate Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once a set of heating experiments performed at a range of temperatures have been imported and their rate parameters have been fit, these can be combined to determine the underlying activation energy values using an Arrhenius approach. ``isoclump`` does this by generating an instance of the ``ic.EDistribution`` class::
+Once a set of heating experiments performed at a range of temperatures have been imported and their rate parameters have been fit, these can be combined to determine the underlying activation energy values using an Arrhenius approach. ``isotopylog`` does this by generating an instance of the ``ipl.EDistribution`` class::
 	
 	#make a list of kd objects (generated as described above)
 	kd_list = [kd1, kd2, kd3, kd4]
 
 	#makde the EDistribution object
-	ed = ic.EDistribution(kd_list)
+	ed = ipl.EDistribution(kd_list)
 
-Similar to the ``ic.kDistribution`` class, these results can be visualized and exported as follows::
+Similar to the ``ipl.kDistribution`` class, these results can be visualized and exported as follows::
 	
 	#to see the data on the command line
 	ed
@@ -215,10 +215,10 @@ Similar to the ``ic.kDistribution`` class, these results can be visualized and e
 Importing and Updating Literature Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It is expected that most ``isoclump`` users will not be generating new heating experiments and calculating their own activation energies, but rather will be using literature values to say something about the geologic history of their natural samples. In this case, ``isoclump`` makes it easy to import literature activation energy estimates and directly create an ``ic.EDistribution`` object containing these data::
+It is expected that most ``isotopylog`` users will not be generating new heating experiments and calculating their own activation energies, but rather will be using literature values to say something about the geologic history of their natural samples. In this case, ``isotopylog`` makes it easy to import literature activation energy estimates and directly create an ``ipl.EDistribution`` object containing these data::
 	
 	#make EDistribution object
-	ed = ic.EDistribution.from_literature(
+	ed = ipl.EDistribution.from_literature(
 		mineral = 'calcite', 
 		reference = 'SE15' #for example, import Stolper and Eiler (2015) data
 		)
@@ -239,7 +239,7 @@ Finally, individual data points (e.g., outliers) can be manually dropped accordi
 Plotting Activation Energies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Furthermore, activation energy Arrhenius plots can be easily visualized. For example, assume we have some ``ic.EDistribution`` object that was fit using the Hemingway and Henkes (2020) model type. Then, we can visualize these results  as follows::
+Furthermore, activation energy Arrhenius plots can be easily visualized. For example, assume we have some ``ipl.EDistribution`` object that was fit using the Hemingway and Henkes (2020) model type. Then, we can visualize these results  as follows::
 
 		#make figure
 		fig, ax = plt.subplots(1,2, sharex = True)
@@ -259,16 +259,16 @@ In addition to modeling activation energies from a set of rate data, one can bac
 	T = 425 + 273.15
 
 	#assuming EDistribution instance, ed
-	kd_from_ed = ic.kDistribution.from_EDistribution(ed, T)
+	kd_from_ed = ipl.kDistribution.from_EDistribution(ed, T)
 
-This ``ic.kDistribution`` object can then be forward-modeled onto heating experiment data (as above) to add another layer of data-model fit visualization. That is, this will give the expected heating experiment evolution as predicted by the activation energy values.
+This ``ipl.kDistribution`` object can then be forward-modeled onto heating experiment data (as above) to add another layer of data-model fit visualization. That is, this will give the expected heating experiment evolution as predicted by the activation energy values.
 
 Determining Geologic Reordering
 -------------------------------
 
-Finally, perhaps the most frequently utilized feature of ``isoclump`` will be the ability to generate clumped isotope evolution plots for any arbitrary time-temperature history. For example, this can be used to assess the likelihood that measured ∆\ :sub:`47`\ values represent primary signals, or if these have been diagenetically overprinted. Similarly, one can estimate geologic cooling rates by evaluating the ∆\ :sub:`47`\ "closure" temperature for geologically heated samples.
+Finally, perhaps the most frequently utilized feature of ``isotopylog`` will be the ability to generate clumped isotope evolution plots for any arbitrary time-temperature history. For example, this can be used to assess the likelihood that measured ∆\ :sub:`47`\ values represent primary signals, or if these have been diagenetically overprinted. Similarly, one can estimate geologic cooling rates by evaluating the ∆\ :sub:`47`\ "closure" temperature for geologically heated samples.
 
-Both of these tasks are trivial in ``isoclump``. For example, overprinting during heating can be calculated as follows::
+Both of these tasks are trivial in ``isotopylog``. For example, overprinting during heating can be calculated as follows::
 
 	#generate EDistribution instance from literature
 	ed = ic.EDistribution.from_literature(
@@ -292,10 +292,10 @@ Both of these tasks are trivial in ``isoclump``. For example, overprinting durin
 	t = np.linspace(t0, tf, nt)
 
 	#now calculate D at each time point
-	D, Dstd = ic.geologic_history(t, T, ed, d0, d0_std = d0_std)
+	D, Dstd = ipl.geologic_history(t, T, ed, d0, d0_std = d0_std)
 
 	#plot results, along with equilibrium D at each time point
-	Deq = ic.Deq_from_T(T)
+	Deq = ipl.Deq_from_T(T)
 	tmyr = t/(1e6*365*24*3600) #getting t in Myr for plotting
 
 	fig,ax = plt.subplots(1,1)
@@ -318,11 +318,11 @@ Similarly, one can estimate cooling closure temperatures. This is identical to t
 		Deq = Deq[::-1]
 
 		#make D0 in equilibrium
-		D0 = ic.Deq_from_T(T[0])
+		D0 = ipl.Deq_from_T(T[0])
 		d0 = [D0, 0, 0] #still d13C and d18O of zero
 
 		#fit the new t-T trajectory
-		D, Dstd = ic.geologic_history(t, T, ed, d0, d0_std = d0_std)
+		D, Dstd = ipl.geologic_history(t, T, ed, d0, d0_std = d0_std)
 
 		#plot the results
 		fig,ax = plt.subplots(1,1)
