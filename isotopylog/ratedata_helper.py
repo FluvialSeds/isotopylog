@@ -100,9 +100,9 @@ def calc_L_curve(
 
 	kink : int
 		Tells the funciton which L-curve "kink" to use; this is a required
-		input since many L-curve solutions appear to have 2 "kinks"; input `1`
-		for the lower kink and `2` for the upper kink. Without fail, the lower
-		kink appears to be a significantly more robust fit.
+		input since some L-curve solutions appear to have 2 "kinks"; input `1`
+		for the highest curvature kink and `2` for the second-highest curvature
+		kink.
 
 	nu_max : scalar
 		Maximum nu value for distribution range; should be at least 4 sigma
@@ -212,8 +212,8 @@ def calc_L_curve(
 	log_om_vec = np.linspace(np.log10(omega_min), np.log10(omega_max), nom)
 	om_vec = 10**log_om_vec
 
-	res_vec = np.zeros(nom)
-	rgh_vec = np.zeros(nom)
+	res_vec_calc = np.zeros(nom)
+	rgh_vec_calc = np.zeros(nom)
 
 	#for each omega value in the vector, calculate the errors
 	for i, w in enumerate(om_vec):
@@ -228,12 +228,12 @@ def calc_L_curve(
 			)
 
 		#store results
-		res_vec[i] = res_inv
-		rgh_vec[i] = rgh_inv
+		res_vec_calc[i] = res_inv
+		rgh_vec_calc[i] = rgh_inv
 
 	#convert to log space
-	res_vec = np.log10(res_vec)
-	rgh_vec = np.log10(rgh_vec)
+	res_vec = np.log10(res_vec_calc)
+	rgh_vec = np.log10(rgh_vec_calc)
 
 	#remove noise after 6 sig figs
 	res_vec = np.around(res_vec, decimals = 6)
@@ -255,8 +255,9 @@ def calc_L_curve(
 	pki = np.argsort(k[pkinds])[::-1][:kink+1] #keep top 2 "kink" points
 	ivals = pkinds[pki]
 
-	#choose either lower or upper kink to keep
-	i = np.sort(ivals)[kink-1]
+	#choose either largest or second largest kink to keep
+	# i = np.sort(ivals)[kink-1]
+	i = ivals[kink-1]
 
 	#extract om_best
 	om_best = om_vec[i]
@@ -805,7 +806,7 @@ def fit_HH20inv(
 		value.
 
 	res_inv : float
-		Root mean square error of the inverse model fit.
+		Root mean square error of the inverse model fit, in D47 units.
 
 	rgh_inv : float
 		Roughness norm of the inverse model fit.
@@ -905,9 +906,17 @@ def fit_HH20inv(
 	Gex_reg = np.concatenate(
 		(Gex, np.zeros(nnu + 1)))
 
+	#concatenate sum to unity constraint
+	dnu = nu[1] - nu[0]
+	nuvec = dnu*np.ones([1,nnu])
+
+	A_reg_unity = np.concatenate((A_reg, nuvec))
+	Gex_reg_unity = np.concatenate((Gex_reg, np.ones(1)))
+
 	#calculate inverse results and estimated G
 	if non_neg is True:
-		rho_nu_inv, _ = nnls(A_reg, Gex_reg)
+		# rho_nu_inv, _ = nnls(A_reg, Gex_reg)
+		rho_nu_inv, _ = nnls(A_reg_unity, Gex_reg_unity)
 
 	else:
 		res = lsq_linear(A_reg, Gex_reg)
@@ -916,8 +925,21 @@ def fit_HH20inv(
 	Ghat = np.inner(A, rho_nu_inv)
 	rgh = np.inner(R, rho_nu_inv)
 
+	#convert to D47
+	D47hat, _ = _calc_D_from_G(
+		he.dex[0,0],
+		Ghat,
+		he.T,
+		# calibration = he.calibration,
+		he.caleq,
+		clumps = he.clumps,
+		G_std = None,
+		ref_frame = he.ref_frame
+		)
+
 	#calculate errors
-	res_inv = norm(Gex - Ghat)/nt**0.5
+	# res_inv = norm(Gex - Ghat)/nt**0.5
+	res_inv = _calc_rmse(he.dex[:,0], D47hat)
 	rgh_inv = norm(rgh)/nnu**0.5
 
 	return rho_nu_inv, omega, res_inv, rgh_inv

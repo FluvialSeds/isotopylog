@@ -100,9 +100,9 @@ class kDistribution(object):
 		when ``model = 'HH20'`` and ``fit_reg = True``. Defaults to ``None``.
 
 	res_inv : None or float
-		The residual norm the Tikhonov regularization model-data fit. ``res_inv``
-		only applies when ``model = 'HH20'`` and ``fit_reg = True``. Defaults to
-		``None``.
+		The residual norm the Tikhonov regularization model-data fit, in D47
+		units. ``res_inv`` only applies when ``model = 'HH20'`` and 
+		``fit_reg = True``. Defaults to ``None``.
 
 	rgh_inv : None or float
 		The roughness norm the Tikhonov regularization model-data fit. ``res_inv``
@@ -110,7 +110,8 @@ class kDistribution(object):
 		``None``.
 
 	rmse : None or float
-		The root-mean-square-error of the model-data fit. Defaults to ``None``.
+		The root-mean-square-error of the model-data fit, in D47 units. 
+		Defaults to ``None``.
 
 	Raises
 	------
