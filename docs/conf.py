@@ -45,7 +45,7 @@
 master_doc = 'index'
 
 # # General information about the project.
-# project = u'isoclump'
+# project = u'isotopylog'
 # copyright = u'2020, Jordon D. Hemingway'
 # author = u'Jordon D. Hemingway'
 
@@ -230,7 +230,7 @@ master_doc = 'index'
 # # html_search_scorer = 'scorer.js'
 
 # # Output file base name for HTML help builder.
-# htmlhelp_basename = 'isoclumpdoc'
+# htmlhelp_basename = 'isotopylogdoc'
 
 # # -- Options for LaTeX output ---------------------------------------------
 
@@ -256,7 +256,7 @@ master_doc = 'index'
 # # (source start file, target name, title,
 # #  author, documentclass [howto, manual, or own class]).
 # latex_documents = [
-#     (master_doc, 'isoclump.tex', 'isoclump Documentation',
+#     (master_doc, 'isotopylog.tex', 'isotopylog Documentation',
 #      'Jordon D. Hemingway', 'manual'),
 # ]
 
@@ -298,7 +298,7 @@ master_doc = 'index'
 # # One entry per manual page. List of tuples
 # # (source start file, name, description, authors, manual section).
 # man_pages = [
-#     (master_doc, 'isoclump', 'isoclump Documentation',
+#     (master_doc, 'isotopylog', 'isotopylog Documentation',
 #      [author], 1)
 # ]
 
@@ -313,8 +313,8 @@ master_doc = 'index'
 # # (source start file, target name, title, author,
 # #  dir menu entry, description, category)
 # texinfo_documents = [
-#     (master_doc, 'isoclump', 'isoclump Documentation',
-#      author, 'isoclump', 'clumped isotope kinetic analysis',
+#     (master_doc, 'isotopylog', 'isotopylog Documentation',
+#      author, 'isotopylog', 'clumped isotope kinetic analysis',
 #      'Miscellaneous'),
 # ]
 
@@ -450,12 +450,12 @@ sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'isoclump'
+project = 'isotopylog'
 copyright = '2020, Jordon D. Hemingway'
 author = 'Jordon D. Hemingway'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.1'
+release = '0.0.5'
 
 
 # -- General configuration ---------------------------------------------------
