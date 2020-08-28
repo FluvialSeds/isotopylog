@@ -5,7 +5,7 @@ def readme():
 		return f.read()
 
 setup(name='isotopylog',
-	version='0.0.4',
+	version='0.0.5',
 	description='Clumped isotope kinetic analysis',
 	long_description=readme(),
 	classifiers=[
@@ -20,7 +20,7 @@ setup(name='isotopylog',
 		'Topic :: Scientific/Engineering'
 	],
 	url='https://github.com/FluvialSeds/isotopylog',
-	download_url='https://github.com/FluvialSeds/isotopylog/tarball/0.0.4',
+	download_url='https://github.com/FluvialSeds/isotopylog/tarball/0.0.5',
 	keywords=[
 		'geochemistry',
 		'clumped isotopes',
@@ -40,6 +40,6 @@ setup(name='isotopylog',
 	],
 	# test_suite='nose.collector',
 	# tests_require=['nose'],
-	# include_package_data=True,
+	include_package_data=True,
 	# zip_safe=False
 	)
