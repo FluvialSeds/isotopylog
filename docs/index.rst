@@ -138,4 +138,5 @@ Indices and Tables
 
 
 .. |date| date::
-.. |doi| image:: https://zenodo.org/badge/89735636.svg
+.. image:: https://zenodo.org/badge/253549515.svg
+   :target: https://zenodo.org/badge/latestdoi/253549515
