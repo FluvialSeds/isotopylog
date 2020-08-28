@@ -132,5 +132,5 @@ This software is still in active deveopment. Please report any bugs directly to 
 
 
 .. |date| date::
-.. image:: https://zenodo.org/badge/253549515.svg
+.. |doi| image:: https://zenodo.org/badge/253549515.svg
    :target: https://zenodo.org/badge/latestdoi/253549515
