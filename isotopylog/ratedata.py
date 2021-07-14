@@ -31,8 +31,8 @@ from .calc_funcs import(
 from .ratedata_helper import(
 	fit_Arrhenius,
 	fit_Hea14,
-	fit_HH20,
-	fit_HH20inv,
+	fit_HH21,
+	fit_HH21inv,
 	fit_PH12,
 	fit_SE15,
 	)
@@ -59,7 +59,7 @@ class kDistribution(object):
 		The values and length of this array depend on the type of model being
 		implemented: \n
 			``'Hea14'``: [ln(kc), ln(kd), ln(k2)] \n
-			``'HH20'``: [ln(k_mu), ln(k_sig)] \n
+			``'HH21'``: [ln(k_mu), ln(k_sig)] \n
 			``'PH12'``: [ln(k), intercept] \n
 			``'SE15'``: [ln(k1), ln(k_dif_single), ln([pair]_0/[pair]_eq)] \n
 		See discussion in each reference for parameter definitions and
@@ -68,11 +68,11 @@ class kDistribution(object):
 
 	model : string
 		The type of model associated with a given kDistribution. Options are:
-		``'Hea14'``, ``'HH20'``, ``'PH12'``, or ``'SE15'``.
+		``'Hea14'``, ``'HH21'``, ``'PH12'``, or ``'SE15'``.
 
 	nu : None or array-like
 		The ln(k) values over which the rate distribution is calculated. ``nu``
-		only applies when ``model = 'HH20'``. Defaults to ``None``.
+		only applies when ``model = 'HH21'``. Defaults to ``None``.
 
 	npt : None or int
 		The number of data points used in the model fit. If ``model = 'Hea14'``
@@ -82,7 +82,7 @@ class kDistribution(object):
 
 	omega : None or scalar
 		The Tikhonov omega value used for inverse regularization. ``omega`` only
-		applies when ``model = 'HH20'`` and ``fit_reg = True``. Defaults to
+		applies when ``model = 'HH21'`` and ``fit_reg = True``. Defaults to
 		``None``.
 
 	params_cov : None or array-like
@@ -92,21 +92,21 @@ class kDistribution(object):
 
 	rho_nu : None or array-like
 		The modeled lognormal probability density function of ln(k) values.
-		``rho_nu`` only applies when ``model = 'HH20'``. Defaults to ``None``.
+		``rho_nu`` only applies when ``model = 'HH21'``. Defaults to ``None``.
 
 	rho_nu_inv : None or array-like
 		The modeled inverse probability density function of ln(k) values
 		calculated using Tikhonov regularization. ``rho_nu_inv`` only applies
-		when ``model = 'HH20'`` and ``fit_reg = True``. Defaults to ``None``.
+		when ``model = 'HH21'`` and ``fit_reg = True``. Defaults to ``None``.
 
 	res_inv : None or float
 		The residual norm the Tikhonov regularization model-data fit, in D47
-		units. ``res_inv`` only applies when ``model = 'HH20'`` and 
+		units. ``res_inv`` only applies when ``model = 'HH21'`` and 
 		``fit_reg = True``. Defaults to ``None``.
 
 	rgh_inv : None or float
 		The roughness norm the Tikhonov regularization model-data fit. ``res_inv``
-		only applies when ``model = 'HH20'`` and ``fit_reg = True``. Defaults to
+		only applies when ``model = 'HH21'`` and ``fit_reg = True``. Defaults to
 		``None``.
 
 	rmse : None or float
@@ -145,11 +145,11 @@ class kDistribution(object):
 		#import packages
 		import isotopylog as ipl
 
-		#assume some values for HH20 model parameters
+		#assume some values for HH21 model parameters
 		params = [-14., 5.]
 
 		#make instance
-		kd = ipl.kDistribution(params, 'HH20')
+		kd = ipl.kDistribution(params, 'HH21')
 
 	Assuming some EDistribution instance exists, rate data can be calculated
 	simply as::
@@ -170,16 +170,16 @@ class kDistribution(object):
 		kd = ipl.kDistribution.invert_experiment(he, model = 'PH12')
 
 	Same as above, but now including the Tikhonov regularization inverse fit
-	for 'HH20' model type::
+	for 'HH21' model type::
 
 		#assume some he is a HeatingExperiment object
 		kd = ipl.kDistribution.invert_experiment(
 			he,
-			model = 'HH20',
+			model = 'HH21',
 			fit_reg = True
 			)
 
-	To visualize these results, we can generate a plot of 'HH20' model k
+	To visualize these results, we can generate a plot of 'HH21' model k
 	distributions::
 
 		#import necessary packages
@@ -295,7 +295,7 @@ class kDistribution(object):
 	#Define @classmethods
 	#define classmethod for generating kDistribution instance from data
 	@classmethod
-	def invert_experiment(cls, he, model = 'HH20', fit_reg = False, **kwargs):
+	def invert_experiment(cls, he, model = 'HH21', fit_reg = False, **kwargs):
 		'''
 		Classmethod for generating a ``kDistribution`` instance directly by
 		inverting a ``ipl.HeatingExperiment`` object that contains clumped 
@@ -311,7 +311,7 @@ class kDistribution(object):
 			The type of model associated with a given kDistribution. Options
 			are: \n
 				``'Hea14'`` \n
-				``'HH20'`` \n
+				``'HH21'`` \n
 				``'PH12'`` \n
 				``'SE15'`` \n
 			See the relevant documentation on each model fit function for
@@ -319,13 +319,13 @@ class kDistribution(object):
 				fit_PH12 \n
 				fit_Hea14 \n
 				fit_SE15 \n
-				fit_HH20 \n
-				fit_HH20inv
+				fit_HH21 \n
+				fit_HH21inv
 
 		fit_reg : boolean
 			Tells the function whether or not to find the regularized inverse
 			solution in addition to the lognormal solution. This only applies
-			if `model = 'HH20'`.
+			if `model = 'HH21'`.
 
 		Returns
 		-------
@@ -349,10 +349,10 @@ class kDistribution(object):
 		isotopylog.fit_Hea14
 			Fitting function for Henkes et al. (2014) model.
 
-		isotopylog.fit_HH20
+		isotopylog.fit_HH21
 			Fitting function for Hemingway and Henkes (2020) lognormal model.
 
-		isotopylog.fit_HH20inv
+		isotopylog.fit_HH21inv
 			Fitting function for Tikhonov regularization inversion model of
 			Hemingway and Henkes (2020).
 
@@ -380,12 +380,12 @@ class kDistribution(object):
 				)
 
 		Same as above, but now including the Tikhonov regularization inverse
-		fit for 'HH20' model type::
+		fit for 'HH21' model type::
 
 			#assume some he is a HeatingExperiment object
 			kd = ipl.kDistribution.invert_experiment(
 				he,
-				model = 'HH20',
+				model = 'HH21',
 				fit_reg = True,
 				omega = 'auto', #passing omega value for model fit
 				nu_min = -30, #passing nu bounds
@@ -424,7 +424,7 @@ class kDistribution(object):
 			params, params_cov, rmse, npt = fit_SE15(he, **kwargs)
 
 		#Hemingway and Henkes 2020
-		elif model == 'HH20':
+		elif model == 'HH21':
 
 			#running the model in this order properly catches any nonsense
 			# kwargs!
@@ -433,19 +433,19 @@ class kDistribution(object):
 			if fit_reg is True:
 
 				#fit the model using the inverse function
-				rho_nu_inv, omega, res_inv, rgh_inv = fit_HH20inv(
+				rho_nu_inv, omega, res_inv, rgh_inv = fit_HH21inv(
 					he, 
 					**kwargs
 					)
 
-				#extract fit_HH20 kwargs and run Gaussian fit.
+				#extract fit_HH21 kwargs and run Gaussian fit.
 				ars = [k for k, v in inspect.signature(
-					fit_HH20).parameters.items()]
+					fit_HH21).parameters.items()]
 
 				kwa = {k : kwargs[k] for k in dict(kwargs) if k in ars}
 
 				#run Gaussian fit
-				params, params_cov, rmse, npt, nu, rho_nu = fit_HH20(
+				params, params_cov, rmse, npt, nu, rho_nu = fit_HH21(
 					he, 
 					**kwa
 					)
@@ -453,7 +453,7 @@ class kDistribution(object):
 			else:
 
 				#run Gaussian fit
-				params, params_cov, rmse, npt, nu, rho_nu = fit_HH20(
+				params, params_cov, rmse, npt, nu, rho_nu = fit_HH21(
 					he, 
 					**kwargs
 					)
@@ -465,7 +465,7 @@ class kDistribution(object):
 		elif isinstance(model, str):
 			raise ValueError(
 				'%s is an invalid model string. Must be one of: "PH12",'
-				'"Hea14", "SE15", or "HH20"' % model)
+				'"Hea14", "SE15", or "HH21"' % model)
 
 		#raise different exception if it's not a string
 		else:
@@ -475,8 +475,8 @@ class kDistribution(object):
 			raise TypeError(
 				'Unexpected model of type %s. Must be string.' % mdt)
 
-		#set HH20 specific attributes to not if model is not HH20
-		if model != 'HH20':
+		#set HH21 specific attributes to not if model is not HH21
+		if model != 'HH21':
 			nu = omega = rho_nu = rho_nu_inv = res_inv = rgh_inv = None
 
 		#return class instance
@@ -573,10 +573,10 @@ class kDistribution(object):
 		return cls(params, ed.model, T, params_cov = params_cov)
 
 
-	#define method for plotting HH20 results
+	#define method for plotting HH21 results
 	def plot(self, ax = None, lnd = {}, invd = {}):
 		'''
-		Generates a plot of ln(k) distributions for 'HH20'-type models.
+		Generates a plot of ln(k) distributions for 'HH21'-type models.
 
 		Parameters
 		----------
@@ -604,7 +604,7 @@ class kDistribution(object):
 
 		ValueError
 			If the `kDistribution` instance is of a model type that does not
-			support plotting. Currently, only 'HH20' supports plotting.
+			support plotting. Currently, only 'HH21' supports plotting.
 
 		See Also
 		--------
@@ -616,7 +616,7 @@ class kDistribution(object):
 		--------
 
 		Basic implementation, assuming `ipl.kDistribution` instance `kd` exists
-		and is of 'HH20' model type::
+		and is of 'HH21' model type::
 
 			#import modules
 			import isotopylog as ipl
@@ -650,9 +650,9 @@ class kDistribution(object):
 		'''
 
 		#check if model is right
-		if self.model != 'HH20':
+		if self.model != 'HH21':
 			raise ValueError(
-				'Plotting is not implemented for model type %s; only "HH20"'
+				'Plotting is not implemented for model type %s; only "HH21"'
 				' fits can be plotted. Consider extracting k values directly'
 				' from summary table instead.' % self.model)
 
@@ -723,8 +723,8 @@ class kDistribution(object):
 		if value in ['Hea14','H14','hea14','Henkes14','Henkes2014','Henkes']:
 			self._model = 'Hea14'
 
-		elif value in ['HH20','hh20','Hemingway20','Hemingway2020','Hemingway']:
-			self._model = 'HH20'
+		elif value in ['HH21','HH21','Hemingway20','Hemingway2020','Hemingway']:
+			self._model = 'HH21'
 
 		elif value in ['PH12','ph12','Passey12','Passey2012','Passey']:
 			self._model = 'PH12'
@@ -736,7 +736,7 @@ class kDistribution(object):
 		elif isinstance(value, str):
 			raise ValueError(
 				'%s is an invalid model string. Must be one of: "PH12",'
-				'"Hea14", "SE15", or "HH20"' % value)
+				'"Hea14", "SE15", or "HH21"' % value)
 
 		#raise different exception if it's not a string
 		else:
@@ -992,7 +992,7 @@ class EDistribution(object):
 
 	For 'SE15' models, E([pair]0/[pair]eq) is forced to an intercept of zero in
 	1/T vs. [pair]0/[pair]eq space, analagous to Stolper and Eiler (2015) Eq. 17.
-	Similarly, for 'HH20' models, sig_nu is forced to an intercept of zero in
+	Similarly, for 'HH21' models, sig_nu is forced to an intercept of zero in
 	1/T vs. sig_nu space as discussed in Hemingway and Henkes (2020).
 
 	See Also
@@ -1041,7 +1041,7 @@ class EDistribution(object):
 
 	Finally, data can be visualized using Arrhenius plots. For example,
 	assuming `ipl.EDistribution` instance `ed` exists and contains data of model 
-	type 'HH20'::
+	type 'HH21'::
 
 		#import additional packages
 		import matplotlib.pyplot as plt
@@ -1137,7 +1137,7 @@ class EDistribution(object):
 	#define classmethod for generating EDistribution instance from literature
 	# data
 	@classmethod
-	def from_literature(cls, mineral = 'calcite', reference = 'HH20', **kwargs):
+	def from_literature(cls, mineral = 'calcite', reference = 'HH21', **kwargs):
 		'''
 		Classmethod for generating an ``ipl.EDistribution`` instance directly
 		from literature data. This method simply inputs the results of
@@ -1151,7 +1151,7 @@ class EDistribution(object):
 			The mineral type whose data will be imported. Current options are:\n
 				``'apatite'`` ('SE15' reference only)\n
 				``'calcite'`` (all references)\n
-				``'dolomite'`` ('HH20' reference only)
+				``'dolomite'`` ('HH21' reference only)
 
 		reference : string
 			The reference whose data will be imported. Current options are:\n
@@ -1159,7 +1159,7 @@ class EDistribution(object):
 				``'Hea14'`` (Henkes et al. 2014; model type 'Hea14')\n
 				``'SE15'`` (Stolper and Eiler 2015; model type 'SE15')\n
 				``'Bea18'`` (Brenner et al. 2018; model type 'SE15')\n
-				``'HH20'`` (Hemingway and Henkes 2020; model type 'HH20')
+				``'HH21'`` (Hemingway and Henkes 2020; model type 'HH21')
 
 		Returns
 		-------
@@ -1201,7 +1201,7 @@ class EDistribution(object):
 		Lloyd et al. (2018) do not report calculated rate parameters for
 		individual experiments, only a set of derived activation energy and
 		pre-exponential factor results. This reference is thus not included
-		here; however, dolomite data from Lea18 are included within the HH20
+		here; however, dolomite data from Lea18 are included within the HH21
 		reference.
 
 		Examples
@@ -1269,14 +1269,14 @@ class EDistribution(object):
 			reference = 'Bea18'
 			model = 'SE15'
 
-		elif reference in ['hemingway','Hemingway','hh20','Hh20','HH20']:
-			reference = 'HH20'
-			model = 'HH20'
+		elif reference in ['hemingway','Hemingway','HH21','HH21','HH21']:
+			reference = 'HH21'
+			model = 'HH21'
 
 		elif isinstance(reference, str):
 			raise ValueError(
 				'Unexpected reference string %s. Currently, must be "PH12",'
-				' "Hea14", "SE15", "Bea18", "Lea18", "HH20"' % reference
+				' "Hea14", "SE15", "Bea18", "Lea18", "HH21"' % reference
 				)
 
 		else:
@@ -1418,7 +1418,7 @@ class EDistribution(object):
 			The parameter of interest for making Arrhenius plot, specific to
 			each model as follows:
 				``'Hea14'``: [ln(kc), ln(kd), ln(k2)] \n
-				``'HH20'``: [ln(k_mu), ln(k_sig)] \n
+				``'HH21'``: [ln(k_mu), ln(k_sig)] \n
 				``'PH12'``: [ln(k), intercept] \n
 				``'SE15'``: [ln(k1), ln(k_dif_single), ln([pair]_0/[pair]_eq)]\n
 			For eample, to make an Arrhenius plot of ln(kc) for 'Hea14' models,
@@ -1458,19 +1458,19 @@ class EDistribution(object):
 
 		ValueError
 			If passed ``param`` is outside of the range of existing parameters
-			(e.g., >2 for 'HH20' models).
+			(e.g., >2 for 'HH21' models).
 
 		See Also
 		--------
 
 		isotopylog.kDistribution.plot
-			Class method for plotting rate distributions for 'HH20' model types.
+			Class method for plotting rate distributions for 'HH21' model types.
 
 		Examples
 		--------
 
 		Basic implementation, assuming ``ipl.EDistribution`` instance ``ed`` 
-		exists and contains data of model type 'HH20'::
+		exists and contains data of model type 'HH21'::
 
 			#import modules
 			import isotopylog as ipl

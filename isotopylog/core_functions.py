@@ -19,7 +19,7 @@ import numpy as np
 #import necessary calculation functions
 from .calc_funcs import(
 	_ghHea14,
-	_ghHH20,
+	_ghHH21,
 	_ghPH12,
 	_ghSE15,
 	_Jacobian,
@@ -160,7 +160,7 @@ def geologic_history(
 
 	nnu : int
 		The number of points to use in the nu array. Only applies if
-		``ed.model = 'HH20'``; for other model types, this is unused. Defaults 
+		``ed.model = 'HH21'``; for other model types, this is unused. Defaults 
 		to ``400``.
 
 	z : int
@@ -364,7 +364,7 @@ def geologic_history(
 			Tref)
 
 	#Hemingway and Henkes 2020 model
-	elif ed.model == 'HH20':
+	elif ed.model == 'HH21':
 
 		#extract relevant parameters and uncertainty in the order:
 		# Emu, lnkmuref, Esig, lnksigref
@@ -379,10 +379,10 @@ def geologic_history(
 		pcov = np.append(pcov, np.append(np.zeros(npt), D0_cov).reshape(-1,1),1)
 
 		#solve for D evolution
-		D = _ghHH20(t, *p, Deq, T, Tref)
+		D = _ghHH21(t, *p, Deq, T, Tref)
 
 		#define lambda function for uncertainty propagation
-		lamfunc = lambda t, Emu, lnkmuref, Esig, lnksigref, D0 : _ghHH20(
+		lamfunc = lambda t, Emu, lnkmuref, Esig, lnksigref, D0 : _ghHH21(
 			t, 
 			Emu, 
 			lnkmuref, 

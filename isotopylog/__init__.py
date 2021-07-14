@@ -1,12 +1,12 @@
 '''
-isotopylog was created as a supplement to Hemingway and Henkes (2020) "A 
-distributed activation energy model for clumped isotope bond reordering in
-carbonates", *Earth and Planetary Science Letters*, **in review**, pages. It was
-created by:
+isotopylog was created as a supplement to Hemingway and Henkes (2021) "A 
+disordered kinetic model for clumped isotope bond reordering in carbonates", 
+*Earth and Planetary Science Letters*, **566**, 116962. It was created by:
 
 	Jordon D. Hemingway
 	Postdoctoral Fellow, Harvard University
-	jordon_hemingway@fas.harvard.edu
+	(currently Assistant Professor, ETH Zurich)
+	jordon.hemingway@erdw.ethz.ch
 
 source code can be found at:
 	
@@ -16,8 +16,8 @@ documentation can be found at:
 
 	http://isotopylog.readthedocs.io
 
-Version 0.0.4 is current as of 1 July 2020 and reflects the notation used
-in Hemingway and Henkes (2020).
+Version 0.0.6 is current as of 15 July 2021 and reflects the notation used
+in Hemingway and Henkes (2021).
 '''
 
 from __future__ import(
@@ -25,7 +25,7 @@ from __future__ import(
 	print_function,
 	)
 
-__version__ = '0.0.4'
+__version__ = '0.0.6'
 
 __docformat__ = 'restructuredtext en'
 
@@ -56,8 +56,8 @@ from .ratedata_helper import(
 	calc_L_curve,
 	fit_Arrhenius,
 	fit_Hea14,
-	fit_HH20,
-	fit_HH20inv,
+	fit_HH21,
+	fit_HH21inv,
 	fit_PH12,
 	fit_SE15
 	)

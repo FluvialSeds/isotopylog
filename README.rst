@@ -1,24 +1,24 @@
 About isotopylog
 ================
-``isotopylog`` is a Python package for analyzing "clumped" isotope kinetic data; it is particularly suited for assessing carbonate clumped isotope (i.e., ∆\ :sub:`47`\) bond reordering and closure temperatures, but will be expanded in the future to include clumped isotopes of other molecular species (e.g., sulfate). This package currently performs two basic functions: 
+``isotopylog`` is a Python package for analyzing "clumped" isotope kinetic data; it is particularly suited for assessing carbonate clumped isotope (i.e., ∆\ :sub:`47`\) bond reordering and closure temperatures, but will be expanded in the future to include clumped isotopes of other isotopologues (e.g., ∆\ :sub:`48`\) molecular species (e.g., sulfate). This package currently performs two basic functions: 
 
 (1) it fits ∆\ :sub:`47`\ reordering data from carbonate heating experiments (inverse model) and 
 (2) it predicts geologic ∆\ :sub:`47`\ evolution given any time/temperature sample history (forward model). 
 
-For both functions, the package can use any of the available clumped isotope kinetic models: (1) the "pseudo-first-order" model (Passey and Henkes, 2012), (2) the "transient defect/equilibrium defect" model (Henkes et al., 2014), (3) the "pair-diffusion" model (Stolper and Eiler, 2015), and (4) the "disordered kinetic" model (Hemingway and Henkes, 2020).
+For both functions, the package can use any of the available clumped isotope kinetic models: (1) the "pseudo-first-order" model (Passey and Henkes, 2012), (2) the "transient defect/equilibrium defect" model (Henkes et al., 2014), (3) the "pair-diffusion" model (Stolper and Eiler, 2015), and (4) the "disordered kinetic" model (Hemingway and Henkes, 2021).
 
 This package allows users to quickly and easily assess whether their clumped isotope measurements reflect primary signatures, or if these values have been reset during diagenetic heating. Similarly, it also allows users to easily assess geologic cooling rates using the apparent "closure" or "blocking" temperatures recorded in carbonates that have been diagenetically heated.
 
 Package Information
 -------------------
 :Authors:
-  Jordon D. Hemingway (jordon_hemingway@fas.harvard.edu)
+  Jordon D. Hemingway (jordon.hemingway@erdw.ethz.ch)
 
 :Version:
-  0.0.5
+  0.0.6
 
 :Release:
-  28 August 2020
+  15 July 2021
 
 :License:
   GNU GPL v3 (or greater)
@@ -51,7 +51,7 @@ If analyzing data with any of the previously published models, please also cite 
 
 Documentation
 -------------
-The documentation for the latest release---including detailed package references and numerous comprehensive examples detailing various steps of the data analysis process---is available at:
+The documentation for the latest release---including detailed package references and comprehensive examples detailing various steps of the data analysis process---is available at:
 
 	http://isotopylog.readthedocs.io
 
@@ -61,7 +61,7 @@ Package features
 
 * Stores, culls, and plots experimental kinetic isotope data
 
-  * Easily converts between multiple reference frames (e.g., Ghosh, CDES90)
+  * Easily converts between multiple reference frames (e.g., Ghosh, CDES90, I-CDES)
   * Plots forward-modeled predictions using rate parameters (i.e., k values) in order to visually assess goodness of fit
 
 * Estimates the rate parameters (i.e., k values) of bond reordering kinetics for a given set of experimental results using any of the following models:
@@ -77,12 +77,13 @@ Package features
     * Calculates best-fit regularized ("smoothed") rate distributions using Tikhonov Regularization
 
       * Automated or user-defined regularization value
+      * Can include negative solutions (e.g., for fitting aragonite data with transient ∆\ :sub:`47`\ increases)
 
     * Determines best-fit lognormal rate distributions
 
 * Determines activation energy values using an Arrhenius fit to rate parameters
   
-  * Generates Arrhenius plots
+  * Generates Arrhenius plots (not possible for negative solutions)
   * Allows quick and easy importing of literature data
 
 * Calculates and stores model performance metrics and goodness of fit statistics
@@ -106,7 +107,7 @@ Future versions of ``isotopylog`` will aim to include:
 
 * Additional models as they become available
 
-* Kinetics of non-carbonate molecular species (e.g., sulfate) as they become available
+* Kinetics of new isotopologues and non-carbonate molecular species (e.g., sulfate) as they become available
 
 
 How to Obtain
@@ -128,7 +129,7 @@ Bug Reports
 ===========
 This software is still in active deveopment. Please report any bugs directly to me at:
 
-	jordon_hemingway@fas.harvard.edu
+	jordon.hemingway@erdw.ethz.ch
 
 
 .. |date| date::

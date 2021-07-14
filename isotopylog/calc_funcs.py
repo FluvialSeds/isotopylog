@@ -17,12 +17,12 @@ __all__ = ['_calc_A',
 		   '_calc_rmse',
 		   '_calc_Rpr',
 		   '_fHea14',
-		   '_fHH20',
+		   '_fHH21',
 		   '_fPH12',
 		   '_fSE15',
 		   '_Gaussian',
 		   '_ghHea14',
-		   '_ghHH20',
+		   '_ghHH21',
 		   '_ghPH12',
 		   '_ghSE15',
 		   '_Jacobian',
@@ -49,10 +49,10 @@ from .dictionaries import(
 	d47_isoparams,
 	)
 
-#define function for calculating HH20 inverse A matrix
+#define function for calculating HH21 inverse A matrix
 def _calc_A(t, nu):
 	'''
-	Function for calculating A matrix for HH20 data inversion.
+	Function for calculating A matrix for HH21 data inversion.
 
 	Parameters
 	----------
@@ -89,7 +89,7 @@ def _calc_A(t, nu):
 	
 	return A
 
-#define function for calculating HH20 inverse R matrix
+#define function for calculating HH21 inverse R matrix
 def _calc_R(n):
 	'''
 	Calculates smoothing matrix, R.
@@ -363,8 +363,8 @@ def _fHea14(t, lnkc, lnkd, lnk2, logG = True):
 
 	return Ghat
 
-#function to fit data to lognormal decay k distribution for HH20  model
-def _fHH20(t, mu_nu, sig_nu, nu_max, nu_min, nnu):
+#function to fit data to lognormal decay k distribution for HH21  model
+def _fHH21(t, mu_nu, sig_nu, nu_max, nu_min, nnu):
 	'''
 	Function to calculate G as a function of time assuming a lognormal 
 	distribution of decay rates described by mu and sigma.
@@ -776,10 +776,10 @@ def _ghHea14(t, Ec, lnkcref, Ed, lnkdref, E2, lnk2ref, D0, Deq, T, Tref):
 
 	return D
 
-#function for calcualting geologic history with HH20 model
-def _ghHH20(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nnu = 400):
+#function for calcualting geologic history with HH21 model
+def _ghHH21(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nnu = 400):
 	'''
-	Calculates the D47 value for a given geologic t-T history using the HH20
+	Calculates the D47 value for a given geologic t-T history using the HH21
 	model.
 
 	Parameters
@@ -790,16 +790,16 @@ def _ghHH20(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nnu = 400):
 		were used to calculate lnkref values. Length ``nt``.
 
 	Emu : float
-		The activation energy value "mu" for the HH20 model.
+		The activation energy value "mu" for the HH21 model.
 
 	lnkmuref : float
-		The reference lnk value "mu" for the HH20 model.
+		The reference lnk value "mu" for the HH21 model.
 
 	Esig : float
-		The activation energy value "sig" for the HH20 model.
+		The activation energy value "sig" for the HH21 model.
 
 	lnksigref : float
-		The reference lnk value "sig" for the HH20 model.
+		The reference lnk value "sig" for the HH21 model.
 
 
 	D0 : float

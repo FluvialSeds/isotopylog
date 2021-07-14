@@ -14,8 +14,8 @@ __docformat__ = 'restructuredtext en'
 __all__ = ['calc_L_curve',
 		   'fit_Arrhenius',
 		   'fit_Hea14',
-		   'fit_HH20',
-		   'fit_HH20inv',
+		   'fit_HH21',
+		   'fit_HH21inv',
 		   'fit_PH12',
 		   'fit_SE15',
 		  ]
@@ -52,7 +52,7 @@ from .calc_funcs import(
 	_fPH12,
 	_fSE15,
 	_Gaussian,
-	_fHH20,
+	_fHH21,
 	)
 
 #import necessary isotopylog core functions
@@ -150,13 +150,13 @@ def calc_L_curve(
 	See Also
 	--------
 
-	isotopylog.fit_HH20inv
+	isotopylog.fit_HH21inv
 		Method for fitting heating experiment data using the L-curve approach
 		of Hemingway and Henkes (2020).
 
 	kDistribution.invert_experiment
 		Method for generating a `kDistribution` instance from experimental
-		data; can generate L curve if `model = "HH20"` and `fit_reg = True`.
+		data; can generate L curve if `model = "HH21"` and `fit_reg = True`.
 
 	Examples
 	--------
@@ -219,7 +219,7 @@ def calc_L_curve(
 	for i, w in enumerate(om_vec):
 
 		#call the inverse fit parent function
-		_, _, res_inv, rgh_inv = fit_HH20inv(
+		_, _, res_inv, rgh_inv = fit_HH21inv(
 			he, 
 			nu_max = nu_max,
 			nu_min = nu_min,
@@ -359,7 +359,7 @@ def fit_Arrhenius(
 
 	zero_int : boolean
 		Tells the function whether or not to force the intercept to zero.
-		This is used for calculating sig_E in the 'HH20' model and
+		This is used for calculating sig_E in the 'HH21' model and
 		ln([p0]/[peq]) for the 'SE15' model, both of which are expected to have
 		zero intercept in ln(k) vs. 1/T space.
 
@@ -513,7 +513,7 @@ def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 	See Also
 	--------
 
-	isotopylog.fit_HH20
+	isotopylog.fit_HH21
 		Method for fitting heating experiment data using the distributed
 		activation energy model of Hemingway and Henkes (2020).
 
@@ -598,13 +598,13 @@ def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 
 	return params, params_cov, rmse, npt
 
-#function to fit data using HH20 lognormal model
-def fit_HH20(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
+#function to fit data using HH21 lognormal model
+def fit_HH21(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 	'''
 	Fits D evolution data using the distributed activation energy model of
 	Hemingway and Henkes (2020). This function solves for mu_nu and sig_nu,
 	the mean and standard deviation of a Gaussian distribution in lnk space.
-	See HH20 Eq. X for notation and details.
+	See HH21 Eq. X for notation and details.
 
 	Parameters
 	----------
@@ -666,7 +666,7 @@ def fit_HH20(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
 		an updated version of the present method.
 
-	isotopylog.fit_HH20inv
+	isotopylog.fit_HH21inv
 		Method for fitting heating experiment data using the L-curve approach
 		of Hemingway and Henkes (2020).
 
@@ -693,7 +693,7 @@ def fit_HH20(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 		import isotopylog as ipl
 
 		#assume he is a HeatingExperiment instance
-		results = ipl.fit_HH20(he)
+		results = ipl.fit_HH21(he)
 
 	References
 	----------
@@ -712,7 +712,7 @@ def fit_HH20(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 	nu = np.linspace(nu_min, nu_max, nnu)
 
 	#fit model to lambda function to allow inputting constants
-	lamfunc = lambda x, mu_nu, sig_nu: _fHH20(
+	lamfunc = lambda x, mu_nu, sig_nu: _fHH21(
 		x, 
 		mu_nu, 
 		sig_nu, 
@@ -752,8 +752,8 @@ def fit_HH20(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 
 	return params, params_cov, rmse, npt, nu, rho_nu
 
-#function to fit data using the HH20 inverse model
-def fit_HH20inv(
+#function to fit data using the HH21 inverse model
+def fit_HH21inv(
 	he,
 	nu_max = 10,
 	nu_min = -50,
@@ -765,7 +765,7 @@ def fit_HH20inv(
 	'''
 	Fits D evolution data using the distributed activation energy model of
 	Hemingway and Henkes (2020). This function solves for rho_nu, the
-	regularized distribution of rates in lnk space. See HH20 Eq. X for
+	regularized distribution of rates in lnk space. See HH21 Eq. X for
 	notation and details. This function can estimate best-fit omega using
 	Tikhonov regularization.
 	
@@ -823,7 +823,7 @@ def fit_HH20inv(
 	See Also
 	--------
 
-	isotopylog.fit_HH20
+	isotopylog.fit_HH21
 		Method for fitting heating experiment data using the lognormal model
 		of Hemingway and Henkes (2020).
 
@@ -841,7 +841,7 @@ def fit_HH20inv(
 		import isotopylog as ipl
 
 		#assume he is a HeatingExperiment instance
-		results = ipl.fit_HH20inv(he, omega = 'auto')
+		results = ipl.fit_HH21inv(he, omega = 'auto')
 
 	Same implementation, but if best-fit `omega` is known a priori::
 
@@ -852,7 +852,7 @@ def fit_HH20inv(
 		omega = 3
 
 		#assume he is a HeatingExperiment instance
-		results = ipl.fit_HH20inv(he, omega = 3)
+		results = ipl.fit_HH21inv(he, omega = 3)
 
 	References
 	----------
@@ -1015,7 +1015,7 @@ def fit_PH12(he, logy = True, p0 = [-10., 0.5], thresh = 1e-10):
 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
 		an updated version of the present method.
 
-	isotopylog.fit_HH20
+	isotopylog.fit_HH21
 		Method for fitting heating experiment data using the distributed
 		activation energy model of Hemingway and Henkes (2020).
 
@@ -1190,7 +1190,7 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 		equilibrium model of Henkes et al. (2014). 'Hea14' can be considered
 		an updated version of the present method.
 
-	isotopylog.fit_HH20
+	isotopylog.fit_HH21
 		Method for fitting heating experiment data using the distributed
 		activation energy model of Hemingway and Henkes (2020).
 

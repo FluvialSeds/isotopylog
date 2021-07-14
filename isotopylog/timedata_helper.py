@@ -31,7 +31,7 @@ from .calc_funcs import(
 	_fHea14,
 	_fPH12,
 	_fSE15,
-	_fHH20,
+	_fHH21,
 	_Jacobian,
 	)
 
@@ -366,11 +366,11 @@ def _forward_model(he, kd, t, z = 6, **kwargs):
 		#calculate Jacobian
 		J = _Jacobian(_fHea14, t, p, **kwargs)
 
-	elif kd.model == 'HH20':
+	elif kd.model == 'HH21':
 
-		#make lambda function since HH20 has more args than fit params
+		#make lambda function since HH21 has more args than fit params
 		l = [np.max(kd.nu), np.min(kd.nu), len(kd.nu)] #additional inputs
-		lamfunc = lambda t, mu_nu, sig_nu: _fHH20(t, mu_nu, sig_nu, *l) 
+		lamfunc = lambda t, mu_nu, sig_nu: _fHH21(t, mu_nu, sig_nu, *l) 
 
 		#calculate G
 		G = lamfunc(t, *p)

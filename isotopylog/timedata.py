@@ -577,7 +577,7 @@ class HeatingExperiment(object):
 			setattr(self, k, v)
 
 		#additionally, store regularized inverse forward model if it exists
-		if kd.model == 'HH20' and kd.rho_nu_inv is not None:
+		if kd.model == 'HH21' and kd.rho_nu_inv is not None:
 
 			#calculate G
 			A = _calc_A(t, kd.nu)
@@ -633,7 +633,7 @@ class HeatingExperiment(object):
 
 		plot_reg : boolean
 			Tells the function whether or not to plot regularized inversion
-			forward-model results as well. Only applies if ``model = 'HH20'``
+			forward-model results as well. Only applies if ``model = 'HH21'``
 			and ``fit_reg = True``.
 
 		ed : dictionary
@@ -671,7 +671,7 @@ class HeatingExperiment(object):
 			If the user is passing ``plot_reg = True`` but the heating
 			experiment does not contain regularized inverse model forward
 			results; that is, if it was fit with something other than 
-			``'HH20'`` model with ``fit_reg = True``.
+			``'HH21'`` model with ``fit_reg = True``.
 
 		See Also
 		--------
@@ -755,7 +755,7 @@ class HeatingExperiment(object):
 					warnings.warn(
 						'Attempting to plot regularized inverse model results'
 						' but they do not exist. Either re-forward-model with'
-						' a "HH20" model or pass plot_reg = False', UserWarning
+						' a "HH21" model or pass plot_reg = False', UserWarning
 						)
 
 					ymreg = None
@@ -797,7 +797,7 @@ class HeatingExperiment(object):
 					warnings.warn(
 						'Attempting to plot regularized inverse model results'
 						' but they do not exist. Either re-forward-model with'
-						' a "HH20" model or pass plot_reg = False', UserWarning
+						' a "HH21" model or pass plot_reg = False', UserWarning
 						)
 
 					ymreg = None
