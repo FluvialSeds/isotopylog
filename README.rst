@@ -38,7 +38,7 @@ When analyzing data with ``isotopylog`` to be used in a peer-reviewed journal, p
 
 Additionally, please cite the following peer-reviewed manuscript describing the deveopment of the package and clumped isotope data treatment:
 
-* J.D. Hemingway and G.A. Henkes (2020) A distributed activation energy model for clumped isotope bond reordering in carbonates. *Earth and Planetary Science Letters*, **in review**, pages.
+* J.D. Hemingway and G.A. Henkes (2021) A disordered kinetic model for clumped isotope bond reordering in carbonates. *Earth and Planetary Science Letters*, **566**, 116962.
 
 If analyzing data with any of the previously published models, please also cite the relevant manuscript(s):
 
