@@ -72,7 +72,7 @@ Package features
 
   * Paired-diffusion model (Stolper and Eiler, 2015)
 
-  * Disordered kinetic model (Hemingway and Henkes, 2020)
+  * Disordered kinetic model (Hemingway and Henkes, 2021)
 
     * Calculates best-fit regularized ("smoothed") rate distributions using Tikhonov Regularization
 
