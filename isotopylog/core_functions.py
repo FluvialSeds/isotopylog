@@ -15,6 +15,7 @@ __all__ = [
 
 import matplotlib.pyplot as plt
 import numpy as np
+import types
 
 #import necessary calculation functions
 from .calc_funcs import(
@@ -99,9 +100,9 @@ def geologic_history(
 	ed, 
 	d0,
 	d0_std = [0.,0.,0.],
-	calibration = 'Bea17', 
-	iso_params = 'Gonfiantini',
-	ref_frame = 'CDES90',
+	calibration = 'Aea21', 
+	iso_params = 'Brand',
+	ref_frame = 'I-CDES',
 	nnu = 400,
 	z = 6,
 	**kwargs
@@ -135,9 +136,20 @@ def geologic_history(
 		Uncertainty associated with the values in d0, as +/- 1 standard
 		deviation. Defaults to array of zeros.
 
-	calibration : str
-		The D-T calibration equation to use for forward modeling. Defaults to
-		``'Bea17'`` for Bonifacie et al. (2017).
+	calibration : string or lambda function
+		The D-T calibration curve to use, either from the literature or as
+		a user-inputted lambda function. If from the literature for D47
+		clumps, options are: \n
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 (CDES 25C)\n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 (Ghosh 25C)\n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 (CDES 90C) \n
+			``'Aea21'``: for Anderson et al. (2021) Eq. 1 (I-CDES) \n
+		If as a lambda function, must have T in Kelvin. It is recommended to
+		run each calibration only using its native reference frame (denoted in
+		parentheses); although these will be automatically adjusted to different
+		reference frames, **there is no guarantee that this conversion is
+		accurate for all analytical setups**. In contrast, lambda functions must
+		be reference-frame specific. Defaults to ``'Aea21'``.
 
 	iso_params : string
 		The isotope parameters used to calculate clumped data. For example, if
@@ -152,11 +164,19 @@ def geologic_history(
 			``'Craig+Li'``: for Craig (1957) + Li et al. (1988)\n
 			``'Gonfiantini'``: for Gonfiantini et al. (1995)\n
 			``'Passey'``: for Passey et al. (2014) lam17\n
-		Defaults to ``'Gonfiantini'``. Only used if ``ed.model = 'SE15'``.
+		Defaults to ``'Brand'``. Only used if ``ed.model = 'SE15'``.
 
 	ref_frame : str
-		The reference frame used to generate D47 values. Defaults to
-		``'CDES90'``.
+		The reference frame used to calculate clumped isotope data. Options
+		are:\n
+			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.\n
+			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
+			``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. (2006)
+			acidified at 25 C.\n
+			``'I-CDES'``: Carbon Dioxide Equilibrium Scale acidified at 90 C,
+			referenced to carbonate standards as described in Bernasconi et al.
+			(2021).
+		Defaults to ``'I-CDES'``.
 
 	nnu : int
 		The number of points to use in the nu array. Only applies if
@@ -182,7 +202,8 @@ def geologic_history(
 	------
 
 	TypeError
-		If inputted 'calibration' and/or 'ref_frame' are not strings.
+		If inputted 'calibration' and/or 'ref_frame' are not strings or (lambda
+		function).
 
 	ValueError
 		If inputted t and T arrays are not the same length.
@@ -288,7 +309,7 @@ def geologic_history(
 	[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
 	[4] Lloyd et al. (2018) *Geochim. Cosmochim. Ac.*, **242**, 1--20.\n
 	[5] Chen et al. (2019) *Geochim. Cosmochim. Ac.*, **258**, 156--173.\n
-	[7] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[7] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 
 	'''
 
@@ -299,32 +320,47 @@ def geologic_history(
 			% len(T)
 			)
 
-	if calibration not in ['PH12', 'SE15', 'Bea17']:
-		raise ValueError(
-			"unexpected calibration %s. Must be 'PH12', 'SE15', or 'Bea17'."
-			% calibration
-			)
-
-	elif not isinstance(calibration, str):
-		ct = type(calibration).__name__
-		raise TypeError(
-			'unexpected calibration of type %s. Must be string.' % ct
-			)
-
-	if ref_frame not in ['Ghosh25', 'Ghosh90', 'CDES25', 'CDES90']:
+	#check reference frame
+	if ref_frame not in ['Ghosh25', 'Ghosh90', 'CDES25', 'CDES90', 'I-CDES']:
 		raise ValueError(
 			"unexpected ref_frame %s. Must be 'Ghosh25', 'Ghosh90', 'CDES25',"
-			" or 'CDES90'." % ref_frame
+			" 'CDES90', or 'I-CDES'." % ref_frame
 			)
 
 	elif not isinstance(ref_frame, str):
 		rft = type(ref_frame).__name__
 		raise TypeError(
-			'unexpected calibration of type %s. Must be string.' % rft
+			'unexpected ref_frame of type %s. Must be string.' % rft
+			)
+
+	#if calibration is a string, calculate Deq from the dictionaries
+	if isinstance(calibration, str):
+		
+		if calibration in ['PH12', 'SE15', 'Bea17', 'Aea21']:
+			#get Deq from dictionary
+			Deq = caleqs[calibration][ref_frame](T)
+
+		else:
+			#wrong string; raise error
+			raise ValueError(
+				"unexpected calibration %s. Must be 'PH12', 'SE15', 'Bea17',"
+				" Aea21', or lambda function."
+				% calibration
+				)
+
+	#if it's a lambda function, calculate Deq directly
+	elif isinstance(calibration, types.FunctionType):
+		Deq = calibration(T)
+
+	#if it's neither, raise typeerror
+	else:
+		ct = type(calibration).__name__
+		raise TypeError(
+			'unexpected calibration of type %s. Must be string or LambdaTYpe.' 
+			% ct
 			)
 
 	#calculate array of D47eq
-	Deq = caleqs[calibration][ref_frame](T)
 	D0 = d0[0]
 	D0_cov = d0_std[0]**2
 	Tref = ed.Tref

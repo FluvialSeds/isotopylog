@@ -46,8 +46,8 @@ cdes_aff = 0.092 #25C - 90C
 ghosh_aff = 0.081 #25C - 90C
 
 #ref frame conversion constants
-# m = 1.0381 #Ghosh to CDES 25C
-# b = 0.0266 #Ghosh to CDES 25C
+m = 1.0381 #Ghosh to CDES 25C
+b = 0.0266 #Ghosh to CDES 25C
 
 #make lambda equations for native (i.e., literature reported) equations
 
@@ -155,10 +155,12 @@ ed_params = {'Hea14' : ['Ec', 'Ed', 'E2'],
 
 clump_isos = {'CO47' : ['D47','d13C_vpdb','d18O_vpdb'],
 			 }
+
 #-------------------------------------------------------------------------------#
 # 6) Dictionary for holding booleans telling the EDistribution which parameters #
 #	 to force zero intercepts													#
 #-------------------------------------------------------------------------------#
+
 zi = {'Hea14' : [False, False, False],
 	  'HH21' : [False, True], 
 	  'PH12' : [False, False], 

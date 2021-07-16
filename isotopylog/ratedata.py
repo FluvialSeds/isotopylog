@@ -723,7 +723,7 @@ class kDistribution(object):
 		if value in ['Hea14','H14','hea14','Henkes14','Henkes2014','Henkes']:
 			self._model = 'Hea14'
 
-		elif value in ['HH21','HH21','Hemingway20','Hemingway2020','Hemingway']:
+		elif value in ['HH21','HH21','Hemingway21','Hemingway2021','Hemingway']:
 			self._model = 'HH21'
 
 		elif value in ['PH12','ph12','Passey12','Passey2012','Passey']:

@@ -510,7 +510,7 @@ def _fSE15(
 	T : float
 		The experimental temperature, in Kelvin.
 
-	calibration : string
+	calibration : string or lambda function
 		The D-T calibration curve to use, either from the literature or as
 		a user-inputted lambda function. If from the literature for D47
 		clumps, options are: \n
@@ -1014,7 +1014,7 @@ def _ghSE15(
 	Tref : float
 		The reference temperature at which lnkref was calculated, in Kelvin.
 
-	calibration : string
+	calibration : string or lambda function
 		The D-T calibration curve to use, either from the literature or as
 		a user-inputted lambda function. If from the literature for D47
 		clumps, options are: \n
@@ -1227,7 +1227,7 @@ def Deq_from_T(T, calibration = 'Aea21', clumps = 'CO47', ref_frame = 'I-CDES'):
 		The temperature values at which to calculate equilibrium D values,
 		in Kelvin. Can be a single temperature or an array of temperatures.
 
-	calibration : string
+	calibration : string or lambda function
 		The D-T calibration curve to use, either from the literature or as
 		a user-inputted lambda function. If from the literature for D47
 		clumps, options are: \n
@@ -1316,13 +1316,32 @@ def Deq_from_T(T, calibration = 'Aea21', clumps = 'CO47', ref_frame = 'I-CDES'):
 	#make sure clumps is CO47 and extract from dictionary
 	if clumps == 'CO47':
 
-		#if lambda function, calculate direction
-		if isinstance(calibration, types.FunctionType):
+		#if calibration is a string, calculate Deq from the dictionaries
+		if isinstance(calibration, str):
+			
+			if calibration in ['PH12', 'SE15', 'Bea17', 'Aea21']:
+				#get Deq from dictionary
+				Deq = caleqs[calibration][ref_frame](T)
+
+			else:
+				#wrong string; raise error
+				raise ValueError(
+					"unexpected calibration %s. Must be 'PH12', 'SE15', 'Bea17',"
+					" Aea21', or lambda function."
+					% calibration
+					)
+
+		#if it's a lambda function, calculate Deq directly
+		elif isinstance(calibration, types.FunctionType):
 			Deq = calibration(T)
 
+		#if it's neither, raise typeerror
 		else:
-			#otherwise call from calibration dictionary
-			Deq = caleqs[calibration][ref_frame](T)
+			ct = type(calibration).__name__
+			raise TypeError(
+				'unexpected calibration of type %s. Must be string or '
+				'LambdaType.' % ct
+				)
 	
 	elif isinstance(clumps, str):
 		raise ValueError(
@@ -1349,7 +1368,7 @@ def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Aea21', ref_frame = 'I-CDES'
 		The clumped isotope values at which to calculate equilibrium T values,
 		in Kelvin. Can be a single clumped isotope value or an array of values.
 
-	calibration : string
+	calibration : string or lambda function
 		The D-T calibration curve to use, either from the literature or as
 		a user-inputted lambda function. If from the literature for D47
 		clumps, options are: \n
@@ -1394,7 +1413,7 @@ def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Aea21', ref_frame = 'I-CDES'
 	------
 
 	TypeError
-		If inputted keyword arguments are not strings.
+		If inputted keyword arguments are not strings (or lambda function).
 
 	TypeError
 		If inputted keyword arguments are not acceptable strings.
@@ -1445,13 +1464,32 @@ def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Aea21', ref_frame = 'I-CDES'
 	#make sure clumps is CO47 and extract function from dictionary
 	if clumps == 'CO47':
 
-		#if lambda function, calculate direction
-		if isinstance(calibration, types.FunctionType):
+		#if calibration is a string, calculate Deq from the dictionaries
+		if isinstance(calibration, str):
+			
+			if calibration in ['PH12', 'SE15', 'Bea17', 'Aea21']:
+				#get Deq from dictionary
+				func = caleqs[calibration][ref_frame]
+
+			else:
+				#wrong string; raise error
+				raise ValueError(
+					"unexpected calibration %s. Must be 'PH12', 'SE15', 'Bea17',"
+					" Aea21', or lambda function."
+					% calibration
+					)
+
+		#if it's a lambda function, calculate Deq directly
+		elif isinstance(calibration, types.FunctionType):
 			func = calibration
 
+		#if it's neither, raise typeerror
 		else:
-			#otherwise call from calibration dictionary
-			func = caleqs[calibration][ref_frame]
+			ct = type(calibration).__name__
+			raise TypeError(
+				'unexpected calibration of type %s. Must be string or '
+				'LambdaType.' % ct
+				)
 	
 	elif isinstance(clumps, str):
 		raise ValueError(
