@@ -207,7 +207,7 @@ class kDistribution(object):
 	[4] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
 	[5] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
 	[6] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.\n
-	[7] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[7] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
 	#define all the possible attributes for __init__ using _kwattrs
@@ -399,8 +399,8 @@ class kDistribution(object):
 			223--236.\n
 		[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
 		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
-		[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, 
-			XX--XX.
+		[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **566**, 
+			116962.
 		'''
 
 		#check which model and run the corresponding inversion method:
@@ -423,7 +423,7 @@ class kDistribution(object):
 			#fit the model
 			params, params_cov, rmse, npt = fit_SE15(he, **kwargs)
 
-		#Hemingway and Henkes 2020
+		#Hemingway and Henkes 2021
 		elif model == 'HH21':
 
 			#running the model in this order properly catches any nonsense
@@ -1080,7 +1080,7 @@ class EDistribution(object):
 	[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
 	[4] Brenner et al. (2018) *Geochim. Cosmochim. Ac.*, **224**, 42--63.\n
 	[5] Lloyd et al. (2018) *Geochim. Cosmochim. Ac.*, **242**, 1--20.\n
-	[6] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[6] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
 	#define all the possible attributes for __init__ using _kwattrs
@@ -1159,7 +1159,7 @@ class EDistribution(object):
 				``'Hea14'`` (Henkes et al. 2014; model type 'Hea14')\n
 				``'SE15'`` (Stolper and Eiler 2015; model type 'SE15')\n
 				``'Bea18'`` (Brenner et al. 2018; model type 'SE15')\n
-				``'HH21'`` (Hemingway and Henkes 2020; model type 'HH21')
+				``'HH21'`` (Hemingway and Henkes 2021; model type 'HH21')
 
 		Returns
 		-------
@@ -1227,8 +1227,8 @@ class EDistribution(object):
 		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
 		[4] Brenner et al. (2018) *Geochim. Cosmochim. Ac.*, **224**, 42--63.\n
 		[5] Lloyd et al. (2018) *Geochim. Cosmochim. Ac.*, **242**, 1--20.\n
-		[6] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, 
-			XX--XX.
+		[6] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 
+			116962.
 		'''
 
 		#ensure mineral is acceptable
@@ -1276,7 +1276,7 @@ class EDistribution(object):
 		elif isinstance(reference, str):
 			raise ValueError(
 				'Unexpected reference string %s. Currently, must be "PH12",'
-				' "Hea14", "SE15", "Bea18", "Lea18", "HH21"' % reference
+				' "Hea14", "SE15", "Bea18", "HH21"' % reference
 				)
 
 		else:

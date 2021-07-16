@@ -37,13 +37,17 @@ b4 = 1.0771e9
 b2 = 2.5885e4
 b0 = 0.1745
 
+#anderson et al. constants (Eq. 1)
+a2 = 0.0391e6
+a0 = 0.154
+
 #Temp conversion constants
 cdes_aff = 0.092 #25C - 90C
 ghosh_aff = 0.081 #25C - 90C
 
 #ref frame conversion constants
-m = 1.0381 #Ghosh to CDES 25C
-b = 0.0266 #Ghosh to CDES 25C
+# m = 1.0381 #Ghosh to CDES 25C
+# b = 0.0266 #Ghosh to CDES 25C
 
 #make lambda equations for native (i.e., literature reported) equations
 
@@ -55,6 +59,9 @@ SE15 = lambda T : s4/(T**4) + s2/(T**2) + s0
 
 #Bea17: CDES90 native
 Bea17 = lambda T : b4/(T**4) + b2/(T**2) + b0
+
+#Aea21: I-CDES native
+Aea21 = lambda T : a2/(T**2) + a0
 
 #store in dictionary
 caleqs = {'PH12':{'Ghosh25':lambda T : (PH12(T) - b)/m,
@@ -69,6 +76,7 @@ caleqs = {'PH12':{'Ghosh25':lambda T : (PH12(T) - b)/m,
 		  		  'Ghosh90' :lambda T : (Bea17(T) - b)/m,
 				  'CDES25':lambda T : Bea17(T) + cdes_aff,
 				  'CDES90': lambda T : Bea17(T)},
+		  'Aea21':{'I-CDES': lambda T : Aea21(T)},
 		 }
 
 #---------------------------------------------------------------------#

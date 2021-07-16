@@ -4,8 +4,8 @@ disordered kinetic model for clumped isotope bond reordering in carbonates",
 *Earth and Planetary Science Letters*, **566**, 116962. It was created by:
 
 	Jordon D. Hemingway
-	Postdoctoral Fellow, Harvard University
-	(currently Assistant Professor, ETH Zurich)
+	Assistant Professor, ETH Zurich
+	(Postdoctoral Fellow at Harvard University a the time of writing)
 	jordon.hemingway@erdw.ethz.ch
 
 source code can be found at:

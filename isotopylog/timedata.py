@@ -77,13 +77,16 @@ class HeatingExperiment(object):
 		The D-T calibration curve to use, either from the literature or as
 		a user-inputted lambda function. If from the literature for D47
 		clumps, options are: \n
-			``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
-			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
-			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
-		If as a lambda function, must have T in Kelvin. Note that literature
-		equations will be adjusted to be consistent with any reference frame,
-		but lambda functions will be reference-frame-specific.
-		Defaults to ``'Bea17'``.
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 (CDES 25C)\n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 (Ghosh 25C)\n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 (CDES 90C) \n
+			``'Aea21'``: for Anderson et al. (2021) Eq. 1 (I-CDES) \n
+		If as a lambda function, must have T in Kelvin. It is recommended to
+		run each calibration only using its native reference frame (denoted in
+		parentheses); although these will be automatically adjusted to different
+		reference frames, **there is no guarantee that this conversion is
+		accurate for all analytical setups**. In contrast, lambda functions must
+		be reference-frame specific. Defaults to ``'Aea21'``.
 
 	clumps : string
 		The clumped isotope system under consideration. Currently only
@@ -116,7 +119,7 @@ class HeatingExperiment(object):
 			``'Craig+Li'``: for Craig (1957) + Li et al. (1988)\n
 			``'Gonfiantini'``: for Gonfiantini et al. (1995)\n
 			``'Passey'``: for Passey et al. (2014) lam17\n
-		Defaults to ``'Gonfiantini'``.
+		Defaults to ``'Brand'``.
 
 	ref_frame : string
 		The reference frame used to calculate clumped isotope data. Options
@@ -125,7 +128,10 @@ class HeatingExperiment(object):
 			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
 			``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. (2006)
 			acidified at 25 C.\n
-		Defaults to ``'CDES90'``.
+			``'I-CDES'``: Carbon Dioxide Equilibrium Scale acidified at 90 C,
+			referenced to carbonate standards as described in Bernasconi et al.
+			(2021).
+		Defaults to ``'I-CDES'``.
 
 	t : None or array-like
 		Array of forward-modeled time points, in the same time units as ``tex``.
@@ -164,22 +170,26 @@ class HeatingExperiment(object):
 	relative to VPDB, not VSMOW.
 
 	This class does allow users to change the reference frame in which D values
-	are reported, however, this functionality should be used with caution.
+	are reported, **however, this functionality should be used with caution.**
 	Transer functions between "Ghosh" and "CDES" reference frame will likely
 	vary between sample sets, and will certainly vary between labs. For this
-	reason, it is recommended that users upload data in the CDES reference
-	frame and perform all calculations within this frame.
+	reason, it is recommended that users upload data in the I-CDES reference
+	frame and perform all calculations within this frame (assuming data were
+	generated along with carbonate standards as described in Bernasoni et al.,
+	2021).
 
 	For calculating D-T calibrations in reference frames other than those used
 	in the original publications (i.e., ``CDES25`` for ``PH12``, ``Ghosh25`` 
-	for ``SE15``, and ``CDES90`` for ``Bea17``), the following transfer function
-	parameters are used:\n
+	for ``SE15``, ``CDES90`` for ``Bea17``, and ``I-CDES`` for ``Aea21``), the 
+	following transfer function parameters are used:\n
 		Ghosh_to_CDES_slope = 1.0381\n
 		Ghosh_to_CDES_intercept = 0.0266\n
 		CDES_AFF = 0.092\n
 		GHosh_AFF = 0.081\n
-	If other transfer function parameters are required, then users should
-	input D-T calibrations as custom lambda functions.
+	(data inputted in ``I-CDES`` cannot be converted to other reference frames
+	since this should be the only reference frame used moving forward). If other 
+	transfer function parameters are required, then users should input D-T 
+	calibrations as custom lambda functions.
 
 	See Also
 	--------
@@ -290,18 +300,21 @@ class HeatingExperiment(object):
 	[11] Passey et al. (2014) *Geochim. Cosmochim. Ac.*, **141**, 1--25.\n
 	[12] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
 	[13] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.\n
-	[14] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279.
+	[14] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279. \n
+	[15] Anderson et al. (2021) *Geophys. Res. Lett.*, **48**, e2020GL092069. \n
+	[16] Bernasconi et al. (2021) *Geochem., Geophys., Geosys.*, **22**, 
+	e2020GC009588. \n
 	'''
 
 	#define all the possible attributes for __init__ using _kwattrs
 	_kwattrs = {
-		'calibration' : 'Bea17', 
+		'calibration' : 'Aea21', 
 		'clumps' : 'CO47', 
 		'D' : None, 
 		'D_std' : None,
 		'dex_std' : None,
-		'iso_params' : 'Gonfiantini',
-		'ref_frame' : 'CDES90',
+		'iso_params' : 'Brand',
+		'ref_frame' : 'I-CDES',
 		't' : None,
 		'T_std' : None,
 		}
@@ -373,7 +386,7 @@ class HeatingExperiment(object):
 	#define @classmethods
 	#method for generating HeatingExperiment instance from csv file 
 	@classmethod
-	def from_csv(cls, file, calibration = 'Bea17', culled = True, cull_sig = 1):
+	def from_csv(cls, file, calibration = 'Aea21', culled = True, cull_sig = 1):
 		'''
 		Imports data from a csv file and creates a HeatingExperiment object
 		from those data.
@@ -387,17 +400,21 @@ class HeatingExperiment(object):
 			The D-T calibration curve to use, either from the literature or as
 			a user-inputted lambda function. If from the literature for D47
 			clumps, options are: \n
-				``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
-				``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
-				``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
-			If as a lambda function, must have T in Kelvin. Note that
-			literature equations will be adjusted to be consistent with any 
-			reference frame, but lambda functions will be reference-frame-
-			specific. Defaults to ``'Bea17'``.
+				``'PH12'``: for Passey and Henkes (2012) Eq. 4 (CDES 25C)\n
+				``'SE15'``: for Stolper and Eiler (2015) Fig. 3 (Ghosh 25C)\n
+				``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 (CDES 90C) \n
+				``'Aea21'``: for Anderson et al. (2021) Eq. 1 (I-CDES) \n
+			If as a lambda function, must have T in Kelvin. It is recommended to
+			run each calibration only using its native reference frame (denoted 
+			in parentheses); although these will be automatically adjusted to 
+			different reference frames, **there is no guarantee that this 
+			conversion is accurate for all analytical setups**. In contrast, 
+			lambda functions must be reference-frame specific. Defaults to
+			``'Aea21'``.
 
 		culled : boolean
 			Tells the function whether or not to cull data following the
-			approach of Passey and Henkes (2012).
+			approach of Passey and Henkes (2012). Defaults to ``True``.
 
 		cull_sig : int or float
 			The number of standard deviations deemed to be the cutoff
@@ -463,7 +480,14 @@ class HeatingExperiment(object):
 		References
 		----------
 
-		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.
+		[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 
+		223--236.\n
+		[2] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
+		[3] Daëron et al. (2016) *Chem. Geol.*, **442**, 83--96.\n
+		[4] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 
+		255--279. \n
+		[5] Anderson et al. (2021) *Geophys. Res. Lett.*, **48**, 
+		e2020GL092069. \n
 		'''
 
 		#import experimental data
@@ -555,8 +579,8 @@ class HeatingExperiment(object):
 			223--236.\n
 		[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
 		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
-		[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**,
-			XX--XX.
+		[4] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**,
+			116962.
 		'''
 
 		#round tmax up
@@ -876,7 +900,9 @@ class HeatingExperiment(object):
 		aff = 0.092):
 		'''
 		Changes the HeatingExperiment reference frame and updates all clumped
-		isotope data accordingly.
+		isotope data accordingly. Note, this is only possible for Ghosh and
+		CDES reference frames, as I-CDES should always be used from now on and
+		should never be converted into any "legacy" reference frames.
 
 		Parameters
 		----------
@@ -909,11 +935,11 @@ class HeatingExperiment(object):
 		Notes
 		-----
 
-		These conversion factors are taken from the literature and might not
+		**These conversion factors are taken from the literature and might not
 		apply to data generated in other labs or using alternative methods.
 		Users should therefore only change reference frames when confident in
 		the transfer function values, and should use lab-specific values where
-		appropriate.
+		appropriate.**
 
 		Examples
 		--------
@@ -1024,11 +1050,14 @@ class HeatingExperiment(object):
 		elif value in ['SE15','se15','Stolper15','Stolper2015','Stolper']:
 			self._calibration = 'SE15'
 
+		elif value in ['Aea21','AEA21','Anderson','anderson','Anderson21']:
+			self._calibration = 'Aea21'
+
 		#raise exception if it's not an acceptable string
 		elif isinstance(value, str):
 			raise ValueError(
 				'%s is an invalid T-D calibration. Must be one of: "Bea17",'
-				'"PH12", or "SE15"' % value)
+				'"PH12", "SE15", or "Aea21"' % value)
 
 		#if it's a lambda function, store appropriately
 		elif isinstance(value, LambdaType):
@@ -1294,11 +1323,14 @@ class HeatingExperiment(object):
 		elif value in ['Ghosh90','ghosh90']:
 			self._ref_frame = 'Ghosh90'
 
+		elif value in ['I-CDES','ICDES','icdes','Icdes','I-cdes','I-CDES90']:
+			self._ref_frame = 'I-CDES'
+
 		#raise exception if it's not an acceptable string
 		elif isinstance(value, str):
 			raise ValueError(
 				'%s is an invalid ref_frame. Must be one of: "CDES25",'
-				' "CDES90", "Ghosh25", or "Ghosh90".' % value)
+				' "CDES90", "Ghosh25", "Ghosh90", or "I-CDES".' % value)
 
 		#raise different exception if it's not a string
 		else:

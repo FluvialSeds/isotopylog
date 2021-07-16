@@ -26,10 +26,13 @@ __all__ = ['_calc_A',
 		   '_ghPH12',
 		   '_ghSE15',
 		   '_Jacobian',
+		   'Deq_from_T',
+		   'T_from_Deq'
 		  ]
 
 #import packages
 import numpy as np
+import types
 
 #import linear algebra functions
 from numpy import eye
@@ -73,7 +76,7 @@ def _calc_A(t, nu):
 	----------
 
 	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.\n
-	[2] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[2] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
 	#extract constants
@@ -401,7 +404,7 @@ def _fHH21(t, mu_nu, sig_nu, nu_max, nu_min, nnu):
 	References
 	----------
 
-	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
 	#setup arrays
@@ -470,9 +473,9 @@ def _fSE15(
 	mp, 
 	d0, 
 	T, 
-	calibration = 'Bea17', 
-	iso_params = 'Gonfiantini', 
-	ref_frame = 'CDES90',
+	calibration = 'Aea21', 
+	iso_params = 'Brand', 
+	ref_frame = 'I-CDES',
 	z = 6
 	):
 	'''
@@ -508,12 +511,19 @@ def _fSE15(
 		The experimental temperature, in Kelvin.
 
 	calibration : string
-		The D-T calibration curve to use, from the literature. Options are: \n
-			``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
-			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
-			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
-		Note that literature equations will be adjusted to be consistent with 
-		any reference frame. Defaults to ``'Bea17'``.
+		The D-T calibration curve to use, either from the literature or as
+		a user-inputted lambda function. If from the literature for D47
+		clumps, options are: \n
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 (CDES 25C)\n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 (Ghosh 25C)\n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 (CDES 90C) \n
+			``'Aea21'``: for Anderson et al. (2021) Eq. 1 (I-CDES) \n
+		If as a lambda function, must have T in Kelvin. It is recommended to
+		run each calibration only using its native reference frame (denoted in
+		parentheses); although these will be automatically adjusted to different
+		reference frames, **there is no guarantee that this conversion is
+		accurate for all analytical setups**. In contrast, lambda functions must
+		be reference-frame specific. Defaults to ``'Aea21'``.
 
 	iso_params : string
 		The isotope parameters used to calculate clumped data. For example, if
@@ -528,18 +538,19 @@ def _fSE15(
 			``'Craig+Li'``: for Craig (1957) + Li et al. (1988)\n
 			``'Gonfiantini'``: for Gonfiantini et al. (1995)\n
 			``'Passey'``: for Passey et al. (2014) lam17\n
-		Defaults to ``'Gonfiantini'``.
+		Defaults to ``'Brand'``.
 
 	ref_frame : string
 		The reference frame used to calculate clumped isotope data. Options
 		are:\n
 			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.\n
 			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
-			``'Ghosh25'``: Heated Gas Line Reference Frame of Ghosh et al. 
-			(2006) acidified at 25 C.\n
-			``'Ghosh90'``: Heated Gas Line Reference Frame of Ghosh et al. 
-			(2006) acidified at 90 C.\n
-		Defaults to ``'CDES90'``.
+			``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. (2006)
+			acidified at 25 C.\n
+			``'I-CDES'``: Carbon Dioxide Equilibrium Scale acidified at 90 C,
+			referenced to carbonate standards as described in Bernasconi et al.
+			(2021).
+		Defaults to ``'I-CDES'``.
 
 	z : int
 		The mineral lattice coordination number to use for calculating the
@@ -830,7 +841,7 @@ def _ghHH21(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nnu = 400):
 	References
 	----------
 
-	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[1] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
 	#get constants
@@ -953,9 +964,9 @@ def _ghSE15(
 	d18O,
 	T, 
 	Tref,
-	calibration = 'Bea17', 
-	iso_params = 'Gonfiantini', 
-	ref_frame = 'CDES90',
+	calibration = 'Aea21', 
+	iso_params = 'Brand', 
+	ref_frame = 'I-CDES',
 	z = 6
 	):
 	'''
@@ -1004,12 +1015,19 @@ def _ghSE15(
 		The reference temperature at which lnkref was calculated, in Kelvin.
 
 	calibration : string
-		The D-T calibration curve to use, from the literature. Options are: \n
-			``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
-			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
-			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
-		Note that literature equations will be adjusted to be consistent with 
-		any reference frame. Defaults to ``'Bea17'``.
+		The D-T calibration curve to use, either from the literature or as
+		a user-inputted lambda function. If from the literature for D47
+		clumps, options are: \n
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 (CDES 25C)\n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 (Ghosh 25C)\n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 (CDES 90C) \n
+			``'Aea21'``: for Anderson et al. (2021) Eq. 1 (I-CDES) \n
+		If as a lambda function, must have T in Kelvin. It is recommended to
+		run each calibration only using its native reference frame (denoted in
+		parentheses); although these will be automatically adjusted to different
+		reference frames, **there is no guarantee that this conversion is
+		accurate for all analytical setups**. In contrast, lambda functions must
+		be reference-frame specific. Defaults to ``'Aea21'``.
 
 	iso_params : string
 		The isotope parameters used to calculate clumped data. For example, if
@@ -1024,18 +1042,19 @@ def _ghSE15(
 			``'Craig+Li'``: for Craig (1957) + Li et al. (1988)\n
 			``'Gonfiantini'``: for Gonfiantini et al. (1995)\n
 			``'Passey'``: for Passey et al. (2014) lam17\n
-		Defaults to ``'Gonfiantini'``.
+		Defaults to ``'Brand'``.
 
 	ref_frame : string
 		The reference frame used to calculate clumped isotope data. Options
 		are:\n
 			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.\n
 			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
-			``'Ghosh25'``: Heated Gas Line Reference Frame of Ghosh et al. 
-			(2006) acidified at 25 C.\n
-			``'Ghosh90'``: Heated Gas Line Reference Frame of Ghosh et al. 
-			(2006) acidified at 90 C.\n
-		Defaults to ``'CDES90'``.
+			``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. (2006)
+			acidified at 25 C.\n
+			``'I-CDES'``: Carbon Dioxide Equilibrium Scale acidified at 90 C,
+			referenced to carbonate standards as described in Bernasconi et al.
+			(2021).
+		Defaults to ``'I-CDES'``.
 
 	z : int
 		The mineral lattice coordination number to use for calculating the
@@ -1196,7 +1215,7 @@ def _Jacobian(f, t, p, eps = 1e-6):
 	return J
 
 #function for calculating T from D
-def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
+def Deq_from_T(T, calibration = 'Aea21', clumps = 'CO47', ref_frame = 'I-CDES'):
 	'''
 	Calculates equilibrium clumped isotope values at a given temperature for
 	a given calibration and reference frame.
@@ -1209,12 +1228,19 @@ def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
 		in Kelvin. Can be a single temperature or an array of temperatures.
 
 	calibration : string
-		The D-T calibration curve to use, from the literature. Options are: \n
-			``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
-			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
-			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
-		Note that literature equations will be adjusted to be consistent with 
-		any reference frame. Defaults to ``'Bea17'``.
+		The D-T calibration curve to use, either from the literature or as
+		a user-inputted lambda function. If from the literature for D47
+		clumps, options are: \n
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 (CDES 25C)\n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 (Ghosh 25C)\n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 (CDES 90C) \n
+			``'Aea21'``: for Anderson et al. (2021) Eq. 1 (I-CDES) \n
+		If as a lambda function, must have T in Kelvin. It is recommended to
+		run each calibration only using its native reference frame (denoted in
+		parentheses); although these will be automatically adjusted to different
+		reference frames, **there is no guarantee that this conversion is
+		accurate for all analytical setups**. In contrast, lambda functions must
+		be reference-frame specific. Defaults to ``'Aea21'``.
 
 	clumps : string
 		The clumped isotope system under consideration. Currently only
@@ -1227,11 +1253,12 @@ def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
 		are:\n
 			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.\n
 			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
-			``'Ghosh25'``: Heated Gas Line Reference Frame of Ghosh et al. 
-			(2006) acidified at 25 C.\n
-			``'Ghosh90'``: Heated Gas Line Reference Frame of Ghosh et al. 
-			(2006) acidified at 90 C.\n
-		Defaults to ``'CDES90'``.
+			``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. (2006)
+			acidified at 25 C.\n
+			``'I-CDES'``: Carbon Dioxide Equilibrium Scale acidified at 90 C,
+			referenced to carbonate standards as described in Bernasconi et al.
+			(2021).
+		Defaults to ``'I-CDES'``.
 
 	Returns
 	-------
@@ -1245,7 +1272,7 @@ def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
 	------
 
 	TypeError
-		If inputted keyword arguments are not strings.
+		If inputted keyword arguments are not strings or lambda function.
 
 	TypeError
 		If inputted keyword arguments are not acceptable strings.
@@ -1282,12 +1309,20 @@ def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
 	[2] Dennis et al. (2011) *Geochim. Cosmochim. Ac.*, **75**, 7117--7131.\n
 	[3] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
 	[4] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
-	[5] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279.
+	[5] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279. \n
+	[6] Anderson et al. (2021) *Geophys. Res. Lett.*, **48**, e2020GL092069. \n
 	'''
 
 	#make sure clumps is CO47 and extract from dictionary
 	if clumps == 'CO47':
-		Deq = caleqs[calibration][ref_frame](T)
+
+		#if lambda function, calculate direction
+		if isinstance(calibration, types.FunctionType):
+			Deq = calibration(T)
+
+		else:
+			#otherwise call from calibration dictionary
+			Deq = caleqs[calibration][ref_frame](T)
 	
 	elif isinstance(clumps, str):
 		raise ValueError(
@@ -1302,7 +1337,7 @@ def Deq_from_T(T, calibration = 'Bea17', clumps = 'CO47', ref_frame = 'CDES90'):
 	return Deq
 
 #function for calculating T from D
-def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Bea17', ref_frame = 'CDES90'):
+def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Aea21', ref_frame = 'I-CDES'):
 	'''
 	Calculates equilibrium temperature for a given clumped isotope value for
 	a given calibration and reference frame.
@@ -1315,12 +1350,19 @@ def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Bea17', ref_frame = 'CDES90'
 		in Kelvin. Can be a single clumped isotope value or an array of values.
 
 	calibration : string
-		The D-T calibration curve to use, from the literature. Options are: \n
-			``'PH12'``: for Passey and Henkes (2012) Eq. 4 \n
-			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 \n
-			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 \n
-		Note that literature equations will be adjusted to be consistent with 
-		any reference frame. Defaults to ``'Bea17'``.
+		The D-T calibration curve to use, either from the literature or as
+		a user-inputted lambda function. If from the literature for D47
+		clumps, options are: \n
+			``'PH12'``: for Passey and Henkes (2012) Eq. 4 (CDES 25C)\n
+			``'SE15'``: for Stolper and Eiler (2015) Fig. 3 (Ghosh 25C)\n
+			``'Bea17'``: for Bonifacie et al. (2017) Eq. 2 (CDES 90C) \n
+			``'Aea21'``: for Anderson et al. (2021) Eq. 1 (I-CDES) \n
+		If as a lambda function, must have T in Kelvin. It is recommended to
+		run each calibration only using its native reference frame (denoted in
+		parentheses); although these will be automatically adjusted to different
+		reference frames, **there is no guarantee that this conversion is
+		accurate for all analytical setups**. In contrast, lambda functions must
+		be reference-frame specific. Defaults to ``'Aea21'``.
 
 	clumps : string
 		The clumped isotope system under consideration. Currently only
@@ -1333,11 +1375,12 @@ def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Bea17', ref_frame = 'CDES90'
 		are:\n
 			``'CDES25'``: Carbion Dioxide Equilibrium Scale acidified at 25 C.\n
 			``'CDES90'``: Carbon Dioxide Equilibrium Scale acidified at 90 C.\n
-			``'Ghosh25'``: Heated Gas Line Reference Frame of Ghosh et al. 
-			(2006) acidified at 25 C.\n
-			``'Ghosh90'``: Heated Gas Line Reference Frame of Ghosh et al. 
-			(2006) acidified at 90 C.\n
-		Defaults to ``'CDES90'``.
+			``'Ghosh'``: Heated Gas Line Reference Frame of Ghosh et al. (2006)
+			acidified at 25 C.\n
+			``'I-CDES'``: Carbon Dioxide Equilibrium Scale acidified at 90 C,
+			referenced to carbonate standards as described in Bernasconi et al.
+			(2021).
+		Defaults to ``'I-CDES'``.
 
 	Returns
 	-------
@@ -1395,12 +1438,20 @@ def T_from_Deq(Deq, clumps = 'CO47', calibration = 'Bea17', ref_frame = 'CDES90'
 	[2] Dennis et al. (2011) *Geochim. Cosmochim. Ac.*, **75**, 7117--7131.\n
 	[3] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
 	[4] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
-	[5] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279.
+	[5] Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279. \n
+	[6] Anderson et al. (2021) *Geophys. Res. Lett.*, **48**, e2020GL092069. \n
 	'''
 
 	#make sure clumps is CO47 and extract function from dictionary
 	if clumps == 'CO47':
-		func = caleqs[calibration][ref_frame]
+
+		#if lambda function, calculate direction
+		if isinstance(calibration, types.FunctionType):
+			func = calibration
+
+		else:
+			#otherwise call from calibration dictionary
+			func = caleqs[calibration][ref_frame]
 	
 	elif isinstance(clumps, str):
 		raise ValueError(
