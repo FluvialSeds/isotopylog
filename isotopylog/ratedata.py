@@ -350,11 +350,11 @@ class kDistribution(object):
 			Fitting function for Henkes et al. (2014) model.
 
 		isotopylog.fit_HH21
-			Fitting function for Hemingway and Henkes (2020) lognormal model.
+			Fitting function for Hemingway and Henkes (2021) lognormal model.
 
 		isotopylog.fit_HH21inv
 			Fitting function for Tikhonov regularization inversion model of
-			Hemingway and Henkes (2020).
+			Hemingway and Henkes (2021).
 
 		isotopylog.fit_PH12
 			Fitting function for Passey and Henkes (2012) model.
@@ -399,7 +399,7 @@ class kDistribution(object):
 			223--236.\n
 		[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
 		[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
-		[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **566**, 
+		[4] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 
 			116962.
 		'''
 
@@ -993,7 +993,7 @@ class EDistribution(object):
 	For 'SE15' models, E([pair]0/[pair]eq) is forced to an intercept of zero in
 	1/T vs. [pair]0/[pair]eq space, analagous to Stolper and Eiler (2015) Eq. 17.
 	Similarly, for 'HH21' models, sig_nu is forced to an intercept of zero in
-	1/T vs. sig_nu space as discussed in Hemingway and Henkes (2020).
+	1/T vs. sig_nu space as discussed in Hemingway and Henkes (2021).
 
 	See Also
 	--------

@@ -338,7 +338,7 @@ def _forward_model(he, kd, t, z = 6, **kwargs):
 	[1] Passey and Henkes (2012) *Earth Planet. Sci. Lett.*, **351**, 223--236.\n
 	[2] Henkes et al. (2014) *Geochim. Cosmochim. Ac.*, **139**, 362--382.\n
 	[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
-	[4] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[4] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
 	#first, extract parameters for shorthand convenience

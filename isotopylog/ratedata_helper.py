@@ -152,7 +152,7 @@ def calc_L_curve(
 
 	isotopylog.fit_HH21inv
 		Method for fitting heating experiment data using the L-curve approach
-		of Hemingway and Henkes (2020).
+		of Hemingway and Henkes (2021).
 
 	kDistribution.invert_experiment
 		Method for generating a `kDistribution` instance from experimental
@@ -199,7 +199,7 @@ def calc_L_curve(
 
 	[1] Hansen (1994) *Numerical Algorithms*, **6**, 1-35.\n
 	[2] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.\n
-	[3] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[3] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
 	'''
 	
 	#extract arrays
@@ -515,7 +515,7 @@ def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 
 	isotopylog.fit_HH21
 		Method for fitting heating experiment data using the distributed
-		activation energy model of Hemingway and Henkes (2020).
+		activation energy model of Hemingway and Henkes (2021).
 
 	isotopylog.fit_PH12
 		Method for fitting heating experiment data using the pseudo first-
@@ -601,7 +601,7 @@ def fit_Hea14(he, logy = True, p0 = [-10., -10., -10.]):
 def fit_HH21(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 	'''
 	Fits D evolution data using the distributed activation energy model of
-	Hemingway and Henkes (2020). This function solves for mu_nu and sig_nu,
+	Hemingway and Henkes (2021). This function solves for mu_nu and sig_nu,
 	the mean and standard deviation of a Gaussian distribution in lnk space.
 	See HH21 Eq. X for notation and details.
 
@@ -667,7 +667,7 @@ def fit_HH21(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 
 	isotopylog.fit_HH21inv
 		Method for fitting heating experiment data using the L-curve approach
-		of Hemingway and Henkes (2020).
+		of Hemingway and Henkes (2021).
 
 	isotopylog.fit_PH12
 		Method for fitting heating experiment data using the pseudo first-
@@ -697,7 +697,7 @@ def fit_HH21(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 	References
 	----------
 
-	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[1] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
 	#extract values to fit
@@ -762,7 +762,7 @@ def fit_HH21inv(
 	):
 	'''
 	Fits D evolution data using the distributed activation energy model of
-	Hemingway and Henkes (2020). This function solves for rho_nu, the
+	Hemingway and Henkes (2021). This function solves for rho_nu, the
 	regularized distribution of rates in lnk space. See HH21 Eq. X for
 	notation and details. This function can estimate best-fit omega using
 	Tikhonov regularization.
@@ -823,7 +823,7 @@ def fit_HH21inv(
 
 	isotopylog.fit_HH21
 		Method for fitting heating experiment data using the lognormal model
-		of Hemingway and Henkes (2020).
+		of Hemingway and Henkes (2021).
 
 	kDistribution.invert_experiment
 		Method for generating a `kDistribution` instance from experimental
@@ -856,7 +856,7 @@ def fit_HH21inv(
 	----------
 
 	[1] Forney and Rothman (2012) *J. Royal Soc. Inter.*, **9**, 2255--2267.\n
-	[2] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+	[2] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
 	#extract variables
@@ -1014,7 +1014,7 @@ def fit_PH12(he, logy = True, p0 = [-10., 0.5], thresh = 1e-10):
 
 	isotopylog.fit_HH21
 		Method for fitting heating experiment data using the distributed
-		activation energy model of Hemingway and Henkes (2020).
+		activation energy model of Hemingway and Henkes (2021).
 
 	isotopylog.fit_SE15
 		Method for fitting heatinge experiment data using the paird diffusion
@@ -1188,7 +1188,7 @@ def fit_SE15(he, p0 = [-7., -9., 0.0992], mp = None, z = 6):
 
 	isotopylog.fit_HH21
 		Method for fitting heating experiment data using the distributed
-		activation energy model of Hemingway and Henkes (2020).
+		activation energy model of Hemingway and Henkes (2021).
 
 	isotopylog.fit_PH12
 		Method for fitting heating experiment data using the pseudo first-

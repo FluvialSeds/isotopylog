@@ -404,7 +404,7 @@ def _fHH21(t, mu_nu, sig_nu, nu_max, nu_min, nnu):
 	References
 	----------
 
-	[1] Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **566**, 116962.
+	[1] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
 	#setup arrays
