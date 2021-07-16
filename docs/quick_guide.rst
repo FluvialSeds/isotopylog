@@ -148,7 +148,7 @@ The next step is to fit the heating experiment data with one of the avaialable k
 		mp = 0.0992 #can pass a value to force the pair/pair_random slope
 		)
 
-	#finally, for fitting the Hemingway and Henkes (2020) model:
+	#finally, for fitting the Hemingway and Henkes (2021) model:
 	kd_hh = ipl.kDistribution.invert_experiment(
 		he,
 		model = 'HH21',
@@ -239,7 +239,7 @@ Finally, individual data points (e.g., outliers) can be manually dropped accordi
 Plotting Activation Energies
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Furthermore, activation energy Arrhenius plots can be easily visualized. For example, assume we have some ``ipl.EDistribution`` object that was fit using the Hemingway and Henkes (2020) model type. Then, we can visualize these results  as follows::
+Furthermore, activation energy Arrhenius plots can be easily visualized. For example, assume we have some ``ipl.EDistribution`` object that was fit using the Hemingway and Henkes (2021) model type. Then, we can visualize these results  as follows::
 
 		#make figure
 		fig, ax = plt.subplots(1,2, sharex = True)
