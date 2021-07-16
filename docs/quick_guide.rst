@@ -151,7 +151,7 @@ The next step is to fit the heating experiment data with one of the avaialable k
 	#finally, for fitting the Hemingway and Henkes (2020) model:
 	kd_hh = ipl.kDistribution.invert_experiment(
 		he,
-		model = 'HH20',
+		model = 'HH21',
 		fit_inv = True #include the inversion as well as the lognormal fits
 		)
 
@@ -271,7 +271,7 @@ Finally, perhaps the most frequently utilized feature of ``isotopylog`` will be 
 Both of these tasks are trivial in ``isotopylog``. For example, overprinting during heating can be calculated as follows::
 
 	#generate EDistribution instance from literature
-	ed = ic.EDistribution.from_literature(
+	ed = ipl.EDistribution.from_literature(
 		mineral = 'calcite', 
 		reference = 'SE15', 
 		Tref = 700)

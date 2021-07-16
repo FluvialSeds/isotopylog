@@ -20,8 +20,8 @@ isotopylog methods
 	isotopylog.derivatize
 	isotopylog.fit_Arrhenius
 	isotopylog.fit_Hea14
-	isotopylog.fit_HH20
-	isotopylog.fit_HH20inv
+	isotopylog.fit_HH21
+	isotopylog.fit_HH21inv
 	isotopylog.fit_PH12
 	isotopylog.fit_SE15
 	isotopylog.geologic_history
@@ -50,5 +50,7 @@ pacakge or provide information regarding the choice of user-inputted parameters.
 * Bonifacie et al. (2017) *Geochim. Cosmochim. Ac.*, **200**, 255--279.
 * Brenner et al. (2018) *Geochim. Cosmochim. Ac.*, **224**, 42--63.
 * Lloyd et al. (2018) *Geochim. Cosmochim. Ac.*, **242**, 1--20.
-* Chen et al. (2019) *Geochim. Cosmochim. Ac.*, **258**, 156--173.\n
-* Hemingway and Henkes (2020) *Earth Planet. Sci. Lett.*, **X**, XX--XX.
+* Chen et al. (2019) *Geochim. Cosmochim. Ac.*, **258**, 156--173.
+* Anderson et al. (2021) *Geophys. Res. Lett.*, **48**, e2020GL092069.
+* Bernasconi et al. (2021) *Geochem., Geophys., Geosys.*, **22**, e2020GC009588.
+* Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.

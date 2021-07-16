@@ -1,6 +1,6 @@
-isotopylog.fit\_HH20
+isotopylog.fit\_HH21
 ====================
 
 .. currentmodule:: isotopylog
 
-.. autofunction:: fit_HH20
+.. autofunction:: fit_HH21

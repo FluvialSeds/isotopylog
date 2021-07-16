@@ -22,10 +22,10 @@ Package Information
   Jordon D. Hemingway (jordon_hemingway@fas.harvard.edu)
 
 :Version:
-  0.0.5
+  0.0.6
 
 :Release:
-  28 August 2020
+  15 July 2021
 
 :License:
   GNU GPL v3 (or greater)
