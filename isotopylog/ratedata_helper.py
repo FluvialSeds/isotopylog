@@ -603,7 +603,7 @@ def fit_HH21(he, nu_max = 10, nu_min = -50, nnu = 300, p0 = [-20, 5]):
 	Fits D evolution data using the distributed activation energy model of
 	Hemingway and Henkes (2021). This function solves for mu_nu and sig_nu,
 	the mean and standard deviation of a Gaussian distribution in lnk space.
-	See HH21 Eq. X for notation and details.
+	See HH21 Eq. 24 for notation and details.
 
 	Parameters
 	----------
