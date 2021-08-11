@@ -399,7 +399,7 @@ def geologic_history(
 			T,
 			Tref)
 
-	#Hemingway and Henkes 2020 model
+	#Hemingway and Henkes 2021 model
 	elif ed.model == 'HH21':
 
 		#extract relevant parameters and uncertainty in the order:

@@ -844,42 +844,86 @@ def _ghHH21(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nnu = 400):
 	[1] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
 	'''
 
+	#----------------------------------#
+	# NEW CODE USING UPDATED EQUATION! #
+	# JDH 10 August 2021               #
+	#----------------------------------#
+
 	#get constants
 	nt = len(t)
 	dt = np.gradient(t)
 	R = 8.314/1000 #in kJ/mol/K
 
-	#calculate overall k at each temperature point, termed kappa
-	#calculate nu_mu and nu_sig from Emu and Esig
-	nu_mu = lnkmuref + (Emu/R)*(1/Tref - 1/T)
-	nu_sig = lnksigref - (Esig/R)*(1/T)
+	#pre-allocate D matrix
+	Dmat = np.zeros([nnu,nt])
+	Dmat[:,0] = D0
 
-	#calculate pnu from nu_mu and nu_sig
-	# pnu is an [nt x nnu] matrix
+	#calculate E and p(E) arrays
+	#go from 5*Esig above Emu to 5*Esig below Emu
+	E_min = np.floor(Emu + 5*Esig)
+	E_max = np.ceil(Emu - 5*Esig)
 
-	#first, make nu array that spans from 5*sigma above max(nu_mu) to 5*sigma
-	# below min(nu_mu)
-	nu_min = np.floor(nu_mu.min() - 5*nu_sig.max())
-	nu_max = np.ceil(nu_mu.max() + 5*nu_sig.max())
+	#get E array
+	E = np.linspace(E_min, E_max, nnu)
+	dE = E[1] - E[0]
 
-	nu = np.linspace(nu_min, nu_max, nnu)
-	dnu = nu[1] - nu[0]
+	#get p(E) array
+	pE = _Gaussian(E, Emu, Esig)
 
-	#then, make into matrix
-	rhonu = _Gaussian(nu, nu_mu, nu_sig)
+	#get nu matrix from T and E arrays
+	numat = lnkmuref + np.outer((E/R),(1/Tref - 1/T))
 
-	#make array of kappa = integral(rho_nu * e^(-k*dt))
-	b = np.exp(-np.outer(np.exp(nu), dt))
-	kappa = np.sum(rhonu * b * dnu, axis = 0)
+	#calculate b, the exponential decay for each E value at each time step
+	b = np.exp(-np.exp(numat)*np.outer(np.ones(nnu),dt))
 
-	#pre-allocate D array
-	D = np.zeros(nt)
-	D[0] = D0
-
-	#loop through and solve for D at each time point
+	#loop through and solve for D(E,t)
 	for i in range(1,nt):
 
-		D[i] = (D[i-1] - Deq[i])*kappa[i] + Deq[i]
+	    Dmat[:,i] = (Dmat[:,i-1] - Deq[i])*b[:,i] + Deq[i]
+
+	#calcualte overall D value
+	D = np.sum(np.outer(pE,np.ones(nt))*Dmat*dE, axis = 0)
+
+	#-------------------------------------------------------------------------#
+	#OLD CODE: USED THE WRONG EQUATION FOR GEOLOGIC HISTORY RECONSTRUCTIONS!! #
+	#-------------------------------------------------------------------------#
+
+	# #get constants
+	# nt = len(t)
+	# dt = np.gradient(t)
+	# R = 8.314/1000 #in kJ/mol/K
+
+	# #calculate overall k at each temperature point, termed kappa
+	# #calculate nu_mu and nu_sig from Emu and Esig
+	# nu_mu = lnkmuref + (Emu/R)*(1/Tref - 1/T)
+	# nu_sig = lnksigref - (Esig/R)*(1/T)
+
+	# #calculate pnu from nu_mu and nu_sig
+	# # pnu is an [nt x nnu] matrix
+
+	# #first, make nu array that spans from 5*sigma above max(nu_mu) to 5*sigma
+	# # below min(nu_mu)
+	# nu_min = np.floor(nu_mu.min() - 5*nu_sig.max())
+	# nu_max = np.ceil(nu_mu.max() + 5*nu_sig.max())
+
+	# nu = np.linspace(nu_min, nu_max, nnu)
+	# dnu = nu[1] - nu[0]
+
+	# #then, make into matrix
+	# rhonu = _Gaussian(nu, nu_mu, nu_sig)
+
+	# #make array of kappa = integral(rho_nu * e^(-k*dt))
+	# b = np.exp(-np.outer(np.exp(nu), dt))
+	# kappa = np.sum(rhonu * b * dnu, axis = 0)
+
+	# #pre-allocate D array
+	# D = np.zeros(nt)
+	# D[0] = D0
+
+	# #loop through and solve for D at each time point
+	# for i in range(1,nt):
+
+	# 	D[i] = (D[i-1] - Deq[i])*kappa[i] + Deq[i]
 
 	return D
 
