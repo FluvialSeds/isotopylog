@@ -16,7 +16,7 @@ documentation can be found at:
 
 	http://isotopylog.readthedocs.io
 
-Version 0.0.6 is current as of 15 July 2021 and reflects the notation used
+Version 0.0.7 is current as of 25 August 2021 and reflects the notation used
 in Hemingway and Henkes (2021).
 '''
 
@@ -25,7 +25,7 @@ from __future__ import(
 	print_function,
 	)
 
-__version__ = '0.0.6'
+__version__ = '0.0.7'
 
 __docformat__ = 'restructuredtext en'
 

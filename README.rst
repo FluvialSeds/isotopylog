@@ -15,10 +15,10 @@ Package Information
   Jordon D. Hemingway (jordon.hemingway@erdw.ethz.ch)
 
 :Version:
-  0.0.6
+  0.0.7
 
 :Release:
-  15 July 2021
+  25 August 2021
 
 :License:
   GNU GPL v3 (or greater)

@@ -846,7 +846,7 @@ def _ghHH21(t, Emu, lnkmuref, Esig, lnksigref, D0, Deq, T, Tref, nnu = 400):
 
 	#----------------------------------#
 	# NEW CODE USING UPDATED EQUATION! #
-	# JDH 10 August 2021               #
+	# JDH 25 August 2021               #
 	#----------------------------------#
 
 	#get constants

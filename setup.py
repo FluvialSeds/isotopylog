@@ -5,7 +5,7 @@ def readme():
 		return f.read()
 
 setup(name='isotopylog',
-	version='0.0.6',
+	version='0.0.7',
 	description='Clumped isotope kinetic analysis',
 	long_description=readme(),
 	classifiers=[
@@ -20,7 +20,7 @@ setup(name='isotopylog',
 		'Topic :: Scientific/Engineering'
 	],
 	url='https://github.com/FluvialSeds/isotopylog',
-	download_url='https://github.com/FluvialSeds/isotopylog/tarball/0.0.6',
+	download_url='https://github.com/FluvialSeds/isotopylog/tarball/0.0.7',
 	keywords=[
 		'geochemistry',
 		'clumped isotopes',
@@ -29,7 +29,7 @@ setup(name='isotopylog',
 		'carbon cycle'
 	],
 	author='Jordon D. Hemingway',
-	author_email='jordon_hemingway@fas.harvard.edu',
+	author_email='jordon.hemingway@erdw.ethz.ch',
 	license='GNU GPL Version 3',
 	packages=['isotopylog'],
 	install_requires=[

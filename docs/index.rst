@@ -19,13 +19,13 @@ This package allows users to quickly and easily assess whether their clumped iso
 Package Information
 -------------------
 :Authors:
-  Jordon D. Hemingway (jordon_hemingway@fas.harvard.edu)
+  Jordon D. Hemingway (jordon.hemingway@erdw.ethz.ch)
 
 :Version:
-  0.0.6
+  0.0.7
 
 :Release:
-  15 July 2021
+  25 August 2021
 
 :License:
   GNU GPL v3 (or greater)
@@ -41,7 +41,7 @@ Bug Reports
 -----------
 This software is still in active deveopment. Please report any bugs directly to me at:
 
-	jordon_hemingway@fas.harvard.edu
+	jordon.hemingway@erdw.ethz.ch
 
 How to Cite
 -----------
