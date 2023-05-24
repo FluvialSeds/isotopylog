@@ -18,7 +18,7 @@ Package Information
   0.0.7
 
 :Release:
-  25 August 2021
+  24 May 2023
 
 :License:
   GNU GPL v3 (or greater)
