@@ -1162,7 +1162,7 @@ class EDistribution(object):
 				``'Hea14'`` (Henkes et al. 2014; model type 'Hea14')\n
 				``'SE15'`` (Stolper and Eiler 2015; model type 'SE15')\n
 				``'Bea18'`` (Brenner et al. 2018; model type 'SE15')\n
-				``'HH21'`` (Hemingway and Henkes 2021; model type 'HH21')
+				``'HH21'`` (Hemingway and Henkes 2021; model type 'HH21')\n
 				``'Lea23_HH21'`` (Looser et al. 2023, model type 'HH21')\n
 				``'Lea23_Hea14'`` (Looser et al. 2023, model type 'Hea14')\n
 				``'Lea23_SE15'`` (Looser et al. 2023, model type 'SE15')\n
