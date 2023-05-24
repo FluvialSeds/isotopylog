@@ -985,15 +985,17 @@ class EDistribution(object):
 	Notes
 	-----
 
-	All resulting activation energy parameters are reported in units of kJ/mol.
-	For 'SE15' model types, this means that resulting E([pair]0/[pair]eq) should
-	be multiplied by R, the ideal gas constant, to retrieve a slope value
-	analagous to that in Stolper and Eiler (2015) Eq. 17.
+	All resulting activation energies are reported in units of kJ/mol. All
+	resulting ln(kref) values are reported in units of ln inverse time, with one
+	exception: 'mp', which is reported in units of Kelvin. This means that for
+	'SE15' E([pair]0/[pair]rand) should be zero and ln(kref)([pair]0/[pair]rand)
+	should be equal to the slope mp analogous to that reported in Stolper and 
+	Eiler (2015) Eq. 17. IF E([pair]0/[pair]rand) IS NOT ZERO (or within a
+	numerical rounding error of zero), THIS IMPLIES THAT ln([pair]0/[pair]rand)
+	DEPENDS ON 1/T**2, NOT 1/T AS ASSUMED IN STOLPER AND EILER 2015.
 
-	For 'SE15' models, E([pair]0/[pair]eq) is forced to an intercept of zero in
-	1/T vs. [pair]0/[pair]eq space, analagous to Stolper and Eiler (2015) Eq. 17.
-	Similarly, for 'HH21' models, sig_nu is forced to an intercept of zero in
-	1/T vs. sig_nu space as discussed in Hemingway and Henkes (2021).
+	For 'HH21' models, sig_nu is forced to an intercept of zero in 1/T vs. 
+	sig_nu space as discussed in Hemingway and Henkes (2021).
 
 	See Also
 	--------
@@ -1080,7 +1082,8 @@ class EDistribution(object):
 	[3] Stolper and Eiler (2015) *Am. J. Sci.*, **315**, 363--411.\n
 	[4] Brenner et al. (2018) *Geochim. Cosmochim. Ac.*, **224**, 42--63.\n
 	[5] Lloyd et al. (2018) *Geochim. Cosmochim. Ac.*, **242**, 1--20.\n
-	[6] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
+	[6] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.\n
+	[7] Looser et al. (2023) *Geochim. Cosmochim. Ac.*, **350**, 1--15.
 	'''
 
 	#define all the possible attributes for __init__ using _kwattrs
@@ -1160,6 +1163,9 @@ class EDistribution(object):
 				``'SE15'`` (Stolper and Eiler 2015; model type 'SE15')\n
 				``'Bea18'`` (Brenner et al. 2018; model type 'SE15')\n
 				``'HH21'`` (Hemingway and Henkes 2021; model type 'HH21')
+				``'Lea23_HH21'`` (Looser et al. 2023, model type 'HH21')\n
+				``'Lea23_Hea14'`` (Looser et al. 2023, model type 'Hea14')\n
+				``'Lea23_SE15'`` (Looser et al. 2023, model type 'SE15')\n
 
 		Returns
 		-------
@@ -1198,6 +1204,11 @@ class EDistribution(object):
 		Hea14 and optical calcite data from PH12 analyzed using the SE15 model,
 		as reported in Stolper and Eiler 2015.
 
+		For Looser et al. (2023) belemnites, reference can be either 
+		``'Lea23_HH21'``, ``'Lea23_Hea14'``, or ``'Lea23_SE15'``, since results
+		for all three models were reported in this study. Note that this study
+		only includes belemnite results, not optical calcites.
+
 		Lloyd et al. (2018) do not report calculated rate parameters for
 		individual experiments, only a set of derived activation energy and
 		pre-exponential factor results. This reference is thus not included
@@ -1228,7 +1239,8 @@ class EDistribution(object):
 		[4] Brenner et al. (2018) *Geochim. Cosmochim. Ac.*, **224**, 42--63.\n
 		[5] Lloyd et al. (2018) *Geochim. Cosmochim. Ac.*, **242**, 1--20.\n
 		[6] Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 
-			116962.
+			116962. \n
+		[7] Looser et al. (2023) *Geochim. Cosmochim. Ac.*, **350**, 1--15.
 		'''
 
 		#ensure mineral is acceptable
@@ -1273,10 +1285,23 @@ class EDistribution(object):
 			reference = 'HH21'
 			model = 'HH21'
 
+		elif reference in ['Lea23_HH21','lea23_hh21']:
+			reference = 'Lea23_HH21'
+			model = 'HH21'
+
+		elif reference in ['Lea23_Hea14','lea23_hea14']:
+			reference = 'Lea23_Hea14'
+			model = 'Hea14'
+
+		elif reference in ['Lea23_SE15','lea23_se15']:
+			reference = 'Lea23_SE15'
+			model = 'SE15'
+
 		elif isinstance(reference, str):
 			raise ValueError(
 				'Unexpected reference string %s. Currently, must be "PH12",'
-				' "Hea14", "SE15", "Bea18", "HH21"' % reference
+				' "Hea14", "SE15", "Bea18", "HH21", "Lea23_HH21", "Lea23_Hea14,'
+				' or "Lea23_SE15"' % reference
 				)
 
 		else:

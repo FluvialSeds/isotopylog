@@ -15,7 +15,7 @@ Package Information
   Jordon D. Hemingway (jordon.hemingway@erdw.ethz.ch)
 
 :Version:
-  0.0.7
+  0.0.8
 
 :Release:
   24 May 2023
