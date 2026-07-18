@@ -1166,7 +1166,8 @@ class EDistribution(object):
 				``'Lea23_HH21'`` (Looser et al. 2023, model type 'HH21')\n
 				``'Lea23_Hea14'`` (Looser et al. 2023, model type 'Hea14')\n
 				``'Lea23_SE15'`` (Looser et al. 2023, model type 'SE15')\n
-				``'Kea26''`` (Kueter et al. 2026, model type 'HH21')\n
+				``'Kea26_OC''`` (Kueter et al. 2026, model type 'HH21')\n
+				``'Kea26_BC''`` (Kueter et al. 2026, model type 'HH21')\n
 
 		Returns
 		-------
@@ -1209,6 +1210,9 @@ class EDistribution(object):
 		``'Lea23_HH21'``, ``'Lea23_Hea14'``, or ``'Lea23_SE15'``, since results
 		for all three models were reported in this study. Note that this study
 		only includes belemnite results, not optical calcites.
+
+		For Kueter et al. (2026), reference can either be ``'Kea26_OC'`` for optical
+		calcaite or ``'Kea26_BC'`` for belemnite calcite.
 
 		Lloyd et al. (2018) do not report calculated rate parameters for
 		individual experiments, only a set of derived activation energy and
@@ -1298,8 +1302,12 @@ class EDistribution(object):
 			reference = 'Lea23_SE15'
 			model = 'SE15'
 
-		elif reference in ['Kueter', 'kueter', 'Kea26', 'kea26']:
-			reference = 'Kea26'
+		elif reference in ['Kea26_OC', 'kea26_oc']:
+			reference = 'Kea26_OC'
+			model = 'HH21'
+
+		elif reference in ['Kea26_BC', 'kea26_bc']:
+			reference = 'Kea26_BC'
 			model = 'HH21'
 
 		elif isinstance(reference, str):
