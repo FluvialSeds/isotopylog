@@ -450,10 +450,10 @@ def fit_Arrhenius(
 	# order to keep things consistent
 	if zero_int is True:
 		params = np.zeros(2)
-		params[0] = p
+		params[0] = p[0]
 
 		params_cov = np.zeros([2,2])
-		params_cov[0,0] = pcov
+		params_cov[0,0] = pcov[0,0]
 
 	else:
 		params = p

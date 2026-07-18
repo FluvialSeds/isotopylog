@@ -1166,6 +1166,7 @@ class EDistribution(object):
 				``'Lea23_HH21'`` (Looser et al. 2023, model type 'HH21')\n
 				``'Lea23_Hea14'`` (Looser et al. 2023, model type 'Hea14')\n
 				``'Lea23_SE15'`` (Looser et al. 2023, model type 'SE15')\n
+				``'Kea26''`` (Kueter et al. 2026, model type 'HH21')\n
 
 		Returns
 		-------
@@ -1296,6 +1297,10 @@ class EDistribution(object):
 		elif reference in ['Lea23_SE15','lea23_se15']:
 			reference = 'Lea23_SE15'
 			model = 'SE15'
+
+		elif reference in ['Kueter', 'kueter', 'Kea26', 'kea26']:
+			reference = 'Kea26'
+			model = 'HH21'
 
 		elif isinstance(reference, str):
 			raise ValueError(
