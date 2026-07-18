@@ -15,10 +15,10 @@ Package Information
   Jordon D. Hemingway (jordon.hemingway@erdw.ethz.ch)
 
 :Version:
-  0.0.8
+  0.0.9
 
 :Release:
-  24 May 2023
+  18 July 2026
 
 :License:
   GNU GPL v3 (or greater)
