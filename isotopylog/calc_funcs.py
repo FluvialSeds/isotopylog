@@ -1240,7 +1240,7 @@ def _Jacobian(f, t, p, eps = 1e-6):
 	#extract constants and pre-allocate array
 	npar = len(p)
 	nt = len(t)
-	J = np.zeros([nt, npar], dtype = np.float)
+	J = np.zeros([nt, npar], dtype = float)
 
 	#loop through each parameter and estimate derivative when perturbed
 	for i in range(npar):

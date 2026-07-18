@@ -54,3 +54,4 @@ pacakge or provide information regarding the choice of user-inputted parameters.
 * Anderson et al. (2021) *Geophys. Res. Lett.*, **48**, e2020GL092069.
 * Bernasconi et al. (2021) *Geochem., Geophys., Geosys.*, **22**, e2020GC009588.
 * Hemingway and Henkes (2021) *Earth Planet. Sci. Lett.*, **566**, 116962.
+* Looser et al. (2023) *Geochim. Cosmochim. Ac.*, **350**, 1--15.
